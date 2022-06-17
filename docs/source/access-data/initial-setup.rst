@@ -120,7 +120,7 @@ Recommended method:
     .. code-block:: bash
 
         # download the file, create, and activate the environment
-        wget https://raw.githubusercontent.com/mwvgroup/Pitt-Google-Broker/master/conda_env.yaml
+        wget https://raw.githubusercontent.com/mwvgroup/pittgoogle-client/main/conda_env.yml
         conda env create --file conda_env.yaml
         conda activate pittgoogle
 
