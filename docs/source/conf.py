@@ -14,14 +14,15 @@
 import sys
 import pkg_resources
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'Pitt-Google Broker'
-copyright = '2021, The Pitt-Google Broker Team'
-author = 'The Pitt-Google Broker Team'
+project = "Pitt-Google Broker"
+copyright = "2021, The Pitt-Google Broker Team"
+author = "The Pitt-Google Broker Team"
 
 # The full version, including alpha/beta/rc tags
 release = pkg_resources.require("pittgoogle-client")[0].version
@@ -33,16 +34,16 @@ release = pkg_resources.require("pittgoogle-client")[0].version
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'myst_parser',
-    'sphinx.ext.autosectionlabel',
-    'sphinx.ext.autodoc',
-    'sphinx.ext.coverage',
-    'sphinx.ext.mathjax',
-    'sphinx.ext.viewcode',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.napoleon',
-    'sphinx_autodoc_typehints',
-    'sphinx_copybutton'
+    "myst_parser",
+    "sphinx.ext.autosectionlabel",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.coverage",
+    "sphinx.ext.mathjax",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.napoleon",
+    "sphinx_autodoc_typehints",
+    "sphinx_copybutton",
 ]
 
 # Make sure the target is unique
@@ -50,13 +51,13 @@ autosectionlabel_prefix_document = True
 # now can reference pages with :ref:`{path/to/page}:{title-of-section}`
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # The suffix(es) of source filenames.
-source_suffix = ['.md', '.rst']
+source_suffix = [".md", ".rst"]
 
 # The master toctree document.
-master_doc = 'index'
+master_doc = "index"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -69,16 +70,16 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ["_static"]
 
 
 # Make list-tables wrap instead of forcing a scrollbar
 # https://knowyourtoolset.com/2018/02/controlling-the-width-of-a-table-with-read-the-docs/
 # but add_stylesheet() -> add_css_file()
 def setup(app):
-    app.add_css_file('css/custom.css')
+    app.add_css_file("css/custom.css")
