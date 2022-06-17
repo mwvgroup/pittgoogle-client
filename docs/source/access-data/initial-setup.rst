@@ -108,7 +108,7 @@ Python API Installs
 
 Recommended method:
 
-    Install the pgb-utils package in a Python3 environment using the code below.
+    Install the pittgoogle-client package in a Python3 environment using the code below.
     This will install the Google Cloud BigQuery, Pub/Sub, and Cloud Storage APIs,
     along with our package which contains working examples of using
     the Google APIs to access data from the Pitt-Google project.
@@ -120,9 +120,9 @@ Recommended method:
     .. code-block:: bash
 
         # download the file, create, and activate the environment
-        wget https://raw.githubusercontent.com/mwvgroup/Pitt-Google-Broker/master/pgb_utils/pgb_env.yaml
-        conda env create --file pgb_env.yaml
-        conda activate PGB
+        wget https://raw.githubusercontent.com/mwvgroup/Pitt-Google-Broker/master/conda_env.yaml
+        conda env create --file conda_env.yaml
+        conda activate pittgoogle
 
         # persist the environment variables in the new PGB env
         cd $CONDA_PREFIX
@@ -140,7 +140,7 @@ Recommended method:
 
     .. code-block:: bash
 
-        pip install pgb-utils
+        pip install pittgoogle-client
 
 Alternate method:
 

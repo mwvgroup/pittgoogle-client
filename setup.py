@@ -1,22 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
-"""Pitt-Google Broker.
+"""pittgoogle-client: Tools for interacting with Pitt-Google Broker data resources.
+
 Example setup.py: https://github.com/pypa/sampleproject/blob/main/setup.py
 
-This file is required for Read the Docs.
-
-The Pitt-Google Broker package is free software: you can redistribute it and/or
+The pittgoogle-client package is free software: you can redistribute it and/or
 modify it under the terms of the GNU General Public License as published
 by the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-The pgb_utils package is distributed in the hope that it will be useful,
+The pittgoogle-client package is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
 Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with pgb_utils.  If not, see <http://www.gnu.org/licenses/>."""
+along with pittgoogle-client.  If not, see <http://www.gnu.org/licenses/>.
+"""
 
 from setuptools import setup, find_packages
 import pathlib
@@ -24,17 +24,17 @@ import pathlib
 
 here = pathlib.Path(__file__).parent.resolve()
 # Get the long description from the README file
-# long_description = (here / 'README.md').read_text(encoding='utf-8')
+long_description = (here / 'README.md').read_text(encoding='utf-8')
 
-with open('docs/requirements.txt') as f:
+with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
 setup(
     name='pittgoogle-client',  # Required
-    version='0.5.0',  # Required
+    version='0.1.0',  # Required
     description='Client package for the Pitt-Google astronomical alert broker.',
-    # long_description=long_description,
-    # long_description_content_type='text/markdown',
+    long_description=long_description,
+    long_description_content_type='text/markdown',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',

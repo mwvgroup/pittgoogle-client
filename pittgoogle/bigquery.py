@@ -58,7 +58,7 @@ def _create_client_raise_exception_if_not_connected(project_id: str):
 
 def _check_client_isinstance():
     msg = ("You must create a BigQuery client first. "
-           "Run `pgb.bigquery.create_client('your_project_id')`")
+           "Run `pittgoogle.bigquery.create_client('your_project_id')`")
     assert isinstance(user_bq_client, bigquery.client.Client), msg
 
 def _create_client_if_needed():
@@ -72,7 +72,7 @@ def _create_client_if_needed():
         msg = ('\nTo run queries, you must first open a BigQuery Client.\n'
                'Enter your Google Cloud Platform project ID now '
                'or exit (just press Enter) and run\n'
-               '`pgb.bigquery.create_client(my_project_id)`\n'
+               '`pittgoogle.bigquery.create_client(my_project_id)`\n'
                '\nProject ID: '
         )
         project_id = input(msg) or ''
@@ -172,7 +172,8 @@ def get_dataset_table_names(dataset: str ='ztf_alerts') -> List[str]:
         f'FROM {pgb_project_id}.{dataset}.INFORMATION_SCHEMA.TABLES'
     )
     query_job = user_bq_client.query(query)
-    tables = [row['table_name'] for row in query_job].sort()
+    tables = [row['table_name'] for row in query_job]
+    tables.sort(key=str.lower)
     return tables
 
 
@@ -355,7 +356,7 @@ def query_objects(columns: List[str],
         iterator: If True, iterate over the objects and return one at a time.
                   Else return the full query results together.
                   This parameter is ignored if `format` == 'query_job'.
-        dry_run: If True, `pgb.bigquery.dry_run` will be called first and the
+        dry_run: If True, `pittgoogle.bigquery.dry_run` will be called first and the
                  user will be asked to confirm before continuing.
 
     Returns: Query results in the requested format. If `iterator` is True,
@@ -405,7 +406,7 @@ def _query_objects_check_history_column_names(columns: List[str]) -> List[str]:
     except AssertionError:
         msg = (
             '\nYou have requested columns that are not available to `query_objects()`.\n'
-            '(To view available columns, use `pgb.bigquery.get_history_column_names()`)\n'
+            '(To view available columns, use `pittgoogle.bigquery.get_history_column_names()`)\n'
             f'\nRequested columns:\n\t{columns}\n'
             f'Unavailable columns:\n\t{badcols}\n'
             '\nProceed without the unavailable columns? [y/N] '
@@ -515,7 +516,7 @@ def cone_search(center: astropy.coordinates.SkyCoord,
                 returned in this format. Duplicate observations are dropped.
         iterator: If True, iterate over the objects and return one at a time.
                   Else return the full query results together.
-        dry_run: If True, `pgb.bigquery.dry_run` will be called first and the
+        dry_run: If True, `pittgoogle.bigquery.dry_run` will be called first and the
                  user will be asked to confirm before continuing.
 
     Returns: Query results in the requested format. If `iterator` is True,
