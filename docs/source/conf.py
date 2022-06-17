@@ -11,11 +11,15 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 # -- Path setup --------------------------------------------------------------
-import sys
-import pkg_resources
+import os
 from pathlib import Path
+import sys
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+pkg_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(pkg_root))
+with open(os.path.join(pkg_root, "VERSION.txt")) as version_file:
+    version = version_file.read().strip()
 
 
 # -- Project information -----------------------------------------------------
@@ -25,7 +29,7 @@ copyright = "2021, The Pitt-Google Broker Team"
 author = "The Pitt-Google Broker Team"
 
 # The full version, including alpha/beta/rc tags
-release = pkg_resources.require("pittgoogle-client")[0].version
+release = version
 
 
 # -- General configuration ---------------------------------------------------
