@@ -4,7 +4,9 @@ fastavro
 google-cloud-bigquery
 google-cloud-pubsub>=2.0  # request syntax is different than in v1.x
 google-cloud-storage
-matplotlib
+# astropy==3.2.1 requires matplotlib<3.5
+# due to the removal of the 'inframe' parameter of draw() in 3.5
+matplotlib<3.5
 numpy
 pandas
 tabulate
