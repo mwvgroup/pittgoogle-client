@@ -45,6 +45,8 @@ Imports
 
     import fastavro
     from google.cloud import storage
+    from matplotlib import pyplot as plt
+    import os
     from pathlib import Path
     import pittgoogle
 
@@ -103,6 +105,7 @@ Plot cutouts
 .. code:: python
 
     pittgoogle.figures.plot_cutouts(alert_dict)
+    plt.show(block=False)
 
 Cast to a dataframe and plot lightcurves
 
@@ -110,12 +113,14 @@ Cast to a dataframe and plot lightcurves
 
     lc_df = pittgoogle.utils.alert_dict_to_dataframe(alert_dict)
     pittgoogle.figures.plot_lightcurve(lc_df)
+    plt.show(block=False)
 
 Plot everything together
 
 .. code:: python
 
     pittgoogle.figures.plot_lightcurve_cutouts(alert_dict)
+    plt.show(block=False)
 
 Command line
 ------------
