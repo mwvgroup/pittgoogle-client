@@ -7,7 +7,7 @@ Cloud File Storage
 -  `Command line`_
 
 This tutorial covers downloading and working with files from our Cloud
-Storage buckets via two methods: the pgb-utils Python package, and the
+Storage buckets via two methods: the pittgoogle-client Python package, and the
 gsutil CLI.
 
 For more information, see:
@@ -24,7 +24,7 @@ Prerequisites
    -  set your environment variables
    -  enable the Cloud Storage API
    -  install the google-cloud-bigquery package if you want to use Python
-   -  install the pgb-utils package if you want to plot the data using Python
+   -  install the pittgoogle-client package if you want to plot the data using Python
    -  install the CLI if you want to use the command line
 
 File names
@@ -46,7 +46,7 @@ Imports
     import fastavro
     from google.cloud import storage
     from pathlib import Path
-    import pgb_utils as pgb
+    import pittgoogle
 
 Name some things
 
@@ -102,20 +102,20 @@ Plot cutouts
 
 .. code:: python
 
-    pgb.figures.plot_cutouts(alert_dict)
+    pittgoogle.figures.plot_cutouts(alert_dict)
 
 Cast to a dataframe and plot lightcurves
 
 .. code:: python
 
-    lc_df = pgb.utils.alert_dict_to_dataframe(alert_dict)
-    pgb.figures.plot_lightcurve(lc_df)
+    lc_df = pittgoogle.utils.alert_dict_to_dataframe(alert_dict)
+    pittgoogle.figures.plot_lightcurve(lc_df)
 
 Plot everything together
 
 .. code:: python
 
-    pgb.figures.plot_lightcurve_cutouts(alert_dict)
+    pittgoogle.figures.plot_lightcurve_cutouts(alert_dict)
 
 Command line
 ------------

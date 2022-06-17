@@ -30,10 +30,10 @@ The Pitt-Google Broker runs on the `Google Cloud Platform <https://cloud.google.
    :maxdepth: 1
    :caption: API Reference
 
-   api/pgb-utils/bigquery
-   api/pgb-utils/figures
-   api/pgb-utils/pubsub
-   api/pgb-utils/utils
+   api/pittgoogle/bigquery
+   api/pittgoogle/figures
+   api/pittgoogle/pubsub
+   api/pittgoogle/utils
 
 ..
 .. Indices and tables

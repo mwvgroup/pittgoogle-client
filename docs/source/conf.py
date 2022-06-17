@@ -12,6 +12,7 @@
 #
 # -- Path setup --------------------------------------------------------------
 import sys
+import pkg_resources
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
@@ -23,7 +24,7 @@ copyright = '2021, The Pitt-Google Broker Team'
 author = 'The Pitt-Google Broker Team'
 
 # The full version, including alpha/beta/rc tags
-release = 'v0.5.0'
+release = pkg_resources.require("pittgoogle-client")[0].version
 
 
 # -- General configuration ---------------------------------------------------

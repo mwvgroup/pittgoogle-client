@@ -13,12 +13,12 @@ You can subscribe to one or more of these topics, and then pull and process the 
 either in real-time or up to 7 days after a message was published.
 
 This tutorial demonstrates two methods: Python and the command line.
-The Python sections use the pgb-utils package, which contains example functions to
+The Python sections use the pittgoogle-client package, which contains example functions to
 complete these tasks.
 These example functions are thin wrappers for the Google API, which offers more
 options than those presented here.
-Interested users are encouraged to look at and extend the pgb-utils source code
-(see :doc:`docs <../../api/pgb-utils/pubsub>`) to harness the full power
+Interested users are encouraged to look at and extend the pittgoogle source code
+(see :doc:`docs <../../api/pittgoogle/pubsub>`) to harness the full power
 of the Google API.
 
 For more information, see:
@@ -26,10 +26,10 @@ For more information, see:
 - `What is Pub/Sub? <https://cloud.google.com/pubsub/docs/overview>`__
 - Python client documentation:
 
-        - :doc:`pgb_utils.pubsub <../../api/pgb-utils/pubsub>`
+        - :doc:`pittgoogle.pubsub <../../api/pittgoogle/pubsub>`
         - `google.cloud.pubsub
           <https://googleapis.dev/python/pubsub/latest/index.html>`__
-          (pgb-utils.pubsub contains thin wrappers for this API)
+          (pittgoogle.pubsub contains thin wrappers for this API)
 
 - `gcloud CLI reference <https://cloud.google.com/sdk/gcloud/reference>`__
 - `All Google APIs for Pub/Sub
@@ -43,7 +43,7 @@ Prerequisites
 
    -  set your environment variables
    -  enable the Pub/Sub API
-   -  install the pgb-utils package if you want to use Python
+   -  install the pittgoogle-client package if you want to use Python
    -  install the CLI if you want to use the command line
 
 .. _create-subscription:
@@ -76,7 +76,7 @@ Method A: Python
 
 .. code:: python
 
-    import pgb_utils as pgb
+    import pittgoogle
 
     # choose an existing Pitt-Google topic
     topic_name = 'ztf-loop'
@@ -85,11 +85,11 @@ Method A: Python
     subscription_name = 'ztf-loop'
 
     # create the subscription
-    subscription = pgb.pubsub.create_subscription(topic_name, subscription_name)
+    subscription = pittgoogle.pubsub.create_subscription(topic_name, subscription_name)
     # you can look at the subscription object, but you don't need to do anything with it
 
 For more information, view the docstring and source code for
-:meth:`pgb_utils.pgb_utils.pubsub.create_subscription`.
+:meth:`pittgoogle.pubsub.create_subscription`.
 
 
 Method B: Command line
@@ -130,21 +130,21 @@ You can then process them however you'd like.
 
 .. code:: python
 
-    import pgb_utils as pgb
+    import pittgoogle
 
     # pull and acknowledge messages
     subscription_name = 'ztf-loop'
     max_messages = 5
-    msgs = pgb.pubsub.pull(subscription_name, max_messages=max_messages)
+    msgs = pittgoogle.pubsub.pull(subscription_name, max_messages=max_messages)
 
     # msgs is a list containing the alert data as bytes
     # you can now process them however you'd like
 
     # here we simply convert the first alert to an astropy table
-    table = pgb.pubsub.decode_message(msgs[0], return_alert_as='table')
+    table = pittgoogle.pubsub.decode_message(msgs[0], return_alert_as='table')
 
 For more information, view the docstring and source code for
-:meth:`pgb_utils.pgb_utils.pubsub.pull`.
+:meth:`pittgoogle.pubsub.pull`.
 
 Pull messages in streaming mode
 ********************************
@@ -159,7 +159,7 @@ The message object is described `here
 
 .. code:: python
 
-    import pgb_utils as pgb
+    import pittgoogle
 
     # create the callback function
     def callback(message):
@@ -169,7 +169,7 @@ The message object is described `here
         # process the message however you'd like
 
         # here we simply convert it to a dataframe and print the 1st row
-        df = pgb.pubsub.decode_message(alert, return_alert_as='df')
+        df = pittgoogle.pubsub.decode_message(alert, return_alert_as='df')
         print(df.head(1))
 
         # acknowledge the message so it is not delivered again
@@ -177,11 +177,11 @@ The message object is described `here
 
     # start streaming messages
     subscription_name = 'ztf-loop'
-    pgb.pubsub.streamingPull(subscription_name, callback)
+    pittgoogle.pubsub.streamingPull(subscription_name, callback)
     # use Control+C to cancel the streaming
 
 For more information, view the docstring and source code for
-:meth:`pgb_utils.pgb_utils.pubsub.streamingPull`.
+:meth:`pittgoogle.pubsub.streamingPull`.
 
 Method B: Command line
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -217,13 +217,13 @@ Method A: Python
 
 .. code:: python
 
-    import pgb_utils as pgb
+    import pittgoogle
 
     subscription_name = 'ztf-loop'
-    pgb.pubsub.delete_subscription(subscription_name)
+    pittgoogle.pubsub.delete_subscription(subscription_name)
 
 For more information, view the docstring and source code for
-:meth:`pgb_utils.pgb_utils.pubsub.delete_subscription`.
+:meth:`pittgoogle.pubsub.delete_subscription`.
 
 Method B: Command line
 ~~~~~~~~~~~~~~~~~~~~~~

@@ -15,11 +15,11 @@ BigQuery Databases
 -  `Command line`_
 
 This tutorial covers downloading and working with data from our BigQuery
-databases via two methods: the pgb-utils Python package, and the bq CLI.
+databases via two methods: the pittgoogle-client Python package, and the bq CLI.
 
 For more information, see: - `Google Cloud BigQuery Python client
 documentation <https://googleapis.dev/python/bigquery/latest/index.html>`__
-(the pgb-utils functions used below are thin wrappers for this API) -
+(the pittgoogle functions used below are thin wrappers for this API) -
 `bq CLI
 reference <https://cloud.google.com/bigquery/docs/reference/bq-cli-reference>`__
 
@@ -30,7 +30,7 @@ Prerequisites
 
    -  set your environment variables
    -  enable the BigQuery API
-   -  install the pgb-utils package if you want to use Python
+   -  install the pittgoogle-client package if you want to use Python
    -  install the CLI if you want to use the command line
 
 Python
@@ -43,7 +43,7 @@ Imports
 
 .. code:: python
 
-    import pgb_utils as pgb
+    import pittgoogle
     import os
 
 Create a Client for the BigQuery connections below
@@ -51,18 +51,18 @@ Create a Client for the BigQuery connections below
 .. code:: python
 
     my_project_id = os.getenv('GOOGLE_CLOUD_PROJECT')
-    pgb.bigquery.create_client(my_project_id)
+    pittgoogle.bigquery.create_client(my_project_id)
 
 View the available tables and their schemas
 
 .. code:: python
 
     # see which tables are available
-    pgb.bigquery.get_dataset_table_names()
+    pittgoogle.bigquery.get_dataset_table_names()
 
     # look at the schema and basic info of a table
     table = 'DIASource'
-    pgb.bigquery.get_table_info(table)
+    pittgoogle.bigquery.get_table_info(table)
 
 Query lightcurves and other history
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -75,7 +75,7 @@ Setup
     columns = ['jd', 'fid', 'magpsf', 'sigmapsf']
     # 'objectId' and 'candid' will be included automatically
     # options are columns in the 'DIASource' table
-    # pgb.bigquery.get_table_info('DIASource')
+    # pittgoogle.bigquery.get_table_info('DIASource')
 
     # Optional
     # choose specific objects
@@ -86,7 +86,7 @@ Setup
 To retrieve lightcurves and other history, we must query for objects'
 "DIASource" observations and aggregate the results by ``objectId``.
 
-``pgb.bigquery.query_objects()`` is a convenience wrapper that let's you
+``pittgoogle.bigquery.query_objects()`` is a convenience wrapper that let's you
 grab all the results at once, or step through them using a generator.
 It's options are demonstrated below.
 
@@ -94,7 +94,7 @@ It's options are demonstrated below.
 
     # Option 1: Get a single DataFrame of all results
 
-    lcs_df = pgb.bigquery.query_objects(columns, objectIds=objectIds)
+    lcs_df = pittgoogle.bigquery.query_objects(columns, objectIds=objectIds)
     # This will execute a dry run and tell you how much data will be processed.
     # You will be asked to confirm before proceeding.
     # In the future we'll skip this using
@@ -110,12 +110,12 @@ ID). It includes the columns we requested in the query.
 
 ``fid`` is the filter, mapped to an integer. You can see the filter's
 common name in the table schema we looked at earlier, or you can use
-``pgb.utils.ztf_fid_names()`` which returns a dictionary of the mapping.
+``pittgoogle.utils.ztf_fid_names()`` which returns a dictionary of the mapping.
 
 .. code:: python
 
     # map fid column to the filter's common name
-    fid_names = pgb.utils.ztf_fid_names()  # dict
+    fid_names = pittgoogle.utils.ztf_fid_names()  # dict
     print(fid_names)
 
     lcs_df['filter'] = lcs_df['fid'].map(fid_names)
@@ -130,7 +130,7 @@ into memory at once. ``query_objects()`` can return one for you:
     # Option 2: Get a generator that yields a DataFrame for each objectId
 
     iterator = True
-    objects = pgb.bigquery.query_objects(
+    objects = pittgoogle.bigquery.query_objects(
         columns, objectIds=objectIds, iterator=iterator, dry_run=dry_run
     )
     # cleaned of duplicates
@@ -150,7 +150,7 @@ results:
     # Option 3: Get a single json string with all the results
 
     format = 'json'
-    lcsjson = pgb.bigquery.query_objects(
+    lcsjson = pittgoogle.bigquery.query_objects(
         columns, objectIds=objectIds, format=format, dry_run=dry_run
     )
     # cleaned of duplicates
@@ -166,7 +166,7 @@ results:
 
     format = 'json'
     iterator = True
-    jobj = pgb.bigquery.query_objects(
+    jobj = pittgoogle.bigquery.query_objects(
         columns, objectIds=objectIds, format=format, iterator=iterator, dry_run=dry_run
     )
     # cleaned of duplicates
@@ -184,7 +184,7 @@ method.
     # Option 5: Get the `query_job` object
     #           (see the section on using google.cloud.bigquery directly)
 
-    query_job = pgb.bigquery.query_objects(
+    query_job = pittgoogle.bigquery.query_objects(
         columns, objectIds=objectIds, format="query_job", dry_run=dry_run
     )
     # query_job is iterable
@@ -201,10 +201,10 @@ method.
 
         # pgb can cast to a DataFrame or json string
         # this option also cleans the duplicates
-        lc_df = pgb.bigquery.format_history_query_results(row=row)
+        lc_df = pittgoogle.bigquery.format_history_query_results(row=row)
         print(f'\nobjectId: {lc_df.objectId}')  # objectId in metadata
         print(lc_df.head(1))
-        lcjson = pgb.bigquery.format_history_query_results(row=row, format='json')
+        lcjson = pittgoogle.bigquery.format_history_query_results(row=row, format='json')
         print('\n', lcjson)
 
         break
@@ -217,16 +217,16 @@ Plot a lightcurve
     # Get an object's lightcurve DataFrame with the minimum required columns
     columns = ['jd','fid','magpsf','sigmapsf','diffmaglim']
     objectId = 'ZTF20acqgklx'
-    lc_df = pgb.bigquery.query_objects(columns, objectIds=[objectId], dry_run=False)
+    lc_df = pittgoogle.bigquery.query_objects(columns, objectIds=[objectId], dry_run=False)
 
     # make the plot
-    pgb.figures.plot_lightcurve(lc_df, objectId=objectId)
+    pittgoogle.figures.plot_lightcurve(lc_df, objectId=objectId)
 
 Cone search
 ~~~~~~~~~~~
 
 To perform a cone search, we query for object histories and then check
-whether they are within the cone. ``pgb.bigquery.cone_search()`` is a
+whether they are within the cone. ``pittgoogle.bigquery.cone_search()`` is a
 convenience wrapper provided
 for demonstration, but note that it is very inefficient.
 
@@ -240,7 +240,7 @@ First we set the search parameters.
     columns = ['jd', 'fid', 'magpsf', 'sigmapsf']
     # 'objectId' and 'candid' will be included automatically
     # options are in the 'DIASource' table
-    # pgb.bigquery.get_table_info('DIASource')
+    # pittgoogle.bigquery.get_table_info('DIASource')
     dry_run = False
 
     # we'll restrict to a handful of objects to reduce runtime, but this is optional
@@ -253,7 +253,7 @@ Here we demonstrate one.
 
     # Option 1: Get a single df of all objects in the cone
 
-    objects_in_cone = pgb.bigquery.cone_search(
+    objects_in_cone = pittgoogle.bigquery.cone_search(
         center, radius, columns, objectIds=objectIds, dry_run=dry_run
     )
     objects_in_cone.sample(5)
@@ -287,8 +287,8 @@ Query setup:
 
     # Write the standard SQL query statement
 
-    # pgb.bigquery.get_dataset_table_names()  # view available tables
-    # pgb.bigquery.get_table_info('<table>')  # view available column names
+    # pittgoogle.bigquery.get_dataset_table_names()  # view available tables
+    # pittgoogle.bigquery.get_table_info('<table>')  # view available column names
 
     # construct the full table name
     pgb_project_id = 'ardent-cycling-243415'
@@ -304,13 +304,13 @@ Query setup:
     )
 
     # note: if you want to query object histories you can get the
-    # query statement using `pgb.bigquery.object_history_sql_statement()`
+    # query statement using `pittgoogle.bigquery.object_history_sql_statement()`
 
 .. code:: python
 
     # Let's create a function to execute a "dry run"
     # and tell us how much data will be processed.
-    # This is essentially `pgb.bigquery.dry_run()`
+    # This is essentially `pittgoogle.bigquery.dry_run()`
     def dry_run(query):
         job_config = bigquery.QueryJobConfig(dry_run=True, use_query_cache=False)
         query_job = bq_client.query(query, job_config=job_config)
