@@ -31,6 +31,8 @@ author = "The Pitt-Google Broker Team"
 # The full version, including alpha/beta/rc tags
 release = version
 
+language = "en"
+
 
 # -- General configuration ---------------------------------------------------
 

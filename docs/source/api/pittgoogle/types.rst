@@ -1,6 +1,6 @@
-pittgoogle.pubsub
+pittgoogle.types
 ======================
 
-.. automodule:: pittgoogle.pubsub
+.. automodule:: pittgoogle.types
    :members:
    :member-order: bysource

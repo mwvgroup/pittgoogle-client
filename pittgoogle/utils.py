@@ -140,6 +140,6 @@ def _strip_cutouts_ztf(alert_dict: dict) -> dict:
 
 # --- Other
 def class_defaults(cls):
-    """Return dictionary of default values for args of class.__init__."""
+    """Return dictionary of default values for args of cls.__init__."""
     params = inspect.signature(cls.__init__).parameters
     return dict((name, param.default) for name, param in params.items())

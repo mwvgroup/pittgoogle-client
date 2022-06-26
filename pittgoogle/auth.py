@@ -1,6 +1,54 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
-"""Functions to facilitate authentication with Google Cloud."""
+"""Classes to facilitate authentication with Google Cloud.
+
+.. contents:: Classes
+   :local:
+   :depth: 1
+
+**Basic Usage**
+
+You must obtain credentials from Google Cloud in order to make API calls.
+There are two options:
+1)  Service Account (recommended)
+    a)  Create a service account and download a key file.
+
+2)  OAuth2
+    a)  See :ref:</access-data/oauth2:service account>. This is not fully integrated,
+        making the authentication process cumbersome.
+
+
+Authentication via a service account is recommended.
+OAuth2 is also available, but is less fully integrated.
+
+To authenticate using service account credentials, first complete the
+:ref:`/access-data/initial-setup` to obtain a key file and set environment variables.
+Then authenticate and obtain credentials using:
+
+.. code-block:: python
+
+    from pittgoogle import auth
+
+    authd = auth.Auth(auth.AuthSettings())  # create an Auth. connection still untested
+    authd.credentials                       # complete authentication
+
+The default arguments instruct the API to look for environment variables.
+
+`AuthSettings`
+----------------
+
+.. autoclass:: pittgoogle.auth.AuthSettings
+   :members:
+   :member-order: bysource
+
+
+`Auth`
+----------------
+
+.. autoclass:: pittgoogle.auth.Auth
+   :members:
+   :member-order: bysource
+"""
 
 from dataclasses import asdict, dataclass, fields
 import logging
@@ -19,14 +67,16 @@ LOGGER = logging.getLogger(__name__)
 class AuthSettings:
     """Settings for authentication to Google Cloud.
 
-    Any setting not provided during instantiation will be obtained from an environment
-    variable of the same name, or None if this can't be found.
+    Any setting not provided during instantiation will be obtained from the environment
+    variable of the same name, if it exists.
+    `GOOGLE_CLOUD_PROJECT` is required. All other settings will fallback to None if they
+    cannot be determined.
 
     GOOGLE_CLOUD_PROJECT:
         Project ID of the Google Cloud project to connect to.
     GOOGLE_APPLICATION_CREDENTIALS:
         Path to a keyfile containing service account credentials.
-        Either this or both `OAUTH_CLIENT_` settings are required for successful
+        Either this or both `OAUTH_CLIENT_*` settings are required for successful
         authentication using `Auth`.
     OAUTH_CLIENT_ID:
         Client ID for an OAuth2 connection.

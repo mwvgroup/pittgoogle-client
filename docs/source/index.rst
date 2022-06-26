@@ -21,18 +21,18 @@ The Pitt-Google Broker runs on the `Google Cloud Platform <https://cloud.google.
 
    access-data/data-overview
    access-data/initial-setup
-   access-data/bigquery
-   access-data/cloud-storage
-   access-data/pubsub
+   access-data/tutorials
 
 .. toctree::
    :hidden:
    :maxdepth: 1
    :caption: API Reference
 
+   api/pittgoogle/auth
    api/pittgoogle/bigquery
    api/pittgoogle/figures
    api/pittgoogle/pubsub
+   api/pittgoogle/types
    api/pittgoogle/utils
 
 ..

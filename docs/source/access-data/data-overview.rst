@@ -75,9 +75,10 @@ as well as value-added products from our pipeline as applicable
 in publicly accesible Cloud Storage buckets.
 See the :doc:`cloud-storage` tutorial.
 
+.. _cost:
 
 Note on Costs
----------------
+-------------
 
 You do not need to setup billing to complete our tutorials.
 The Google Cloud services pricing structure includes a Free Tier,
@@ -114,6 +115,8 @@ Some pricing examples (as of Aug. 2021):
 For more information, see:
 
 - `Free Tier <https://cloud.google.com/free>`__
+- `$300 Free Trial <https://cloud.google.com/free/docs/gcp-free-tier?authuser=1#free-trial>`__
+- `$5000 Research Credits <https://edu.google.com/programs/credits/research/?modal_active=none>`__
 - `Pricing structure <https://cloud.google.com/pricing>`__
   (scroll to "Only pay for what you use")
 - `Detailed price list <https://cloud.google.com/pricing/list>`__
