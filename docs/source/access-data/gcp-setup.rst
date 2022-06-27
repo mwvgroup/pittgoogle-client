@@ -15,7 +15,8 @@ Otherwise, it's recommended to follow the steps in order.
 Projects are free and are easy to create/delete.
 Each user can have many projects simultaneously, and users can share projects.
 A basic level of ongoing access to services like Pub/Sub and BigQuery is also free.
-No credit card required (see :ref:`/access-data/data-overview:cost`).
+No credit card required (see :ref:`access-data/data-overview:cost`).
+.. `here <access-data/data-overview:Pub/Sub>`
 
 .. _setup project:
 
