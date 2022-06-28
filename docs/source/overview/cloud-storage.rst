@@ -1,37 +1,36 @@
-Cloud File Storage
-==================
+Cloud (File) Storage
+====================
 
--  `Prerequisites`_
--  `File names`_
--  `Python`_
--  `Command line`_
+.. contents:: Table of Contents
+    :depth: 1
+    :local:
 
-This tutorial covers downloading and working with files from our Cloud
-Storage buckets via two methods: the pittgoogle-client Python package, and the
-gsutil CLI.
+We store alert data in the Cloud Storage buckets listed below.
+This tutorial covers access via two methods: pittgoogle-client, and the gsutil CLI.
 
-For more information, see:
+Data Resources
+----------------
 
--   `Google Cloud Storage Client Python
-    documentation <https://googleapis.dev/python/storage/latest/client.html>`__
--   `gsutil overview <https://cloud.google.com/storage/docs/gsutil>`__
+.. list-table:: Buckets
+    :class: tight-table
+    :widths: 40 60
+    :header-rows: 1
+
+    * - Bucket Name
+      - Description
+
+    * - ardent-cycling-243415-ztf-alert_avros
+      - This bucket contains the complete, original alert packets as Avro files.
+        The files are named using the syntax: {objectId}.{candid}.{ztf_topic}.avro
 
 Prerequisites
 -------------
 
-1. Complete the :doc:`initial-setup`. Be sure to:
+1. Complete the :doc:`initial-setup`. In particular, be sure to:
 
-   -  set your environment variables
-   -  enable the Cloud Storage API
-   -  install the google-cloud-bigquery package if you want to use Python
-   -  install the pittgoogle-client package if you want to plot the data using Python
-   -  install the CLI if you want to use the command line
-
-File names
-----------
-
-We store the alert packets as Avro files named as
-"{objectId}.{candid}.{ztf\_topic}.avro"
+   -  :doc:`install-pittgoogle` and/or :ref:`Install the command-line tools <install gcp cli>`.
+   -  :ref:`service account`
+   -  :ref:`Set your environment variables <set env vars>`
 
 Python
 ------
@@ -58,7 +57,7 @@ Name some things
     local_dir = ''
 
     my_project_id = os.getenv('GOOGLE_CLOUD_PROJECT')
-    pgb_project_id = 'ardent-cycling-243415'
+    pgb_project_id = pittgoogle.types.PittGoogleProjectIds.production
 
 Download files
 ~~~~~~~~~~~~~~

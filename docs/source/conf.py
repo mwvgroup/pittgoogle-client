@@ -31,7 +31,7 @@ author = "The Pitt-Google Broker Team"
 # The full version, including alpha/beta/rc tags
 release = version
 
-language = "en"
+# language = "en"
 
 
 # -- General configuration ---------------------------------------------------
@@ -52,9 +52,14 @@ extensions = [
     "sphinx_copybutton",
 ]
 
+# set typing.TYPE_CHECKING = True
+set_type_checking_flag = True
+
 # Make sure the target is unique
-autosectionlabel_prefix_document = True
+# autosectionlabel_prefix_document = True
 # now can reference pages with :ref:`{path/to/page}:{title-of-section}`
+# but can't use this with custom labels, so
+autosectionlabel_prefix_document = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

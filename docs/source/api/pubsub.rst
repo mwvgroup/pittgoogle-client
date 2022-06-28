@@ -2,5 +2,3 @@ pittgoogle.pubsub
 ======================
 
 .. automodule:: pittgoogle.pubsub
-   :members:
-   :member-order: bysource

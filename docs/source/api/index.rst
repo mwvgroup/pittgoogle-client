@@ -1,12 +1,8 @@
-API Reference
+Index
 ================
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 3
+    :glob:
 
-    pittgoogle/auth
-    pittgoogle/bigquery
-    pittgoogle/figures
-    pittgoogle/pubsub
-    pittgoogle/types
-    pittgoogle/utils
+    *

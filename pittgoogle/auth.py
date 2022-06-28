@@ -2,40 +2,45 @@
 # -*- coding: UTF-8 -*-
 """Classes to facilitate authentication with Google Cloud.
 
-.. contents:: Classes
+.. contents:: Table of Contents
    :local:
    :depth: 1
 
-**Basic Usage**
+Usage
+-----
 
-You must obtain credentials from Google Cloud in order to make API calls.
+You must obtain credentials before making API calls.
 There are two options:
-1)  Service Account (recommended)
-    a)  Create a service account and download a key file.
 
-2)  OAuth2
-    a)  See :ref:</access-data/oauth2:service account>. This is not fully integrated,
-        making the authentication process cumbersome.
+#.  :ref:`service account` (recommended)
 
+#.  :doc:`/overview/oauth2`
 
-Authentication via a service account is recommended.
-OAuth2 is also available, but is less fully integrated.
+This example uses a service account.
 
-To authenticate using service account credentials, first complete the
-:ref:`/access-data/initial-setup` to obtain a key file and set environment variables.
-Then authenticate and obtain credentials using:
+The basic call is:
 
-.. code-block:: python
+.. code-block:: pycon
 
     from pittgoogle import auth
 
-    authd = auth.Auth(auth.AuthSettings())  # create an Auth. connection still untested
-    authd.credentials                       # complete authentication
+    myauth = auth.Auth(auth.AuthSettings())
 
-The default arguments instruct the API to look for environment variables.
+As long as you have :ref:`set your environment variables <set env vars>`,
+`AuthSettings` will find your credentials.
+
+However, we still don't know if they are valid.
+To authenticate, request the `credentials` explicitly:
+
+.. code-block:: pycon
+
+    myauth.credentials
+
+Classes
+-------
 
 `AuthSettings`
-----------------
+~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: pittgoogle.auth.AuthSettings
    :members:
@@ -43,14 +48,14 @@ The default arguments instruct the API to look for environment variables.
 
 
 `Auth`
-----------------
+~~~~~~~~~~~~~~~~~~~
 
 .. autoclass:: pittgoogle.auth.Auth
    :members:
    :member-order: bysource
 """
 
-from dataclasses import asdict, dataclass, fields
+from dataclasses import dataclass
 import logging
 import os
 
@@ -69,31 +74,36 @@ class AuthSettings:
 
     Any setting not provided during instantiation will be obtained from the environment
     variable of the same name, if it exists.
-    `GOOGLE_CLOUD_PROJECT` is required. All other settings will fallback to None if they
-    cannot be determined.
 
     GOOGLE_CLOUD_PROJECT:
         Project ID of the Google Cloud project to connect to.
+
     GOOGLE_APPLICATION_CREDENTIALS:
         Path to a keyfile containing service account credentials.
         Either this or both `OAUTH_CLIENT_*` settings are required for successful
         authentication using `Auth`.
+
     OAUTH_CLIENT_ID:
         Client ID for an OAuth2 connection.
         Either this and `OAUTH_CLIENT_SECRET`, or the `GOOGLE_APPLICATION_CREDENTIALS`
         setting, are required for successful authentication using `Auth`.
+
     OAUTH_CLIENT_SECRET:
         Client secret for an OAuth2 connection.
         Either this and `OAUTH_CLIENT_ID`, or the `GOOGLE_APPLICATION_CREDENTIALS`
         setting, are required for successful authentication using `Auth`.
     """
 
-    GOOGLE_CLOUD_PROJECT: str = os.getenv("GOOGLE_CLOUD_PROJECT")
-    GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = os.getenv(
-        "GOOGLE_APPLICATION_CREDENTIALS", None
-    )
-    OAUTH_CLIENT_ID: Optional[str] = os.getenv("OAUTH_CLIENT_ID", None)
-    OAUTH_CLIENT_SECRET: Optional[str] = os.getenv("OAUTH_CLIENT_SECRET", None)
+    GOOGLE_CLOUD_PROJECT: Optional[str] = None
+    GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = None
+    OAUTH_CLIENT_ID: Optional[str] = None
+    OAUTH_CLIENT_SECRET: Optional[str] = None
+
+    def __post_init__(self):
+        """Look for missing settings in environment variables."""
+        for key, val in self.__dict__.items():
+            if val is None:
+                setattr(self, key, os.getenv(key, None))
 
 
 @dataclass
