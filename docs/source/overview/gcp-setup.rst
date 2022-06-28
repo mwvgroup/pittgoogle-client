@@ -105,7 +105,7 @@ described on that page.)
 Replace the angle brackets (``<>``) and everything between them with your values for the
 project ID and file path, obtained above.
 
-.. code-block:: console
+.. code-block:: bash
 
     export GOOGLE_CLOUD_PROJECT="<my-project-id>"
     export GOOGLE_APPLICATION_CREDENTIALS="</local/path/to/GCP_auth_key.json>"
@@ -117,7 +117,7 @@ variables when your environment is activated, and erase them when it is deactiva
 
 Activate your Conda environment, then:
 
-.. code-block:: console
+.. code-block:: bash
 
     # cd to the environment's directory
     ogdir=$(pwd)

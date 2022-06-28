@@ -4,7 +4,7 @@
 
 .. contents:: Table of Contents
    :local:
-   :depth: 1
+   :depth: 2
 
 Usage
 -----
@@ -20,7 +20,7 @@ This example uses a service account.
 
 The basic call is:
 
-.. code-block:: pycon
+.. code-block:: python
 
     from pittgoogle import auth
 
@@ -32,7 +32,7 @@ As long as you have :ref:`set your environment variables <set env vars>`,
 However, we still don't know if they are valid.
 To authenticate, request the `credentials` explicitly:
 
-.. code-block:: pycon
+.. code-block:: python
 
     myauth.credentials
 
@@ -144,9 +144,9 @@ class Auth:
         self._credentials = None
 
     def get_credentials(self):
-        """Create user credentials object from service account credentials or an OAuth.
+        """Load user credentials from a service account key file or an OAuth2 session.
 
-        Try service account credentials first. Fall back to OAuth.
+        Try the service account first, fall back to OAuth2.
         """
         # service account credentials
         try:
@@ -198,10 +198,8 @@ class Auth:
 
         The user must have a Google account that is authorized make API calls
         through the project defined by `GOOGLE_CLOUD_PROJECT`.
-        Any project can be used, as long as the user has access.
-
-        Additional requirement because this is still in dev: The OAuth is restricted
-        to users registered with Pitt-Google, so contact us.
+        In addition, the user must be registered with Pitt-Google (this is a Google
+        requirement on apps that are still in dev).
         """
         # create an OAuth2Session
         client_id = self.OAUTH_CLIENT_ID

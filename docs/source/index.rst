@@ -16,7 +16,7 @@ The Pitt-Google Broker runs on the `Google Cloud Platform <https://cloud.google.
 
     Overview<self>
     overview/initial-setup
-    overview/tutorials
+    overview/data-resources
 
 .. toctree::
    :hidden:

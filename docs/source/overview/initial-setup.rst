@@ -11,7 +11,7 @@ Initial Setup
     cost
     adv-setup
 
-To get started, you'll need to complete 2 steps:
+To access data, you'll need to complete 2 steps:
 
 #.  :doc:`install-pittgoogle`
 

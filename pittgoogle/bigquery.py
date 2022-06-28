@@ -11,8 +11,9 @@ import pandas as pd
 from tabulate import tabulate
 from typing import List, Tuple, Optional, Union, Generator
 
+from .types import PittGoogleProjectIds
 
-pgb_project_id = "ardent-cycling-243415"
+pgb_project_id = PittGoogleProjectIds.production
 
 # --- BigQuery Client
 user_bq_client, user_project_id = None, None  # module's global Client, related id

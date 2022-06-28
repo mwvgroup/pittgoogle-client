@@ -41,9 +41,9 @@ class Alert(NamedTuple):
     A Pub/Sub message is of type: `google.cloud.pubsub_v1.types.PubsubMessage`, which is
     documented `here <https://googleapis.dev/python/pubsub/latest/types.html>`__.
 
-    The pittgoogle client will unpack the message into this container and deliver it to
-    the user (e.g., to a :ref:`user callback`).
-    The attributes will be populated according to the request.
+    The pittgoogle client will unpack the Pub/Sub message into this container and
+    deliver it to the user (e.g., to a :ref:`user callback`).
+    The attributes will be populated according to the user's request.
 
     Attributes:
         bytes:

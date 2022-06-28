@@ -20,7 +20,7 @@ Python
 You can pip install any of the Google Cloud python libraries.
 Here are the 3 we use most.
 
-.. code-block:: console
+.. code-block:: bash
 
     pip install google-cloud-bigquery
     pip install google-cloud-pubsub
@@ -42,7 +42,7 @@ To install on Windows, use the
 `installer <https://cloud.google.com/sdk/docs/downloads-interactive#windows>`__.
 For Linux and Mac, use:
 
-.. code-block:: console
+.. code-block:: bash
 
     curl https://sdk.cloud.google.com | bash
 
@@ -51,7 +51,7 @@ Then open a new terminal or restart your shell.
 Make sure your :ref:`environment variables <set env vars>` are set, reset them if needed.
 Then initialize gcloud using
 
-.. code-block:: console
+.. code-block:: bash
 
     gcloud init
 
@@ -62,14 +62,14 @@ The remaining steps are optional, but recommended for the smoothest experience.
 
 Set your new project as the default:
 
-.. code-block:: console
+.. code-block:: bash
 
     gcloud config set project "$GOOGLE_CLOUD_PROJECT"
 
 Instruct gcloud to authenticate using your key file containing
 :ref:`service account credentials <service account>`:
 
-.. code-block:: console
+.. code-block:: bash
 
     gcloud auth activate-service-account \
         --project="$GOOGLE_CLOUD_PROJECT" \

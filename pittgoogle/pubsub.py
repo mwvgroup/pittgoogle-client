@@ -19,32 +19,60 @@ In general, use a :class:`pittgoogle.pubsub.Consumer` to connect to a subscripti
 pull messages.
 The most basic instantiation looks like this:
 
-.. code-block:: pycon
+.. code-block:: python
 
     from pittgoogle import pubsub
 
     consumer = pubsub.Consumer(pubsub.ConsumerSettings())
 
-Given a default :class:`ConsumerSettings()`, it will try to create a
-:class:`SubscriberClient()` using authentication information stored in environment
-variables, and then connect to a Pub/Sub subscription defined by a default
-:class:`Subscription()` (creating the subscription in Pub/Sub, if necessary).
-These two objects become attributes on the consumer
-(``consumer.client`` and ``consumer.subscription`` respectively).
-So if, for example, you ran the code above and it created a subscription that you now
-want to delete, you can do so using ``consumer.subscription.delete()``.
-
 To learn about all of the available settings for the consumer,
 see :class:`ConsumerSettings` and follow the type definition for each of its attributes.
-These include options for controlling the flow of messages and the way they are
-processed.
-The :ref:`callbacks <callbacks>` are particularly important, and are explained in
-detail below.
+
+Given a default :class:`ConsumerSettings()`, the consumer will try to create a
+:class:`SubscriberClient()` using authentication information stored in environment
+variables, and then connect to a Pub/Sub subscription defined by a default
+:class:`Subscription()` (creating it, if necessary).
+
+Each element of :class:`ConsumerSettings` becomes an attribute on the consumer.
+So if, for example, you ran the code above and it created a subscription that you now
+want to delete, you can do so using:
+
+.. code-block:: python
+
+    consumer.subscription.delete()
+
+Pull and process messages
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To pull messages from a subscription, use the :meth:`~Consumer.stream()` method.
+This executes a "streaming pull" in a **background thread**.
+
+To process and/or save alerts, you must use a :ref:`callback <callbacks>`.
+The consumer will run each alert through your callback, in the background thread.
+Here is the most basic example, which uses the example function
+:meth:`Consumer.collect_alert` as the user callback.
+
+.. code-block:: python
+
+    from pittgoogle import pubsub
+
+    settings = pubsub.ConsumerSettings(
+        callback_settings=pubsub.CallbackSettings(
+            user_callback=pubsub.Consumer.collect_alert
+        )
+    )
+    consumer = pubsub.Consumer(settings)
+
+    results = consumer.stream()
+
+See :ref:`user callback` for more information.
 
 .. _callbacks:
 
 Callbacks Explainer
 -------------------
+
+(You may wish to jump directly to :ref:`user callback`.)
 
 In Pub/Sub, a streaming pull happens in a background thread.
 Thus, message processing should be handled by a callback function
@@ -58,9 +86,7 @@ a batch of messages.
 The user then processes messages by iterating through the batch.
 Everything happens in the foreground thread.
 You can mimic this behavior by using :meth:`Consumer.collect_alert` as your
-user callback (explained below; and note the "BEWARE").
-This will trigger the Pitt-Google consumer to collect the alerts.
-
+user callback (explained below; especially note the warning).
 
 The :class:`Consumer` uses two callbacks:
 its :ref:`own callback() method <consumer callback>`
@@ -69,19 +95,19 @@ These are explained below.
 
 .. _consumer callback:
 
-Consumer Callback
+Consumer callback
 ~~~~~~~~~~~~~~~~~~~~~~
 
 The consumer's :meth:`~Consumer.callback()` method is called automatically
 on each incoming message.
 This method will:
 
-#.  Unpack the Pub/Sub message into an :class:`Alert()`, populating only the attributes
+#.  Unpack the Pub/Sub message into an :class:`pittgoogle.types.Alert()`, populating only the attributes
     reqested in :attr:`CallbackSettings.unpack`.
 
-#.  Send the :class:`Alert()` through the user callback (explained below).
+#.  Send the :class:`~pittgoogle.types.Alert()` through the user callback (explained below).
 
-#.  Handle the :class:`Response()` returned by the user callback.
+#.  Handle the :class:`~pittgoogle.types.Response()` returned by the user callback.
     This may include storing data in the consumer's :attr:`Consumer().results` attribute
     and :ref:`ack'ing or nack'ing <ack and nack>` the message.
 
@@ -89,15 +115,15 @@ This method will:
 
 .. _user callback:
 
-User Callback
+User callback
 ~~~~~~~~~~~~~~~~~
 
 A :attr:`~CallbackSettings.user_callback` is a function supplied by the user that
-accepts a single :class:`Alert`, processes the alert, and returns a :class:`Response`.
+accepts a single :class:`pittgoogle.types.Alert`, processes the alert, and returns a :class:`pittgoogle.types.Response`.
 
 Here is a template:
 
-.. code-block:: pycon
+.. code-block:: python
 
     def my_user_callback(alert):
         # alert is an instance of pittgoogle.types.Alert
@@ -105,6 +131,7 @@ Here is a template:
 
         try:
             # process the alert_dict here
+            # you should also save any results that you want to persist
             pass
 
         except:
@@ -115,7 +142,20 @@ Here is a template:
 
         return Response(ack=ack, result=None)
 
-The incoming :class:`Alert` will contain data as requested via the
+And here is how to use it:
+
+.. code-block:: python
+
+    from pittgoogle import pubsub
+
+    settings = pubsub.ConsumerSettings(
+        callback_settings=pubsub.CallbackSettings(user_callback=my_user_callback)
+    )
+    consumer = pubsub.Consumer(settings)
+
+    consumer.stream()
+
+The incoming :class:`~pittgoogle.types.Alert` will contain data as requested via the
 :attr:`~CallbackSettings.unpack` attribute.
 
 The user callback can include arbitrary processing logic but it must be self-contained,
@@ -124,23 +164,27 @@ This callback is allowed to accept arbitrary keyword arguments, but their
 values must be passed to the consumer via the :attr:`~CallbackSettings.user_kwargs`
 setting prior to starting the pull.
 
-After processing the alert, the user callback should return a :class:`Response`.
+After processing the alert, the user callback should return a :class:`~pittgoogle.types.Response`.
 It is recommended that the callback persists its results on its own (e.g., by
 sending to a database or writing to a file) rather than sending them back to the
-consumer in the :attr:`Response.result` attribute (e.g., by using
-:meth:`Consumer.collect_alert`).
-If you choose to send results back to the consumer,
-**BEWARE**: results will not be available until the background thread has been closed.
-This increases the potential that collected results will fill up your memory,
-and also means that the results may be lost if a thread crashes.
+consumer in the :attr:`~pittgoogle.types.Response.result` attribute.
 
+.. warning::
+
+    If you choose to send results back to the consumer through the
+    :attr:`~pittgoogle.types.Response.result` attribute (as is done in :meth:`Consumer.collect_alert`),
+    the results will not be available until the background thread has been closed.
+    This increases the potential that collected results will fill up your memory,
+    and also means that the results may be lost if a thread crashes.
+    This option can be useful for testing, but it should not be combined with a
+    large value of :attr:`FlowConfigs.max_results`.
 
 .. _ack and nack:
 
 ack and nack
 ~~~~~~~~~~~~~~
 
-A :class:`Response()` (to be returned by a :ref:`user callback`) contains
+A :class:`pittgoogle.types.Response()` (to be returned by a :ref:`user callback`) contains
 the boolean attribute :attr:`~Response.ack`, which indicates whether the message
 should be ack'd (``ack=True``) or nack'd (``ack=False``).
 
@@ -155,16 +199,15 @@ client at some arbitrary time in the future.
 (Redelivery is usually immediate, though can be affected by, for example, the number of
 messages in the subscription.)
 
-A little background:
-
 In Pub/Sub, the subscriber client should either ack or nack each message it receives.
 The consumer's :class:`~Consumer.handle_response()` method does this automatically,
-based on the :class:`Response()` returned by the :ref:`user callback`.
+based on the :class:`~pittgoogle.types.Response()` returned by the :ref:`user callback`.
 
 This is a similar concept to setting the offset in an Apache Kafka topic/subscription.
 However, a major difference is that Pub/Sub messages are not ordered[*], so one cannot
 "fast-forward" or "rewind" the stream in the same way.
-Instead, every Pub/Sub message should be ack'd or nack'd independently.
+Instead, every Pub/Sub message is delivered, processed, and ack'd or nack'd
+independently.
 
 [*] Unless the subscription has been explicitly configured to behave otherwise.
 
@@ -288,14 +331,14 @@ class SubscriberClient:
     # authentication
     @property
     def auth(self) -> Auth:
-        """Class wrapper for :class:`Auth` object.
+        """Class wrapper for :class:`pittgoogle.auth.Auth` object.
 
-        If this is set to a :class:`AuthSettings` instance it will be
-        used to instantiate a :class:`Auth`, which will then replace it.
+        If this is set to a :class:`pittgoogle.auth.AuthSettings` instance it will be
+        used to instantiate a :class:`~pittgoogle.auth.Auth`, which will then replace it.
 
         The API call triggering authentication with Google Cloud is not made until
-        either the :attr:`~Auth.credentials` or
-        :attr:`~Auth.session` attribute is explicitly requested.
+        either the :attr:`~pittgoogle.auth.Auth().credentials` or
+        :attr:`~pittgoogle.auth.Auth().session` attribute is explicitly requested.
 
         Settings this manually will trigger reinstantiation of `self.client`.
         """
@@ -303,7 +346,7 @@ class SubscriberClient:
             # just warn and return
             LOGGER.warning(
                 (
-                    "No auth.AuthSettings or auth.Auth supplied. "
+                    "No pittgoogle.auth.AuthSettings or pittgoogle.auth.Auth supplied. "
                     "Cannot connect to Google Cloud."
                 )
             )
@@ -430,8 +473,8 @@ class Subscription:
     def client(self) -> Optional[SubscriberClient]:
         """Class wrapper for a :class:`SubscriberClient()`.
 
-        If this is set to a :class:`Auth` or
-        :class:`AuthSettings` it will be used to instantiate a
+        If this is set to a :class:`pittgoogle.auth.Auth` or
+        :class:`pittgoogle.auth.AuthSettings` it will be used to instantiate a
         :class:`SubscriberClient`, which will then replace it.
 
         This will be required in order to connect to the subscription,
@@ -567,8 +610,8 @@ class CallbackSettings:
 
     Attributes:
         user_callback:
-            A function, supplied by the user, that accepts a single :class:`Alert` as
-            its sole argument and returns a :class:`Response`.
+            A function, supplied by the user, that accepts a single :class:`pittgoogle.types.Alert` as
+            its sole argument and returns a :class:`pittgoogle.types.Response`.
             The function is allowed to accept arbitrary keyword arguments, but their
             values must be passed to the consumer via the `user_kwargs` setting prior
             to starting the pull.
@@ -578,8 +621,8 @@ class CallbackSettings:
             `user_callback` by the consumer.
         unpack:
             This determines which data is extracted from the Pub/Sub message into an
-            :class:`Alert`, and thus made available to the user callback.
-            This should be a tuple of :class:`Alert` attributes (the attribute name as
+            :class:`~pittgoogle.types.Alert`, and thus made available to the user callback.
+            This should be a tuple of :class:`~pittgoogle.types.Alert` attributes (the attribute name as
             a string) to be populated.
     """
 
@@ -723,8 +766,8 @@ class ConsumerSettings:
 
     Attributes:
         client:
-            Either a :class:`SubscriberClient` or the :class:`Auth`
-            or :class:`AuthSettings` necessary to create one.
+            Either a :class:`SubscriberClient` or the :class:`pittgoogle.auth.Auth`
+            or :class:`pittgoogle.auth.AuthSettings` necessary to create one.
 
         subscription:
             Pub/Sub subscription to be pulled.
@@ -761,7 +804,6 @@ class Consumer:
 
     #.  Make sure the subscription exists in Pub/Sub (creating it, if necessary), and
         that the client can connect (``self.subscription.touch()``).
-        If the subscription does not exist, it will be created.
     """
 
     def __init__(self, settings: ConsumerSettings):
@@ -795,7 +837,7 @@ class Consumer:
     def client(self) -> Optional[SubscriberClient]:
         """Class wrapper for a :class:`SubscriberClient`.
 
-        If this is set to a :class:`Auth` or :class:`AuthSettings` it will be used to
+        If this is set to a :class:`pittgoogle.auth.Auth` or :class:`pittgoogle.auth.AuthSettings` it will be used to
         instantiate a :class:`SubscriberClient`, which will then replace it.
         """
         if self._client is None:
@@ -863,7 +905,7 @@ class Consumer:
 
         Args:
             block:
-                Whether to block the terminal during the pull.
+                Whether to block the foreground thread during the pull.
 
                 If True (default), the consumer manages the flow of messages and
                 enforces the stopping conditions set in the
@@ -873,11 +915,10 @@ class Consumer:
                 Use this option with caution.
                 The pull will continue in the background, but the consumer will not
                 automatically control the flow (e.g., it will not enforce the stopping
-                conditions set in the flow_configs).
+                conditions).
                 Thus the pull can run in the background indefinitely.
-                You can stop it manually by calling ``consumer._stop()``
-                (where ``consumer`` is the :class:`Consumer()` instance that opened
-                the stream).
+                You can stop it manually by calling the consumer's
+                :meth:`~Consumer.stop()` method.
                 If you want this option, consider opening the stream by calling the
                 Pub/Sub API directly.
                 This will give you more control over the pull (including the option
@@ -885,10 +926,21 @@ class Consumer:
                 The command is documented
                 `here <https://googleapis.dev/python/pubsub/latest/subscriber/api/client.html#google.cloud.pubsub_v1.subscriber.client.Client.subscribe>`__.
                 It can be executed using the consumer's client:
-                ``consumer.streaming_pull_future = consumer.client.client.subscribe()``
-                (with appropriate args/kwargs).
+
+                .. code-block:: python
+
+                    from pittgoogle import pubsub
+
+                    consumer = pubsub.Consumer(pubsub.ConsumerSettings())
+                    consumer.streaming_pull_future = consumer.client.client.subscribe()
+
+                (also send appropriate args/kwargs).
                 Assigning the result to the consumer's streaming_pull_future attribute
-                will allow you to use ``consumer._stop()``.
+                will allow you to use ``consumer.stop()``.
+
+        Return:
+            List of results, if any, that the user callback passed back to the consumer
+            via :attr:`~pittgoogle.types.Response.result`.
         """
         # tell the callback whether the consumer is actively managing the queue
         self.callback_settings.block = block
@@ -950,12 +1002,12 @@ class Consumer:
                         )
                         break
 
-            self._stop()
+            self.stop()
 
         # We must catch all errors so we can
         # stop the streaming pull and close the background thread before raising them.
         except (Keyboardinterrupt, Exception):
-            self._stop()
+            self.stop()
             raise
 
         LOGGER.debug(
@@ -1009,7 +1061,7 @@ class Consumer:
         self.handle_response(response, message)
 
     def _unpack_msg(self, message: pubsub_v1.types.PubsubMessage) -> Alert:
-        """Return an :class:`Alert` with data requested in :attr:`~CallbackSettings.unpack."""
+        """Return an :class:`~pittgoogle.types.Alert` with data requested in :attr:`~CallbackSettings.unpack."""
 
         @staticmethod
         def _my_bytes(message):
@@ -1137,7 +1189,7 @@ class Consumer:
 
         return count
 
-    def _stop(self) -> None:
+    def stop(self) -> None:
         """Shutdown the streaming pull and exit the background thread gracefully."""
         self.streaming_pull_future.cancel()  # Trigger the shutdown.
         self.streaming_pull_future.result()  # Block until the shutdown is complete.

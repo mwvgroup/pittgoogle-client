@@ -1,4 +1,4 @@
-Tutorials
+Data Resources
 ================
 
 .. toctree::

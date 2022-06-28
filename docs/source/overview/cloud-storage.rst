@@ -1,15 +1,19 @@
 Cloud (File) Storage
 ====================
 
-.. contents:: Table of Contents
-    :depth: 1
-    :local:
+.. toctree::
+    :maxdepth: 1
+    :hidden:
 
-We store alert data in the Cloud Storage buckets listed below.
-This tutorial covers access via two methods: pittgoogle-client, and the gsutil CLI.
+    cloud-storage-tutorial
 
-Data Resources
-----------------
+We store alert data in the
+`Cloud Storage <https://cloud.google.com/storage/docs/introduction>`__
+buckets listed below.
+
+To learn how to access, see the
+
+-   :doc:`cloud-storage-tutorial`
 
 .. list-table:: Buckets
     :class: tight-table
@@ -22,130 +26,3 @@ Data Resources
     * - ardent-cycling-243415-ztf-alert_avros
       - This bucket contains the complete, original alert packets as Avro files.
         The files are named using the syntax: {objectId}.{candid}.{ztf_topic}.avro
-
-Prerequisites
--------------
-
-1. Complete the :doc:`initial-setup`. In particular, be sure to:
-
-   -  :doc:`install-pittgoogle` and/or :ref:`Install the command-line tools <install gcp cli>`.
-   -  :ref:`service account`
-   -  :ref:`Set your environment variables <set env vars>`
-
-Python
-------
-
-Setup
-~~~~~
-
-Imports
-
-.. code:: python
-
-    import fastavro
-    from google.cloud import storage
-    from matplotlib import pyplot as plt
-    import os
-    from pathlib import Path
-    import pittgoogle
-
-Name some things
-
-.. code:: python
-
-    # fill in the path to the local directory to which you want to download files
-    local_dir = ''
-
-    my_project_id = os.getenv('GOOGLE_CLOUD_PROJECT')
-    pgb_project_id = pittgoogle.types.PittGoogleProjectIds.production
-
-Download files
-~~~~~~~~~~~~~~
-
-Download alerts for a given ``objectId``
-
-.. code:: python
-
-    objectId = 'ZTF17aaackje'
-    bucket_name = f'{pgb_project_id}-ztf-alert_avros'
-
-    # Create a client and request a list of files
-    storage_client = storage.Client(my_project_id)
-    bucket = storage_client.get_bucket(bucket_name)
-    blobs = bucket.list_blobs(prefix=objectId)
-
-    # download the files
-    for blob in blobs:
-        local_path = f'{local_dir}/{blob.name}'
-        blob.download_to_filename(local_path)
-        print(f'Downloaded {local_path}')
-
-Plot cutouts and lightcurves
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The functions in this section were adapted from
-https://github.com/ZwickyTransientFacility/ztf-avro-alert/blob/master/notebooks/Filtering\_alerts.ipynb.
-
-Open a file (see the previous section to download files)
-
-.. code:: python
-
-    paths = Path(local_dir).glob('*.avro')
-    for path in paths:
-        with open(path, 'rb') as fin:
-            alert_list = [r for r in fastavro.reader(fin)]
-        break
-    alert_dict = alert_list[0]  # extract the single alert packet
-
-    print(alert_dict.keys())
-
-Plot cutouts
-
-.. code:: python
-
-    pittgoogle.figures.plot_cutouts(alert_dict)
-    plt.show(block=False)
-
-Cast to a dataframe and plot lightcurves
-
-.. code:: python
-
-    lc_df = pittgoogle.utils.alert_dict_to_dataframe(alert_dict)
-    pittgoogle.figures.plot_lightcurve(lc_df)
-    plt.show(block=False)
-
-Plot everything together
-
-.. code:: python
-
-    pittgoogle.figures.plot_lightcurve_cutouts(alert_dict)
-    plt.show(block=False)
-
-Command line
-------------
-
-See also:
-
--   `Quickstart: Using the gsutil
-    tool <https://cloud.google.com/storage/docs/quickstart-gsutil>`__
--   `gsutil cp <https://cloud.google.com/storage/docs/gsutil/commands/cp>`__
-
-Get help
-
-.. code:: bash
-
-    gsutil help
-    gsutil help cp
-
-Download a single file
-
-.. code:: bash
-
-    # fill in the path to the local directory to which you want to download files
-    local_dir=
-    # fill in the name of the file you want. see above for the syntax
-    file_name=
-    # file_name=ZTF17aaackje.1563161493315010012.ztf_20210413_programid1.avro
-    avro_bucket="${pgb_project_id}-ztf-alert_avros"
-
-    gsutil cp "gs://${avro_bucket}/${file_name}" ${local_dir}/.
