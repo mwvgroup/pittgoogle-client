@@ -1,5 +1,6 @@
 aplpy
 astropy==3.2.1  # required by figures.plot_stamp(), see comments there
+attrs
 fastavro
 google-auth-oauthlib
 google-cloud-bigquery

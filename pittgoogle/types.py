@@ -1,41 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
-"""pittgoogle types.
+"""pittgoogle types."""
 
-.. contents:: Classes
-   :local:
-   :depth: 1
-
-`Alert`
---------
-
-.. autoclass:: Alert
-   :members:
-   :member-order: bysource
-
-`Response`
-----------
-
-.. autoclass:: Response
-   :members:
-   :member-order: bysource
-
-`PittGoogleProjectIds`
-------------------------
-
-.. autoclass:: PittGoogleProjectIds
-   :members:
-   :member-order: bysource
-"""
-
+import attrs
 from dataclasses import dataclass
 from typing import Any, ByteString, ClassVar, Dict, NamedTuple, Optional, TYPE_CHECKING
+from base64 import b64decode, b64encode
+import fastavro
+from io import BytesIO
+import json
+from astropy.time import Time
+
 
 if TYPE_CHECKING:
     from google.cloud import pubsub_v1
 
 
-class Alert(NamedTuple):
+@attrs.frozen(kw_only=True)
+class Alert:
     """Container for an alert.
 
     A Pub/Sub message is of type: `google.cloud.pubsub_v1.types.PubsubMessage`, which is
@@ -65,8 +47,9 @@ class Alert(NamedTuple):
     msg: Optional["pubsub_v1.types.PubsubMessage"] = None
 
 
-class Response(NamedTuple):
-    """Container for a response, to be returned by a user_callback.
+@attrs.frozen(kw_only=True)
+class Response:
+    """Container for a response, to be returned by a :ref:`user callback`.
 
     (see :class:`pittgoogle.pubsub.Consumer`)
 
@@ -110,3 +93,77 @@ class PittGoogleProjectIds:
     production: ClassVar[str] = "ardent-cycling-243415"
     testing: ClassVar[str] = "avid-heading-329016"
     billing: ClassVar[str] = "light-cycle-328823"
+
+
+@dataclass
+class Cast:
+    """Methods to convert data types."""
+
+    @staticmethod
+    def bytes_to_b64utf8(bytes_data):
+        """Convert bytes data to UTF8.
+
+        Args:
+            bytes_data (bytes): Bytes data
+
+        Returns:
+            A string in UTF-8 format
+        """
+        if bytes_data is not None:
+            return b64encode(bytes_data).decode("utf-8")
+
+    @staticmethod
+    def base64_to_dict(bytes_data):
+        """Convert base64 encoded bytes data to a dict.
+
+        Args:
+            bytes_data (base64 bytes): base64 encoded bytes
+
+        Returns:
+            A dictionary
+        """
+        if bytes_data is not None:
+            return json.loads(b64decode(bytes_data).decode("utf-8"))
+
+    @staticmethod
+    def avro_to_dict(bytes_data):
+        """Convert Avro serialized bytes data to a dict.
+
+        Args:
+            bytes_data (bytes): Avro serialized bytes
+
+        Returns:
+            A dictionary
+        """
+        if bytes_data is not None:
+            with BytesIO(bytes_data) as fin:
+                alert_dicts = [r for r in fastavro.reader(fin)]  # list with single dict
+            return alert_dicts[0]
+
+    @staticmethod
+    def b64avro_to_dict(bytes_data):
+        """Convert base64 encoded, Avro serialized bytes data to a dict.
+
+        Args:
+            bytes_data (bytes): base64 encoded, Avro serialized bytes
+
+        Returns:
+            A dictionary
+        """
+        return Cast.avro_to_dict(b64decode(bytes_data))
+        # if bytes_data is not None:
+        #     with BytesIO(b64decode(bytes_data)) as fin:
+        #         alert_dicts = [r for r in fastavro.reader(fin)]  # list with single dict
+        #     return alert_dicts[0]
+
+    @staticmethod
+    def jd_to_readable_date(jd):
+        """Convert a julian date to a human readable string.
+
+        Args:
+            jd (float): Datetime value in julian format
+
+        Returns:
+            String in 'day mon year hour:min' format
+        """
+        return Time(jd, format="jd").strftime("%d %b %Y - %H:%M:%S")

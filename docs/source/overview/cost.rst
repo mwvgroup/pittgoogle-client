@@ -1,17 +1,23 @@
+.. _cost:
+
 Note on Costs
-==============
+--------------
 
-You do not need to setup billing to complete our tutorials.
-The Google Cloud services pricing structure includes a Free Tier,
-and the usage incurred from our tutorials stays well within these limits.
+A baseline level of data access is free.
+This is structured as a usage quota that renews monthly --  the first `X` (amount) of
+usage each month is free, where `X` depends on the service (Pub/Sub,
+BigQuery, Cloud Storage).
+Some examples are given in the table below.
+:ref:`Projects <projects>` are free.
+No credit card is required.
+If you exceed the limit and have not set up billing your access will be restricted until
+the quota renews.
 
-You cannot be charged unless you explicitly enable billing for your project
-and setup a billing account.
+You cannot be charged unless you create a billing account and attach it to your project.
+In this case, the pricing structure is "pay-as-you-go".
+Free quotas still apply.
 
-For users who wish to process volumes of data larger than the Free Tier quotas,
-Google's pricing structure is "pay-as-you-go"
-and you only pay for what you actually use.
-See the links below for more information.
+There are some options listed below to offset costs.
 
 Some pricing examples (as of Aug. 2021):
 
@@ -33,7 +39,7 @@ Some pricing examples (as of Aug. 2021):
       - 10 GB per month
       - $40 per TB
 
-For more information, see:
+Here are links that might be useful:
 
 - `Free Tier <https://cloud.google.com/free>`__
 - `$300 Free Trial <https://cloud.google.com/free/docs/gcp-free-tier?authuser=1#free-trial>`__

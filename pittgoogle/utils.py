@@ -4,8 +4,9 @@
 """Functions to support working with alerts and related data."""
 
 
+import logging
 from astropy.table import Table
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 import inspect
 import pandas as pd
 from base64 import b64decode, b64encode
@@ -13,76 +14,10 @@ import fastavro
 from io import BytesIO
 import json
 from astropy.time import Time
+import os
 
 
-# --- Convert formats
-def jd_to_readable_date(jd):
-    """Convert a julian date to a human readable string.
-
-    Args:
-        jd (float): Datetime value in julian format
-
-    Returns:
-        String in 'day mon year hour:min' format
-    """
-    return Time(jd, format="jd").strftime("%d %b %Y - %H:%M:%S")
-
-
-def bytes_to_b64utf8(bytes_data):
-    """Convert bytes data to UTF8.
-
-    Args:
-        bytes_data (bytes): Bytes data
-
-    Returns:
-        A string in UTF-8 format
-    """
-    if bytes_data is not None:
-        return b64encode(bytes_data).decode("utf-8")
-
-
-def base64_to_dict(bytes_data):
-    """Convert base64 encoded bytes data to a dict.
-
-    Args:
-        bytes_data (base64 bytes): base64 encoded bytes
-
-    Returns:
-        A dictionary
-    """
-    if bytes_data is not None:
-        return json.loads(b64decode(bytes_data).decode("utf-8"))
-
-
-def avro_to_dict(bytes_data):
-    """Convert Avro serialized bytes data to a dict.
-
-    Args:
-        bytes_data (bytes): Avro serialized bytes
-
-    Returns:
-        A dictionary
-    """
-    if bytes_data is not None:
-        with BytesIO(bytes_data) as fin:
-            alert_dicts = [r for r in fastavro.reader(fin)]  # list with single dict
-        return alert_dicts[0]
-
-
-def b64avro_to_dict(bytes_data):
-    """Convert base64 encoded, Avro serialized bytes data to a dict.
-
-    Args:
-        bytes_data (bytes): base64 encoded, Avro serialized bytes
-
-    Returns:
-        A dictionary
-    """
-    return avro_to_dict(b64decode(bytes_data))
-    # if bytes_data is not None:
-    #     with BytesIO(b64decode(bytes_data)) as fin:
-    #         alert_dicts = [r for r in fastavro.reader(fin)]  # list with single dict
-    #     return alert_dicts[0]
+LOGGER = logging.getLogger(__name__)
 
 
 # --- Survey-specific
@@ -142,4 +77,8 @@ def _strip_cutouts_ztf(alert_dict: dict) -> dict:
 def class_defaults(cls):
     """Return dictionary of default values for args of cls.__init__."""
     params = inspect.signature(cls.__init__).parameters
-    return dict((name, param.default) for name, param in params.items())
+    ClassDefaults = namedtuple(
+        "ClassDefaults", " ".join(name for name in params.keys())
+    )
+    return ClassDefaults._make(params[key].default for key in ClassDefaults._fields)
+    # return dict((name, param.default) for name, param in params.items())

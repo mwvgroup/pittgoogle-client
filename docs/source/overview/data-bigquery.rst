@@ -1,21 +1,6 @@
 BigQuery Catalogs
 ==================
 
-.. toctree::
-    :maxdepth: 1
-    :hidden:
-
-    bigquery-tutorial
-
-We store data in the `BigQuery <https://cloud.google.com/bigquery/docs/introduction>`__
-datasets and tables described below.
-
-To learn how to access, see the
-
--   :doc:`bigquery-tutorial`
-
--   :doc:`/api/bigquery` module documentation
-
 .. list-table:: Datasets and Tables
     :class: tight-table
     :widths: 15 15 70

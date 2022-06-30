@@ -9,9 +9,6 @@ Advanced Setup
 Install Libraries for Google Cloud APIs
 ----------------------------------------
 
-If you want to install python libraries individually or install command-line tools,
-read on.
-
 .. _install gcp python:
 
 Python

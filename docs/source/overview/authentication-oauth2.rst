@@ -1,5 +1,9 @@
-OAuth2 Authentication
-=====================
+.. _oauth2:
+
+Authentication: OAuth2
+========================
+
+These are instructions to complete authentication using OAuth2.
 
 .. note::
 
@@ -14,14 +18,12 @@ Requirements
 -------------
 
 #.  You must have a Google account (e.g., Gmail address) that is authorized make
-    API calls through the project that is defined by the `GOOGLE_CLOUD_PROJECT`
+    API calls through the :ref:`project <projects>` that is defined by the `GOOGLE_CLOUD_PROJECT`
     :ref:`environment variable <set env vars>`.
 
 #.  You must be added to the list of authorized test users, and obtain the
     client ID and client secret. Contact us.
     (This is a Google requirement for apps in dev.)
-	
-    .. Include your Google account info (Gmail address).
 
 #.  Unfortunately the pittgoogle-client does not yet store tokens, which means you will
     have to re-authenticate every time you make an API call.

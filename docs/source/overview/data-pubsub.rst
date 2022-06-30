@@ -1,12 +1,6 @@
 Pub/Sub Message Streams
 =======================
 
-We publish the streams listed in the table below.
-
-To learn how to access, see the
-
--   :doc:`/api/pubsub` module documentation
-
 .. list-table:: Streams
     :class: tight-table
     :widths: 25 75

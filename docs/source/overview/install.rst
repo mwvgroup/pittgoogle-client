@@ -1,7 +1,7 @@
-Install the pittgoogle-client
-==============================
+Install pittgoogle-client
+----------------------------
 
-
+.. automodule:: pittgoogle
 
 The basic install command is (but note the recommendations below):
 
@@ -9,7 +9,7 @@ The basic install command is (but note the recommendations below):
 
     pip install pittgoogle-client
 
-This can be imported (in python) as:
+This is imported (in python) as:
 
 .. code-block:: python
 
@@ -22,7 +22,7 @@ Here is an example using both:
 
 .. code-block:: bash
 
-    conda create --n pittgoogle python=3.7
+    conda create -n pittgoogle python=3.7
     conda activate pittgoogle
     pip install pittgoogle-client
 

@@ -42,7 +42,7 @@ release = version
 extensions = [
     "myst_parser",
     "sphinx.ext.autosectionlabel",
-    "sphinx.ext.autodoc",
+    # "sphinx.ext.autodoc",
     "sphinx.ext.coverage",
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
@@ -56,10 +56,10 @@ extensions = [
 set_type_checking_flag = True
 
 # Make sure the target is unique
-# autosectionlabel_prefix_document = True
+autosectionlabel_prefix_document = True
 # now can reference pages with :ref:`{path/to/page}:{title-of-section}`
 # but can't use this with custom labels, so
-autosectionlabel_prefix_document = False
+# autosectionlabel_prefix_document = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
