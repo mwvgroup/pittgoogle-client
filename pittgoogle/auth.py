@@ -1,44 +1,86 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
-"""Classes to facilitate authentication with Google Cloud."""
+"""A class to handle authentication with Google Cloud."""
 # the rest of the docstring is in /docs/source/api/auth.rst
 
 
-import attrs
-from dataclasses import dataclass
 import logging
 import os
+from typing import TYPE_CHECKING, Union
 
+import attrs
 from google import auth as gauth
 from google_auth_oauthlib.helpers import credentials_from_session
 from requests_oauthlib import OAuth2Session
-from typing import Optional, Union
+
+if TYPE_CHECKING:
+    # from google.oauth2.credentials import Credentials as oauth2Credentials
+    import google
+    import requests_oauthlib
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-@attrs.define
-class AuthSettings:
-    """Settings for authentication to Google Cloud.
+# @attrs.define
+# class AuthSettings:
+#     """Settings for authentication to Google Cloud.
+#
+#     Missing attributes will be obtained from an environment variable of the same name,
+#     if it exists.
+#
+#     GOOGLE_CLOUD_PROJECT:
+#         Project ID of the Google Cloud project to connect to.
+#
+#     GOOGLE_APPLICATION_CREDENTIALS:
+#         Path to a keyfile containing service account credentials.
+#         Either this or both `OAUTH_CLIENT_*` settings are required for successful
+#         authentication using `Auth`.
+#
+#     OAUTH_CLIENT_ID:
+#         Client ID for an OAuth2 connection.
+#         Either this and `OAUTH_CLIENT_SECRET`, or the `GOOGLE_APPLICATION_CREDENTIALS`
+#         setting, are required for successful authentication using `Auth`.
+#
+#     OAUTH_CLIENT_SECRET:
+#         Client secret for an OAuth2 connection.
+#         Either this and `OAUTH_CLIENT_ID`, or the `GOOGLE_APPLICATION_CREDENTIALS`
+#         setting, are required for successful authentication using `Auth`.
+#     """
+#
+#     GOOGLE_CLOUD_PROJECT = attrs.field(
+#         factory=lambda: os.getenv("GOOGLE_CLOUD_PROJECT", None)
+#     )
+#     GOOGLE_APPLICATION_CREDENTIALS = attrs.field(
+#         factory=lambda: os.getenv("GOOGLE_APPLICATION_CREDENTIALS", None)
+#     )
+#     OAUTH_CLIENT_ID = attrs.field(factory=lambda: os.getenv("OAUTH_CLIENT_ID", None))
+#     OAUTH_CLIENT_SECRET = attrs.field(
+#         factory=lambda: os.getenv("OAUTH_CLIENT_SECRET", None)
+#     )
+#
 
-    Missing attributes will be obtained from an environment variable of the same name,
+# @dataclass
+@attrs.define
+class Auth:
+    """Credentials and/or OAuth session for authentication to a Google Cloud project.
+
+    Missing parameters will be obtained from an environment variable of the same name,
     if it exists.
 
-    GOOGLE_CLOUD_PROJECT:
+    Parameters
+    ------------
+    GOOGLE_CLOUD_PROJECT : optional, `str`
         Project ID of the Google Cloud project to connect to.
-
-    GOOGLE_APPLICATION_CREDENTIALS:
+    GOOGLE_APPLICATION_CREDENTIALS : optional, `str`
         Path to a keyfile containing service account credentials.
         Either this or both `OAUTH_CLIENT_*` settings are required for successful
         authentication using `Auth`.
-
-    OAUTH_CLIENT_ID:
+    OAUTH_CLIENT_ID : optional, `str`
         Client ID for an OAuth2 connection.
         Either this and `OAUTH_CLIENT_SECRET`, or the `GOOGLE_APPLICATION_CREDENTIALS`
         setting, are required for successful authentication using `Auth`.
-
-    OAUTH_CLIENT_SECRET:
+    OAUTH_CLIENT_SECRET : optional, `str`
         Client secret for an OAuth2 connection.
         Either this and `OAUTH_CLIENT_ID`, or the `GOOGLE_APPLICATION_CREDENTIALS`
         setting, are required for successful authentication using `Auth`.
@@ -54,53 +96,55 @@ class AuthSettings:
     OAUTH_CLIENT_SECRET = attrs.field(
         factory=lambda: os.getenv("OAUTH_CLIENT_SECRET", None)
     )
+    _credentials = attrs.field(default=None, init=False)
+    _oauth2 = attrs.field(default=None, init=False)
 
-
-@dataclass
-class Auth:
-    """Credentials and/or OAuth session for authentication to a Google Cloud project."""
-
-    def __init__(self, settings: Union[AuthSettings, "Auth", None] = None, **kwargs):
-        """`kwargs` can include any individual attribute of `AuthSettings`.
-
-        Order of precedence is: kwargs, settings, environment variables.
-
-        Sending no arguments will load a default `AuthSettings()`.
-
-        Passing an `Auth()` instance as the only argument is idempotent.
-
-        Initiallization does not load credentials.
-        To do that, call the `credentials` or `session` attribute explicitly.
-        """
-        # initialization should be idempotent. unpack settings
-        if isinstance(settings, Auth):
-            for key, val in settings.__dict__.items():
-                setattr(self, key, val)
-
-        else:
-            # get defaults
-            env_settings = AuthSettings()
-            if settings is None:
-                settings = env_settings
-
-            # look for attribute in order of precedence. then set it
-            for field in attrs.fields(AuthSettings):
-                key = field.name
-                val = kwargs.get(key, None)
-                if val is None:
-                    # try settings, fallback to env_settings
-                    val = getattr(settings, key, getattr(env_settings, key, None))
-                setattr(self, key, val)
-
-        # initialize credentials but don't make a request for them
-        # these may not be None if settings is an Auth() instance
-        self._credentials = getattr(self, "_credentials", None)
-        self._oauth2 = getattr(self, "_oauth2", None)
-
+    # def __init__(self, settings: Union[AuthSettings, "Auth", None] = None, **kwargs):
+    #     """`kwargs` can include any individual attribute of `AuthSettings`.
+    #
+    #     Order of precedence is: kwargs, settings, environment variables.
+    #
+    #     Sending no arguments will load a default `AuthSettings()`.
+    #
+    #     Passing an `Auth()` instance as the only argument is idempotent.
+    #
+    #     Initiallization does not load credentials.
+    #     To do that, call the `credentials` or `session` attribute explicitly.
+    #     """
+    #     # initialization should be idempotent. unpack settings
+    #     if isinstance(settings, Auth):
+    #
+    #         # for key, val in settings.__dict__.items():
+    #         #     setattr(self, key, val)
+    #
+    #     else:
+    #         # get defaults
+    #         env_settings = AuthSettings()
+    #         if settings is None:
+    #             settings = env_settings
+    #
+    #         # look for attribute in order of precedence. then set it
+    #         for field in attrs.fields(AuthSettings):
+    #             key = field.name
+    #             val = kwargs.get(key, None)
+    #             if val is None:
+    #                 # try settings, fallback to env_settings
+    #                 val = getattr(settings, key, getattr(env_settings, key, None))
+    #             setattr(self, key, val)
+    #
+    #     # initialize credentials but don't make a request for them
+    #     # these may not be None if settings is an Auth() instance
+    #     self._credentials = getattr(self, "_credentials", None)
+    #     self._oauth2 = getattr(self, "_oauth2", None)
+    #
     # credentials
     @property
-    def credentials(self):
-        """Credentials object."""
+    def credentials(
+        self,
+    ) -> Union[
+        "google.auth.credentials.Credentials", "google.oauth2.credentials.Credentials"
+    ]:
+        """Credentials, loaded from a service account key file or an OAuth2 session."""
         if self._credentials is None:
             self._credentials = self.get_credentials()
         return self._credentials
@@ -113,7 +157,11 @@ class Auth:
     def credentials(self):
         self._credentials = None
 
-    def get_credentials(self):
+    def get_credentials(
+        self,
+    ) -> Union[
+        "google.auth.credentials.Credentials", "google.oauth2.credentials.Credentials"
+    ]:
         """Load user credentials from a service account key file or an OAuth2 session.
 
         Try the service account first, fall back to OAuth2.
@@ -132,7 +180,7 @@ class Auth:
                     f"\nGOOGLE_CLOUD_PROJECT {self.GOOGLE_CLOUD_PROJECT} "
                     f"\nGOOGLE_APPLICATION_CREDENTIALS {self.GOOGLE_APPLICATION_CREDENTIALS}"
                     "\nFalling back to OAuth2. "
-                    "If this is unexpected, check the args/kwargs you passed or "
+                    "If this is unexpected, check the kwargs you passed or "
                     "try setting environment variables."
                 )
             )
@@ -146,11 +194,13 @@ class Auth:
 
         else:
             if project != self.GOOGLE_CLOUD_PROJECT:
+                # prevent confusion about which project we'll connect to
                 raise ValueError(
                     (
-                        "GOOGLE_CLOUD_PROJECT must match the credentials in "
+                        f"GOOGLE_CLOUD_PROJECT ({self.GOOGLE_CLOUD_PROJECT}) "
+                        "must match the credentials in "
                         "GOOGLE_APPLICATION_CREDENTIALS at "
-                        f"{self.GOOGLE_APPLICATION_CREDENTIALS}."
+                        f"{self.GOOGLE_APPLICATION_CREDENTIALS} (project: {project})."
                     )
                 )
 
@@ -165,10 +215,10 @@ class Auth:
 
     # OAuth2Session
     @property
-    def oauth2(self):
-        """OAuth2Session connected to the Google Cloud project."""
+    def oauth2(self) -> "requests_oauthlib.OAuth2Session":
+        """`requests_oauthlib.OAuth2Session` connected to the Google Cloud project."""
         if self._oauth2 is None:
-            self._oauth2 = self.authenticate_with_oauth()
+            self._oauth2 = self.authenticate_with_oauth2()
         return self._oauth2
 
     @oauth2.setter
@@ -179,7 +229,7 @@ class Auth:
     def oauth2(self):
         self._oauth2 = None
 
-    def authenticate_with_oauth(self):
+    def authenticate_with_oauth2(self) -> "requests_oauthlib.OAuth2Session":
         """Guide user through authentication and create `OAuth2Session` for credentials.
 
         The user will need to visit a URL, authenticate themselves, and authorize

@@ -1,6 +1,8 @@
 ..
     The file is intended to be included in pubsub.rst.
 
+.. currentmodule:: pittgoogle.pubsub
+
 Classes
 --------
 

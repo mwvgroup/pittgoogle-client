@@ -3,6 +3,8 @@ pittgoogle.auth
 
 .. automodule:: pittgoogle.auth
 
-.. contents:: Table of Contents
+.. contents::
    :local:
    :depth: 2
+
+.. include:: auth-docstring.rst

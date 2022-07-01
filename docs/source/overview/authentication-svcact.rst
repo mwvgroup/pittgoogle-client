@@ -1,9 +1,10 @@
+..
+    This file is intended to be included in authentication.rst
+
 .. _service account:
 
-Authentication Setup: Service Account
-=======================================
-
-(Recommended)
+Service Account (Recommended)
+--------------------------------
 
 These are instructions to create a service account and download a key file that can be
 used for authentication.
@@ -15,7 +16,7 @@ used for authentication.
     (ignore the other sections on that page).
     You will:
 
-    -   Create a service account with the **Project > Owner** role[\*].
+    -   Create a service account with the **Project > Owner** role.
 
     -   Download a key file that contains authorization credentials.
         **Keep this file secret!**
@@ -23,13 +24,14 @@ used for authentication.
 #.  Take note of the path to the key file you downloaded. Then,
     :ref:`set both environment variables <set env vars>`.
 
-[\*]
-The **Project > Owner** role gives the service account permission to do
-anything and everything, within the project.
-It is the simplest option and allows you to avoid the headache of tracking down
-"permission denied" errors.
-However, this role is excessively permissive in essentially all cases.
-If you want to restrict the permissions granted to the service account, assign a
-different role(s).
-A good place to look is:
-`Predefined roles <https://cloud.google.com/iam/docs/understanding-roles#predefined>`__.
+.. note::
+
+    The **Project > Owner** role gives the service account permission to do anything and
+    everything, within the project.
+    It is the simplest option and allows you to avoid the headache of tracking down
+    "permission denied" errors.
+    However, this role is excessively permissive in essentially all cases.
+    If you want to restrict the permissions granted to the service account,
+    assign a different role(s).
+    A good place to look is:
+    `Predefined roles <https://cloud.google.com/iam/docs/understanding-roles#predefined>`__.

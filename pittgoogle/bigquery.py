@@ -4,14 +4,15 @@
 BigQuery databases and reading the results.
 """
 
+from typing import Generator, List, Optional, Tuple, Union
+
 import astropy
 from astropy import coordinates as coord
 from google.cloud import bigquery
 import pandas as pd
 from tabulate import tabulate
-from typing import List, Tuple, Optional, Union, Generator
 
-from .types import PittGoogleProjectIds
+from .utils import PittGoogleProjectIds
 
 pgb_project_id = PittGoogleProjectIds.production
 

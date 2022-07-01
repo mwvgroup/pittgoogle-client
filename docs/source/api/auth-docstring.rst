@@ -1,13 +1,18 @@
-.. automodule:: pittgoogle.auth
+..
+    This is the docstring for the pittgoogle.auth module.
+    The file is intended to be included in docs/source/api/auth.rst.
 
 Usage
 -----
 
-To use this module, you must have completed one of the setup options described in :doc:`/overview/authentication`.
+.. note::
 
-In most cases you will not need to use this module directly.
+    To authenticate, you must have completed one of the setup options described in :doc:`/overview/authentication`.
+    **The recommended workflow is to use a** :ref:`service account <service account>` **to** :ref:`set environment variables <set env vars>`.
+    In that case, you will not need to call this module directly.
 
-The example below uses a service account.
+
+This example uses a service account.
 
 The basic call is:
 
@@ -18,22 +23,14 @@ The basic call is:
     myauth = auth.Auth()
 
 This will load authentication settings from your :ref:`environment variables <set env vars>`.
-
-You can also send an instance of :mod:`AuthSettings()` or any of its attributes as keyword arguments.
-Some examples:
+You can override this behavior with keyword arguments.
 
 .. code-block:: python
 
-    myauth = auth.Auth(GOOGLE_CLOUD_PROJECT="kwarg-project-id")
-
-    settings = auth.AuthSettings(
-        GOOGLE_CLOUD_PROJECT="settings-project-id",
-        GOOGLE_APPLICATION_CREDENTIALS="settings/path/to/key_file.json",
+    myauth = auth.Auth(
+        GOOGLE_CLOUD_PROJECT="new-project-id",
+        GOOGLE_APPLICATION_CREDENTIALS="new/path/to/GCP_auth_key.json"
     )
-    myauth = auth.Auth(settings)
-
-    myauth = auth.Auth(settings, GOOGLE_CLOUD_PROJECT="kwarg-project-id")
-    # the kwarg takes precedence, so myauth.GOOGLE_CLOUD_PROJECT = "kwarg-project-id"
 
 This does not automatically load the credentials.
 To do that, request them explicitly:
@@ -42,16 +39,10 @@ To do that, request them explicitly:
 
     myauth.credentials
 
+This will first look for a service account key file, then fallback to OAuth2.
+
 Classes
 -------
-
-`AuthSettings`
-~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: pittgoogle.auth.AuthSettings
-   :members:
-   :member-order: bysource
-
 
 `Auth`
 ~~~~~~~~~~~~~~~~~~~
@@ -59,3 +50,4 @@ Classes
 .. autoclass:: pittgoogle.auth.Auth
    :members:
    :member-order: bysource
+   :noindex:

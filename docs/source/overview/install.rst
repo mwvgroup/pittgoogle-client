@@ -1,3 +1,5 @@
+.. _install:
+
 Install pittgoogle-client
 ----------------------------
 

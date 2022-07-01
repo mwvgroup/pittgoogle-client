@@ -1,22 +1,15 @@
+.. _authentication:
+
 Authentication
 ================
 
-.. toctree::
-    :maxdepth: 1
-    :hidden:
-
-    authentication-svcact
-    authentication-oauth2
-
-
 Authentication for API calls is obtained directly from Google Cloud.
-pittgoogle has implemented two options. Complete at least one:
+Two options are implemented in pittgoogle. Complete at least one:
 
-#.  :ref:`service account` (recommended)
-
-#.  :ref:`oauth2`
-
-
-.. _service account:
+.. contents::
+    :depth: 1
+    :local:
 
 .. include:: authentication-svcact.rst
+
+.. include:: authentication-oauth2.rst

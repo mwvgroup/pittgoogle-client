@@ -2,5 +2,9 @@ pittgoogle.types
 ======================
 
 .. automodule:: pittgoogle.types
-    :members:
-    :member-order: bysource
+
+.. contents:: Table of Contents
+    :depth: 2
+    :local:
+
+.. include:: types-members.rst

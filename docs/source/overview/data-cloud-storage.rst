@@ -1,3 +1,5 @@
+.. _data cloud storage:
+
 Cloud (File) Storage
 ====================
 
@@ -10,5 +12,5 @@ Cloud (File) Storage
       - Description
 
     * - ardent-cycling-243415-ztf-alert_avros
-      - This bucket contains the complete, original alert packets as Avro files.
-        The files are named using the syntax: {objectId}.{candid}.{ztf_topic}.avro
+      - Contains the complete, original alert packets as Avro files.
+        Filename syntax is: `<objectId>.<candid>.<ztf_topic>.avro`

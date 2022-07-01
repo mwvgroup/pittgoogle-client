@@ -15,7 +15,6 @@ import os
 from pathlib import Path
 import sys
 
-
 pkg_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(pkg_root))
 with open(os.path.join(pkg_root, "VERSION.txt")) as version_file:
@@ -42,7 +41,7 @@ release = version
 extensions = [
     "myst_parser",
     "sphinx.ext.autosectionlabel",
-    # "sphinx.ext.autodoc",
+    "sphinx.ext.autodoc",
     "sphinx.ext.coverage",
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",

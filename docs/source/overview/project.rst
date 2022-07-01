@@ -3,18 +3,19 @@
 Google Cloud Projects
 ======================
 
-In order to make API calls accessing data from Pitt-Google you will need to be authenticated to a Google Cloud project.
-
-Projects are free and easy to create \& delete.
-Each user can have many projects and users can share projects.
-
-.. contents:: Table of Contents
+.. contents::
     :depth: 2
     :local:
 
+In order to make API calls accessing data from Pitt-Google you will need to be authenticated to a Google Cloud project.
+
+Projects are free.
+They are easy to create \& delete.
+Each user can have many projects and users can share projects.
+
 .. _setup project:
 
-Setup a Google Cloud Project
+Setup a Google Cloud project
 --------------------------------
 
 **Create a project**
@@ -32,7 +33,7 @@ Setup a Google Cloud Project
 
 -   Click "Create".
 
-.. figure:: setup-project.png
+.. figure:: project-setup.png
    :alt: Google Cloud project setup
 
 
@@ -65,14 +66,11 @@ Where to find the project ID
 
 Click on the name of the project in the blue menu bar on any page in the
 `Google Cloud Console <https://console.cloud.google.com/home/dashboard>`__.
-
 From there you can see the names and IDs of all the projects you are connected to.
-
-.. include:: cost.rst
 
 .. _delete-project:
 
-Cleanup: Delete a GCP project
+Cleanup: Delete a project
 -------------------------------
 
 If/when you are done with a Google Cloud project you can permanently delete it.

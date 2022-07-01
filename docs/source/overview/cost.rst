@@ -1,6 +1,6 @@
 .. _cost:
 
-Note on Costs
+Costs
 --------------
 
 A baseline level of data access is free.
@@ -8,20 +8,12 @@ This is structured as a usage quota that renews monthly --  the first `X` (amoun
 usage each month is free, where `X` depends on the service (Pub/Sub,
 BigQuery, Cloud Storage).
 Some examples are given in the table below.
-:ref:`Projects <projects>` are free.
-No credit card is required.
 If you exceed the limit and have not set up billing your access will be restricted until
 the quota renews.
+:ref:`Projects <projects>` are free.
+No credit card is required.
 
-You cannot be charged unless you create a billing account and attach it to your project.
-In this case, the pricing structure is "pay-as-you-go".
-Free quotas still apply.
-
-There are some options listed below to offset costs.
-
-Some pricing examples (as of Aug. 2021):
-
-.. list-table::
+.. list-table:: Pricing Examples (as of Aug. 2021)
     :class: tight-table
     :widths: 15 20 20 20
     :header-rows: 1
@@ -38,6 +30,11 @@ Some pricing examples (as of Aug. 2021):
       - message delivery
       - 10 GB per month
       - $40 per TB
+
+You cannot be charged unless you create a billing account and attach it to your project.
+In this case, the pricing structure is "pay-as-you-go".
+There are some options listed below to offset costs.
+Free quotas still apply.
 
 Here are links that might be useful:
 

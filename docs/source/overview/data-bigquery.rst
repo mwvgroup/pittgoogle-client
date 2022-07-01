@@ -1,3 +1,5 @@
+.. _data bigquery:
+
 BigQuery Catalogs
 ==================
 

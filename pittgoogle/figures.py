@@ -4,16 +4,17 @@
 """``figures`` contains functions for plotting alert and history data.
 """
 
+import gzip
+import io
+from typing import Optional
+
 import aplpy
 from astropy.io import fits
 from astropy.time import Time
-import gzip
-import io
 import matplotlib as mpl
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
-from typing import Optional
 
 from . import utils as pgbu
 
@@ -118,7 +119,7 @@ def plot_lightcurve_cutouts(alert_dict):
     https://github.com/ZwickyTransientFacility/ztf-avro-alert/blob/master/notebooks/Filtering_alerts.ipynb
     """
     fig = plt.figure(figsize=(16, 4))
-    dflc = pgbu.alert_dict_to_dataframe(alert_dict)
+    dflc = pgbu.Cast.alert_dict_to_dataframe(alert_dict)
     plot_lightcurve(dflc, ax=plt.subplot(1, 4, 1))
     for i, cutout in enumerate(["Science", "Template", "Difference"]):
         stamp = alert_dict["cutout{}".format(cutout)]["stampData"]

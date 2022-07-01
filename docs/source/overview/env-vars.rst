@@ -9,10 +9,10 @@ Set Environment Variables
 Setting these two environment variables will support a smooth authentication process
 that occurs in the background:
 
--   GOOGLE_CLOUD_PROJECT: Project ID of the :ref:`project <projects>` that you
+-   `GOOGLE_CLOUD_PROJECT` -- Project ID of the :ref:`project <projects>` that you
     will authenticate to.
 
--   GOOGLE_APPLICATION_CREDENTIALS: Path to a key file containing your :ref:`service
+-   `GOOGLE_APPLICATION_CREDENTIALS` -- Path to a key file containing your :ref:`service
     account <service account>` credentials.
 
 To set these, replace the following angle brackets (``<>``) and everything between them with your

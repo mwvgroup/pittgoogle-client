@@ -1,3 +1,5 @@
+.. _data pubsub:
+
 Pub/Sub Message Streams
 =======================
 

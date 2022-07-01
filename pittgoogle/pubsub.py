@@ -4,42 +4,53 @@
 # the rest of the docstring is in /docs/source/api/pubsub.rst
 
 
-from dataclasses import dataclass
+import dataclasses
+import inspect
 import logging
 import os
-from typing import Callable, Mapping, Iterable, List, Optional, Union
+import queue
+from typing import Callable, Iterable, List, Mapping, Optional, Union
 
-# from concurrent.futures.thread import ThreadPoolExecutor
+import attrs
 from google.api_core.exceptions import NotFound
 from google.cloud import pubsub_v1
 
-# from google.cloud.pubsub_v1.subscriber.scheduler import ThreadScheduler
-import queue
+from .auth import Auth
+from .types import Alert, Response
+from .utils import Cast, PittGoogleProjectIds, init_defaults
 
-from .auth import Auth, AuthSettings
-from .types import Alert, Cast, Response, PittGoogleProjectIds
-from .utils import class_defaults
+# from google.cloud.pubsub_v1.subscriber.scheduler import ThreadScheduler
+# from concurrent.futures.thread import ThreadPoolExecutor
 
 
 LOGGER = logging.getLogger(__name__)
 
 
-@dataclass
+# @dataclasses.dataclass
+@attrs.define
 class Topic:
     """Basic attributes of a Pub/Sub topic.
 
-    Attributes:
-        name:
-            Name of the Pub/Sub topic.
-        projectid:
-            The topic owner's Google Cloud project ID.
-            Note that Pitt-Google's IDs can be
-            obtained from :attr:`pittgoogle.types.PittGoogleProjectIds.production`,
-            :attr:`pittgoogle.types.PittGoogleProjectIds.testing`, etc.
+    Parameters
+    ------------
+    name : `str`
+        Name of the Pub/Sub topic.
+    projectid : `str`
+        The topic owner's Google Cloud project ID.
+        Note that Pitt-Google's IDs can be
+        obtained from :attr:`pittgoogle.utils.PittGoogleProjectIds.production`,
+        :attr:`pittgoogle.utils.PittGoogleProjectIds.testing`, etc.
     """
 
-    name: str = "ztf-loop"
-    projectid: str = PittGoogleProjectIds.production
+    name: str = attrs.field(
+        default="ztf-loop", validator=attrs.validators.instance_of(str)
+    )
+    """Name of the Pub/Sub topic."""
+    projectid: str = attrs.field(
+        default=PittGoogleProjectIds.production,
+        validator=attrs.validators.instance_of(str),
+    )
+    """Topic owner's Google Cloud project ID."""
 
     @property
     def path(self) -> str:
@@ -52,50 +63,48 @@ class Topic:
         LOGGER.info(f"Topic set to {self}")
 
 
-@dataclass
+# @dataclasses.dataclass
+@attrs.define
 class SubscriberClient:
     """Wrapper for a `pubsub_v1.SubscriberClient`.
 
-    Initialization is idempotent for caller convenience.
+    Parameters
+    ------------
+    auth : optional, `pittgoogle.auth.Auth`
+        Authentication information for the client.
+        Passing a `SubscriberClient` is idempotent.
+        The API call triggering authentication with Google Cloud is not made until
+        the auth's ``credentials`` or `session` attribute is explicitly requested.
     """
 
-    def __init__(self, auth: Union[Auth, AuthSettings, "SubscriberClient"]):
-        # initialization should be idempotent
-        # unpack auth settings to attributes
-        for name, val in auth.__dict__.items():
-            setattr(self, name, val)
+    _auth: Optional[Auth] = None
+    _client: Optional = attrs.field(default=None, init=False)
 
-        # initialize attributes if not present in auth
-        self._auth = getattr(self, "_auth", auth)
-        self._client = getattr(self, "_client", None)
+    # def __attrs_post_init__(self):
+    #     # self, auth: Union[Auth, AuthSettings, "SubscriberClient", None] = None
+    #     # ):
+    #     # initialization should be idempotent. unpack settings
+    #     if isinstance(self._auth, SubscriberClient):
+    #         client = attrs.evolve(self._auth)  # copy so can iterate and set vals
+    #         for key, val in attrs.asdict(client).items():
+    #             setattr(self, key, val)
+    #
+    #     else:
+    #         self.auth = self._auth
 
     # authentication
     @property
     def auth(self) -> Auth:
-        """Class wrapper for :class:`pittgoogle.auth.Auth` object.
+        """:class:`pittgoogle.auth.Auth` instance for client authentication.
 
-        If this is set to a :class:`pittgoogle.auth.AuthSettings` instance it will be
-        used to instantiate a :class:`~pittgoogle.auth.Auth`, which will then replace it.
-
-        The API call triggering authentication with Google Cloud is not made until
-        either the :attr:`~pittgoogle.auth.Auth().credentials` or
-        :attr:`~pittgoogle.auth.Auth().session` attribute is explicitly requested.
+        If this is set to None, a default :class:`~pittgoogle.auth.Auth` will be
+        created.
 
         Settings this manually will trigger reinstantiation of `self.client`.
         """
         if self._auth is None:
-            # just warn and return
-            LOGGER.warning(
-                (
-                    "No pittgoogle.auth.AuthSettings or pittgoogle.auth.Auth supplied. "
-                    "Cannot connect to Google Cloud."
-                )
-            )
-
-        else:
-            # make sure we have an Auth and not just an AuthSettings
-            self._auth = Auth(self._auth)
-
+            LOGGER.info("No pittgoogle.auth.Auth supplied. Creating default.")
+            self._auth = Auth()
         return self._auth
 
     @auth.setter
@@ -113,7 +122,7 @@ class SubscriberClient:
     # client
     @property
     def client(self) -> pubsub_v1.SubscriberClient:
-        """Class wrapper for a `pubsub_v1.SubscriberClient` object.
+        """`pubsub_v1.SubscriberClient` instance.
 
         The client is authenticated using `self.auth.credentials`.
         """
@@ -130,72 +139,103 @@ class SubscriberClient:
         self._client = None
 
 
-@dataclass
+# @dataclasses.dataclass
+@attrs.define
 class Subscription:
-    """Basic attributes of a Pub/Sub subscription plus methods to administer it."""
+    """Basic attributes of a Pub/Sub subscription plus methods to administer it.
 
-    def __init__(
-        self,
-        name: str = "ztf-loop",
-        client: Union[SubscriberClient, Auth, AuthSettings, None] = None,
-        topic: Optional[Topic] = None,
-    ):
-        self._name = name
-        self._client = client
-        self._topic = topic
-        self._projectid = None
+    Parameters
+    -----------
+    name : `str`
+        Name of the Pub/Sub subscription.
+    client : optional, `pittgoogle.pubsub.SubscriberClient`, `pittgoogle.auth.Auth`
+        A subscriber client or the authentitication info required to create one.
+    topic : `pittgoogle.pubsub.Topic`
+        Topic that the subscription is/will be attached to.
+        If the subscription exists this will be set to the topic that it is attached to.
+        If the subscription needs to be created it will be attached to this topic.
+        If this is None it will be set to `Topic(name)`.
+    """
 
-    # name
-    @property
-    def name(self) -> str:
-        """Name of the subscription."""
-        if self._name is None:
-            default = class_defaults(self)["name"]
-            LOGGER.warning(f"No subscription name provided. Falling back to {default}.")
-            self._name = default
+    name: str = attrs.field(
+        default="ztf-loop", validator=attrs.validators.instance_of(str)
+    )
+    """Name of the Pub/Sub subscription."""
+    client: Union[SubscriberClient, Auth] = attrs.field(
+        factory=SubscriberClient,
+        converter=_Helpers.client_from_auth,
+        validator=attrs.validators.instance_of(SubscriberClient),
+    )
+    """:class:`SubscriberClient()` to manage the subscription."""
+    topic: Optional[Topic] = attrs.field(default=None)
+    """:class:`Topic()` that the subscription is or will be attached to."""
+    # _projectid: Optional[str] = attrs.field(default=None, init=False)
 
-        return self._name
+    def __attrs_post_init__(self):
+        """Initialize the `topic` using the subscription `name`."""
+        if self.topic is None:
+            self.topic = Topic(self.name)
+        #     self,
+        #     name: str = "ztf-loop",
+        #     client: Union[SubscriberClient, Auth, AuthSettings, None] = None,
+        #     topic: Optional[Topic] = None,
+        # ):
+        #     self._name = name
+        #     self._client = client
+        #     self._topic = topic
+        # self._projectid = None
+        # if isinstance(self._client, Auth):
+        #     self._client = SubscriberClient(client=self._client)
 
-    @name.setter
-    def name(self, value):
-        self._name = value
-
-    @name.deleter
-    def name(self):
-        self._name = None
+    # # name
+    # @property
+    # def name(self) -> str:
+    #     """Name of the subscription."""
+    #     if self._name is None:
+    #         default = init_defaults(self)["name"]
+    #         LOGGER.warning(f"No subscription name provided. Falling back to {default}.")
+    #         self._name = default
+    #
+    #     return self._name
+    #
+    # @name.setter
+    # def name(self, value):
+    #     self._name = value
+    #
+    # @name.deleter
+    # def name(self):
+    #     self._name = None
 
     # projectid
     @property
     def projectid(self) -> str:
         """Subscription owner's Google Cloud project ID."""
-        if self._projectid is None:
+        # if self._projectid is None:
 
-            # get it from the client, if present
-            if self._client is not None:
-                self._projectid = getattr(self.client, "GOOGLE_CLOUD_PROJECT")
-                LOGGER.debug(
-                    f"Subscription's projectid obtained from client. {self._projectid}"
+        # get it from the client, if present
+        if self.client is not None:
+            projectid = getattr(self.client, "GOOGLE_CLOUD_PROJECT")
+            LOGGER.debug(f"Subscription's projectid obtained from client. {projectid}")
+
+        # get it from an environment variable
+        else:
+            projectid = os.getenv("GOOGLE_CLOUD_PROJECT", None)
+            LOGGER.debug(
+                (
+                    "Subscription's projectid obtained from environment variable. "
+                    f"projectid = {projectid}"
                 )
+            )
 
-            # get it from an environment variable
-            else:
-                self._projectid = os.getenv("GOOGLE_CLOUD_PROJECT", None)
-                LOGGER.debug(
-                    (
-                        "Subscription's projectid obtained from environment variable. "
-                        f"projectid = {self._projectid}"
-                    )
-                )
+        return projectid
 
-        return self._projectid
-
-    @projectid.setter
-    def projectid(self, value):
-        self._projectid = value
-
-    @projectid.deleter
-    def projectid(self):
-        self._projectid = None
+    # @projectid.setter
+    # def projectid(self, value):
+    #     self._projectid = value
+    #
+    # @projectid.deleter
+    # def projectid(self):
+    #     self._projectid = None
 
     @property
     def path(self) -> str:
@@ -209,67 +249,69 @@ class Subscription:
             )
         return f"projects/{self.projectid}/subscriptions/{self.name}"
 
-    # client
-    @property
-    def client(self) -> Optional[SubscriberClient]:
-        """Class wrapper for a :class:`SubscriberClient()`.
+    # # client
+    # @property
+    # def client(self) -> SubscriberClient:
+    #     """:class:`SubscriberClient()` to manage the subscription.
+    #
+    #     If this is set to a :class:`pittgoogle.auth.Auth`
+    #     it will be used to instantiate a :class:`SubscriberClient`.
+    #
+    #     This will be required in order to connect to the subscription,
+    #     but the connection is not checked during instantiation.
+    #     """
+    #     if self._client is None:
+    #         # try to create a client using default AuthSettings
+    #         LOGGER.debug(
+    #             (
+    #                 "No client or auth information provided. "
+    #                 "Attempting to create a client using a default "
+    #                 "pittgoogle.auth.AuthSettings()."
+    #             )
+    #         )
+    #         self._client = SubscriberClient()
+    #     else:
+    #         # make sure we have a SubscriberClient and not just an Auth or AuthSettings
+    #         self._client = SubscriberClient(self._client)
+    #
+    #     return self._client
+    #
+    # @client.setter
+    # def client(self, value):
+    #     if isinstance(value, Auth):
+    #         self._client = SubscriberClient(value)
+    #     else:
+    #         self._client = value
+    #
+    # @client.deleter
+    # def client(self):
+    #     self._client = None
 
-        If this is set to a :class:`pittgoogle.auth.Auth` or
-        :class:`pittgoogle.auth.AuthSettings` it will be used to instantiate a
-        :class:`SubscriberClient`, which will then replace it.
-
-        This will be required in order to connect to the subscription,
-        but the connection is not checked during instantiation.
-        """
-        if self._client is None:
-            # try to create a client using default AuthSettings
-            LOGGER.debug(
-                (
-                    "No client or auth information provided. "
-                    "Attempting to create a client using a default "
-                    "pittgoogle.auth.AuthSettings()."
-                )
-            )
-            self._client = SubscriberClient(AuthSettings())
-        else:
-            # make sure we have a SubscriberClient and not just an Auth or AuthSettings
-            self._client = SubscriberClient(self._client)
-
-        return self._client
-
-    @client.setter
-    def client(self, value):
-        self._client = value
-
-    @client.deleter
-    def client(self):
-        self._client = None
-
-    # topic
-    @property
-    def topic(self) -> Topic:
-        """Class wrapper for a :class:`Topic` that the subscription is or will be attached to.
-
-        If the subscription exists this will be set to the topic that it is attached to.
-
-        If the subscription needs to be created it will be attached to this topic.
-        If this is None it will fallback to the name of the subscription and the default
-        Pitt-Google project ID.
-        """
-        if self._topic is None:
-            default = Topic(self.name)
-            LOGGER.debug(f"No topic provided. Falling back to {default}.")
-            self._topic = default
-
-        return self._topic
-
-    @topic.setter
-    def topic(self, value):
-        self._topic = value
-
-    @topic.deleter
-    def topic(self):
-        self._topic = None
+    # # topic
+    # @property
+    # def topic(self) -> Topic:
+    #     """:class:`Topic` that the subscription is or will be attached to.
+    #
+    #     If the subscription exists this will be set to the topic that it is attached to.
+    #
+    #     If the subscription needs to be created it will be attached to this topic.
+    #     If this is None it will fallback to the name of the subscription and the default
+    #     Pitt-Google project ID.
+    #     """
+    #     if self._topic is None:
+    #         default = Topic(self.name)
+    #         LOGGER.debug(f"No topic provided. Falling back to {default}.")
+    #         self._topic = default
+    #
+    #     return self._topic
+    #
+    # @topic.setter
+    # def topic(self, value):
+    #     self._topic = value
+    #
+    # @topic.deleter
+    # def topic(self):
+    #     self._topic = None
 
     # touch, create, and delete
     def touch(self) -> None:
@@ -294,8 +336,11 @@ class Subscription:
             LOGGER.info(
                 (
                     f"Subscription exists: {self.path}\n"
-                    f"Connected to topic: {self.topic.path}"
+                    f"Connected to topic: {self.topic.path}\n"
                 )
+            )
+            LOGGER.debug(
+                "Updating `Subscription()` instance with corresponding `Topic()`"
             )
             self.topic.path = subscrip.topic
 
@@ -345,25 +390,27 @@ class Subscription:
             LOGGER.info(f"Deleted subscription: {self.path}")
 
 
-@dataclass
+# @dataclasses.dataclass
+@attrs.define
 class CallbackSettings:
-    """Settings for a :meth:`Consumer.callback`.
+    """Settings for the :ref:`callbacks <callbacks>`.
 
-    Attributes:
-        user_callback:
-            A function, supplied by the user, that accepts a single
-            :class:`pittgoogle.types.Alert` as
-            its sole argument and returns a :class:`pittgoogle.types.Response`.
-            The function is allowed to accept arbitrary keyword arguments, but their
-            values must be passed to the consumer via the `user_kwargs` setting prior
-            to starting the pull.
-            See :ref:`user callback` for more information.
-        user_kwargs:
-            A dictionary of key/value pairs that will be sent as kwargs to the
-            `user_callback` by the consumer.
-        unpack:
-            List of :class:`~pittgoogle.types.Alert` attributes to populate with data.
-            This determines which data is available to the user callback.
+    Parameters
+    ----------
+    user_callback : callable
+        A function, supplied by the user, that accepts a single
+        :class:`pittgoogle.types.Alert` as
+        its sole argument and returns a :class:`pittgoogle.types.Response`.
+        The function is allowed to accept arbitrary keyword arguments, but their
+        values must be passed to the consumer via the `user_kwargs` setting prior
+        to starting the pull.
+        See :ref:`user callback <user callback>` for more information.
+    user_kwargs : `dict`
+        A dictionary of key/value pairs that will be sent as kwargs to the
+        ``user_callback`` by the consumer.
+    unpack : iterable of `str`
+        :class:`~pittgoogle.types.Alert` attributes that should be populated with data.
+        This determines which data is available to the user callback.
     """
 
     user_callback: Optional[Callable[[Alert], Response]] = None
@@ -371,19 +418,28 @@ class CallbackSettings:
     unpack: Iterable[str] = tuple(["dict", "metadata"])
 
 
-@dataclass
+# @dataclasses.dataclass
+@attrs.define
 class FlowConfigs:
-    """Stopping conditions and flow control settings for a streaming pull."""
+    """Stopping conditions and flow control settings for a streaming pull.
 
-    def __init__(
-        self,
-        max_results: Optional[int] = 10,
-        timeout: Optional[int] = 30,
-        max_backlog: int = 1000,
-    ):
-        self._max_results = max_results
-        self._timeout = timeout
-        self._max_backlog = max_backlog
+    Parameters
+    ----------
+    max_results : optional, `int`
+        Maximum number of messages to pull and process before stopping.
+        Default = 10, use None for no limit.
+    timeout : optional, `int`
+        Maximum number of seconds to wait for a new message before stopping.
+        Default = 30. Use None for no limit.
+    max_backlog : optional, `int`
+        Maximum number of pulled but unprocessed messages before pausing the pull.
+        Default = min(1000, ``max_results``).
+        This will be cleaned to satisfy ``max_backlog <= max_results``.
+    """
+
+    _max_results: Optional[int] = 10
+    _timeout: Optional[int] = 30
+    _max_backlog: int = 1000
 
     @staticmethod
     def _basic_clean(key, value) -> Optional[int]:
@@ -391,7 +447,7 @@ class FlowConfigs:
 
         Validity check: `value` must be either a positive integer or None.
         """
-        default = class_defaults(FlowConfigs)[key]
+        default = init_defaults(FlowConfigs)[key]
 
         # check for None
         if value is None:
@@ -419,10 +475,7 @@ class FlowConfigs:
     # max_results
     @property
     def max_results(self) -> Optional[int]:
-        """Maximum number of messages to pull and process before stopping.
-
-        Default = 10, use None for no limit.
-        """
+        """Maximum number of messages to pull and process before stopping."""
         self._max_results = FlowConfigs._basic_clean("max_results", self._max_results)
         return self._max_results
 
@@ -432,15 +485,12 @@ class FlowConfigs:
 
     @max_results.deleter
     def max_results(self):
-        self._max_results = class_defaults(self)["max_results"]
+        self._max_results = init_defaults(self)["max_results"]
 
     # timeout
     @property
     def timeout(self) -> Optional[int]:
-        """Maximum number of seconds to wait for a new message before stopping.
-
-        Default = 30. Use None for no limit.
-        """
+        """Maximum number of seconds to wait for a new message before stopping."""
         return FlowConfigs._basic_clean("timeout", self._timeout)
 
     @timeout.setter
@@ -449,20 +499,16 @@ class FlowConfigs:
 
     @timeout.deleter
     def timeout(self):
-        self._timeout = class_defaults(self)["timeout"]
+        self._timeout = init_defaults(self)["timeout"]
 
     # max_backlog
     @property
     def max_backlog(self) -> int:
-        """Maximum number of pulled but unprocessed messages before pausing the pull.
-
-        Default = min(1000, `max_results`).
-        Will be cleaned to satisfy `max_backlog <= max_results`.
-        """
+        """Maximum number of pulled but unprocessed messages before pausing the pull."""
         max_backlog = FlowConfigs._basic_clean("max_backlog", self._max_backlog)
 
         # check specific validity conditions. upon failure, fall back to default value
-        default = class_defaults(self)["max_backlog"]
+        default = init_defaults(self)["max_backlog"]
 
         # max_backlog cannot be None
         if max_backlog is None:
@@ -497,14 +543,14 @@ class FlowConfigs:
 
     @max_backlog.deleter
     def max_backlog(self):
-        self._max_backlog = class_defaults(self)["max_backlog"]
+        self._max_backlog = init_defaults(self)["max_backlog"]
 
 
-@dataclass
+@dataclasses.dataclass
 class ConsumerSettings:
     """Settings for a :class:`Consumer`.
 
-    Attributes:
+    Parameters:
         client:
             Either a :class:`SubscriberClient` or the :class:`~pittgoogle.auth.Auth`
             or :class:`~pittgoogle.auth.AuthSettings` necessary to create one.
@@ -527,13 +573,43 @@ class ConsumerSettings:
     callback_settings: CallbackSettings = CallbackSettings()
 
 
-@dataclass
+@attrs.define
+class _Helpers:
+    @staticmethod
+    def client_from_auth(value):
+        if isinstance(value, SubscriberClient):
+            return value
+        elif isinstance(value, Auth):
+            return SubscriberClient(auth=value)
+
+    # @staticmethod
+    # def each_element_in_alert_attrs(inst, attribute, elements):
+    #     alert_attrs = attrs.asdict(Alert()).keys()
+    #     for element in elements:
+    #         if element not in alert_attrs:
+    #             raise ValueError(
+    #                 f"Only attribute names of Alert are allowed in {attribute.name}."
+    #             )
+
+    @staticmethod
+    def backlog_le_results(inst, attribute, value):
+        """Enforce max_backlog <= max_results."""
+        if attribute.name == "max_results":
+            returnval = value
+
+        if (inst.max_results is not None) and (inst.max_backlog > inst.max_results):
+            LOGGER.debug(
+                (
+                    "Setting max_backlog = max_results to prevent an excessive number "
+                    "of pulled messages that will never be processed. "
+                )
+            )
+            inst.max_backlog = inst.max_results
+
+
+@attrs.define
 class Consumer:
     """Consumer class to pull a Pub/Sub subscription and process messages.
-
-    Args:
-        settings:
-            An instance of :class:`ConsumerSettings()`.
 
     Initialization does the following:
 
@@ -544,90 +620,239 @@ class Consumer:
 
     #.  Make sure the subscription exists in Pub/Sub (creating it, if necessary), and
         that the client can connect (``self.subscription.touch()``).
+
+    Parameters
+    -----------
+    client : `SubscriberClient` or `Auth`
+        Either a client or the auth information necessary to create one.
+    subscription : `Subscription` or `str`
+        Pub/Sub subscription to be pulled. Note that if you pass a `Subscription`, it's
+        `client` will be replaced with this consumer's `client` attribute.
+    flow_configs : `FlowConfigs`
+        Stopping conditions and flow control settings for the streaming pull.
+    callback_settings : `CallbackSettings`
+        Settings for the :ref:`callbacks <callbacks>`.
+        These dictate the message delivery format, processing logic, and data
+        returned.
+
+    Settings for the :ref:`callbacks <callbacks>`.
+
+    Parameters
+    ----------
+    max_results : optional, `int`
+        Maximum number of messages to pull and process before stopping.
+        Default = 10, use None for no limit.
+    timeout : optional, `int`
+        Maximum number of seconds to wait for a new message before stopping.
+        Default = 30. Use None for no limit.
+    max_backlog : optional, `int`
+        Maximum number of pulled but unprocessed messages before pausing the pull.
+        Default = min(1000, ``max_results``).
+        This will be cleaned to satisfy ``max_backlog <= max_results``.
+    user_callback : callable
+        A function, supplied by the user, that accepts a single
+        :class:`pittgoogle.types.Alert` as
+        its sole argument and returns a :class:`pittgoogle.types.Response`.
+        The function is allowed to accept arbitrary keyword arguments, but their
+        values must be passed to the consumer via the `user_kwargs` setting prior
+        to starting the pull.
+        See :ref:`user callback <user callback>` for more information.
+    user_kwargs : `dict`
+        A dictionary of key/value pairs that will be sent as kwargs to the
+        ``user_callback`` by the consumer.
+    unpack : iterable of `str`
+        :class:`~pittgoogle.types.Alert` attributes that should be populated with data.
+        This determines which data is available to the user callback.
     """
 
-    def __init__(self, settings: ConsumerSettings):
-        LOGGER.debug(
-            f"Instantiating consumer with the following settings: {settings.__repr__()}"
+    # client: SubscriberClient  # = attrs.field()
+    # subscription: Subscription  # = attrs.field(factory=Subscription)
+    # flow_configs: FlowConfigs  # = attrs.field(factory=FlowConfigs)
+    # callback_settings: CallbackSettings  # = attrs.field(factory=CallbackSettings)
+    client: SubscriberClient = attrs.field(
+        # default=attrs.Factory(SubscriberClient, takes_self=False),
+        factory=SubscriberClient,
+        converter=SubscriberClient,
+    )
+    """:class:`SubscriberClient` for the consumer."""
+    subscription: Subscription = attrs.field(
+        # default=attrs.Factory(Subscription, takes_self=False),
+        factory=Subscription,
+        converter=Subscription,
+    )
+    """:class:`Subscription` that the consumer will pull."""
+    flow_configs: FlowConfigs = attrs.field(
+        # default=attrs.Factory(FlowConfigs, takes_self=False)
+        factory=FlowConfigs,
+    )
+    """:class:`FlowConfigs`"""
+    # callback_settings: CallbackSettings = attrs.field(
+    #     # default=attrs.Factory(CallbackSettings, takes_self=False)
+    #     factory=CallbackSettings,
+    # )
+    # """:class:`CallbackSettings`"""
+    user_callback: Optional[Callable[[Alert], Response]] = attrs.field(
+        default=None, validator=attrs.validators.optional(attrs.validators.is_callable)
+    )
+    """A :ref:`user callback <user callback>` or None."""
+    user_kwargs: Mapping = attrs.field(factory=dict)
+    """Keyword arguments for `user_callback`."""
+    unpack: Iterable[str] = attrs.field(
+        default=["dict", "metadata"],
+        # validator=_Helpers.each_element_in_alert_attrs,
+        validator=attrs.validators.deep_iterable(
+            attrs.validators.in_(attrs.asdict(Alert()).keys())
+        ),
+    )
+    """:class:`~pittgoogle.types.Alert` attributes that will be populated with data."""
+    max_results: int = attrs.field(
+        default=10,
+        validator=attrs.validators.optional(attrs.validators.gt(0)),
+        on_setattr=_Helpers.backlog_le_results,
+    )
+    """Maximum number of messages to pull and process before stopping."""
+    timeout: int = attrs.field(
+        default=30, validator=attrs.validators.optional(attrs.validators.gt(0))
+    )
+    """Maximum number of seconds to wait for a new message before stopping."""
+    max_backlog: int = attrs.field(default=1000, on_setattr=_Helpers.backlog_le_results)
+    """Maximum number of pulled but unprocessed messages before pausing the pull."""
+
+    def __attrs_post_init__(self):
+        """Force the `subscription` to use `self.client`."""
+        self.subscription.client = self.client
+
+    # custom init so that we can accept **kwargs
+    def __init__(
+        self,
+        **kwargs,
+    ):
+        def _kwargs_then_attrs(kwargs, obj):
+            init_varnames = inspect.signature(obj.__init__).parameters.keys()
+            # field_names = [field.name for field in dataclasses.fields(obj)]
+            return dict((k, kwargs.get(k, getattr(obj, k))) for k in init_varnames)
+
+        # create client
+        myattrs = dict(
+            client=SubscriberClient(
+                **_kwargs_then_attrs(kwargs, kwargs.get("client", SubscriberClient()))
+            )
         )
 
-        # unpack consumer settings to attributes
-        self._client = settings.client
-        self._subscription = settings.subscription
-        self.flow_configs = settings.flow_configs
-        self.callback_settings = settings.callback_settings
+        # the subscription should use this same client
+        kwargs["client"] = attrs["client"]
 
-        # authenticate and store credentials
-        self.client.auth.credentials
-        self.projectid = self.client.auth.GOOGLE_CLOUD_PROJECT
+        # create other attributes
+        for attr, factory in (
+            ("subscription", Subscription),
+            ("flow_configs", FlowConfigs),
+            ("callback_settings", CallbackSettings),
+        ):
+            myattrs[attr] = factory(
+                **_kwargs_then_attrs(kwargs, kwargs.get(attr, factory()))
+            )
+        # subscription = Subscription(
+        #     **_kwargs_then_attrs(kwargs, kwargs.get("subscription", Subscription()))
+        # )
+        # flow_configs = FlowConfigs(
+        #     **_kwargs_then_attrs(kwargs, kwargs.get("flow_configs", FlowConfigs()))
+        # )
+        # callback_settings = CallbackSettings(
+        #     **_kwargs_then_attrs(
+        #         kwargs, kwargs.get("callback_settings", CallbackSettings())
+        #     )
+        # )
+        self.__attrs_init__(**attrs)
+        # subscription = Subscription(kwargs.pop("subscription", None))
+        # flow_configs = kwargs.pop("flow_configs", FlowConfigs())
+        # callback_settings = kwargs.pop("callback_settings", CallbackSettings())
+        #
+        # self.__attrs_init__(
+        #     client=client,
+        #     subscription=Subscription(
+        #         **_kwargs_then_attrs(
+        #             dict(**kwargs, client=client), Subscription(subscription)
+        #         )
+        #     ),
+        #     flow_configs=FlowConfigs(**_kwargs_then_attrs(kwargs, flow_configs)),
+        #     callback_settings=CallbackSettings(
+        #         **_kwargs_then_attrs(kwargs, callback_settings)
+        #     ),
+        # )
 
-        # check connection to the subscription
-        if self.subscription._client is None:
-            self.subscription._client = self._client
-        self.subscription.touch()
-
-        # list of results of user processing. stored and returned upon user request
-        self._results = None
-
-        # instantiate a queue to communicate with the background thread
-        self.__queue = None
+        # # authenticate and store credentials
+        # self.client.auth.credentials
+        # self.projectid = self.client.auth.GOOGLE_CLOUD_PROJECT
+        #
+        # # check connection to the subscription
+        # if self.subscription._client is None:
+        #     self.subscription._client = self._client
+        # self.subscription.touch()
+        #
+        # # list of results of user processing. stored and returned upon user request
+        # self._results = None
+        #
+        # # instantiate a queue to communicate with the background thread
+        # self.__queue = None
 
     # subscriber client
-    @property
-    def client(self) -> Optional[SubscriberClient]:
-        """Class wrapper for a :class:`SubscriberClient`.
+    # @property
+    # def client(self) -> Optional[SubscriberClient]:
+    #     """:class:`SubscriberClient` for the consumer.
+    #
+    #     If this is set to a :class:`pittgoogle.auth.Auth` or
+    #     :class:`pittgoogle.auth.AuthSettings` it will be used to
+    #     instantiate a :class:`SubscriberClient`, which will then replace it.
+    #     """
+    #     if self._client is None:
+    #         # nothing to do but warn
+    #         LOGGER.warning("Cannot create a SubscriberClient.")
+    #
+    #     else:
+    #         # make sure we have a SubscriberClient and not just an Auth or AuthSettings
+    #         self._client = SubscriberClient(self._client)
+    #
+    #     return self._client
+    #
+    # @client.setter
+    # def client(self, value):
+    #     # make sure we have a SubscriberClient and not just an Auth or AuthSettings
+    #     self._client = SubscriberClient(value)
+    #
+    # @client.deleter
+    # def client(self):
+    #     self._client = None
 
-        If this is set to a :class:`pittgoogle.auth.Auth` or :class:`pittgoogle.auth.AuthSettings` it will be used to
-        instantiate a :class:`SubscriberClient`, which will then replace it.
-        """
-        if self._client is None:
-            # nothing to do but warn
-            LOGGER.warning("Cannot create a SubscriberClient.")
-
-        else:
-            # make sure we have a SubscriberClient and not just an Auth or AuthSettings
-            self._client = SubscriberClient(self._client)
-
-        return self._client
-
-    @client.setter
-    def client(self, value):
-        self._client = value
-
-    @client.deleter
-    def client(self):
-        self._client = None
-
-    # subscription
-    @property
-    def subscription(self) -> Subscription:
-        """Subscription to be pulled.
-
-        If this is set to a string it will be used along with `self.client` to create a
-        :class:`Subscription` with the default topic, which will then replace it.
-        If you need the subscription to be created and attached
-        to a non-default topic, use a :class:`Subscription` directly.
-
-        If deleted, this is reset to None and the default subscription name is used with
-        `self.client` to create the :class:`Subscription`.
-        """
-        if isinstance(self._subscription, str):
-            self._subscription = Subscription(
-                name=self._subscription, client=self.client
-            )
-
-        elif self._subscription is None:
-            self._subscription = Subscription(client=self.client)
-
-        return self._subscription
-
-    @subscription.setter
-    def subscription(self, value):
-        self._subscription = value
-
-    @subscription.deleter
-    def subscription(self):
-        self._subscription = None
+    # # subscription
+    # @property
+    # def subscription(self) -> Subscription:
+    #     """Subscription to be pulled.
+    #
+    #     If this is set to a string it will be used along with `self.client` to create a
+    #     :class:`Subscription` with the default topic.
+    #     If you need the subscription to be created and attached
+    #     to a non-default topic, use a :class:`Subscription` directly.
+    #
+    #     If deleted, this is reset to None and the default subscription name is used with
+    #     `self.client` to create the :class:`Subscription`.
+    #     """
+    #     if isinstance(self._subscription, str):
+    #         self._subscription = Subscription(
+    #             name=self._subscription, client=self.client
+    #         )
+    #
+    #     elif self._subscription is None:
+    #         self._subscription = Subscription(client=self.client)
+    #
+    #     return self._subscription
+    #
+    # @subscription.setter
+    # def subscription(self, value):
+    #     self._subscription = value
+    #
+    # @subscription.deleter
+    # def subscription(self):
+    # self._subscription = None
 
     # stream
     @property
@@ -783,7 +1008,7 @@ class Consumer:
 
         # Run the user_callback
         if self.callback_settings.user_callback is not None:
-            response = self.execute_user_callback(alert)
+            response = self._execute_user_callback(alert)
 
         # No user_callback was supplied. respond with success but log a warning
         else:
@@ -855,7 +1080,7 @@ class Consumer:
 
         return Alert._make(_my_unpack(self, k, message) for k in Alert._fields)
 
-    def execute_user_callback(self, alert: Alert) -> Response:
+    def _execute_user_callback(self, alert: Alert) -> Response:
         """Try to execute the :attr:`~CallbackSettings.user_callback`, return an appropriate Response."""
         kwargs = self.callback_settings.user_kwargs
         if kwargs is None:
@@ -886,7 +1111,7 @@ class Consumer:
 
     @staticmethod
     def collect_alert(alert: Alert) -> Response:
-        """:ref:`user callback` example that simply requests that the alert be collected.
+        """:ref:`user callback <user callback>` example that simply requests that the alert be collected.
 
         Returns:
             ``Response(ack=True, result=alert)``
@@ -900,7 +1125,7 @@ class Consumer:
 
     @property
     def results(self):
-        """Container to store results returned from a :ref:`user callback`."""
+        """Container to store results returned from a :ref:`user callback <user callback>`."""
         if self._results is None:
             self._results = list()
         return self._results

@@ -42,7 +42,7 @@ Name some things
     local_dir = ''
 
     my_project_id = os.getenv('GOOGLE_CLOUD_PROJECT')
-    pgb_project_id = pittgoogle.types.PittGoogleProjectIds.production
+    pgb_project_id = pittgoogle.utils.PittGoogleProjectIds.production
 
 Download files
 ~~~~~~~~~~~~~~
@@ -95,7 +95,7 @@ Cast to a dataframe and plot lightcurves
 
 .. code:: python
 
-    lc_df = pittgoogle.utils.alert_dict_to_dataframe(alert_dict)
+    lc_df = pittgoogle.utils.Cast.alert_dict_to_dataframe(alert_dict)
     pittgoogle.figures.plot_lightcurve(lc_df)
     plt.show(block=False)
 

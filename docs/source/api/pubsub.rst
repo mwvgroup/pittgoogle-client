@@ -1,9 +1,8 @@
 pittgoogle.pubsub
 ======================
 
-.. automodule:: pittgoogle
-
 .. automodule:: pittgoogle.pubsub
+    :noindex:
 
 .. contents:: Table of Contents
    :local:
