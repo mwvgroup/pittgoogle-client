@@ -4,15 +4,17 @@
 BigQuery databases and reading the results.
 """
 
+from typing import Generator, List, Optional, Tuple, Union
+
 import astropy
 from astropy import coordinates as coord
 from google.cloud import bigquery
 import pandas as pd
 from tabulate import tabulate
-from typing import List, Tuple, Optional, Union, Generator
 
+from .utils import PittGoogleProjectIds
 
-pgb_project_id = "ardent-cycling-243415"
+pgb_project_id = PittGoogleProjectIds.production
 
 # --- BigQuery Client
 user_bq_client, user_project_id = None, None  # module's global Client, related id
