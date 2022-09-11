@@ -68,23 +68,41 @@ class Auth:
     Missing parameters will be obtained from an environment variable of the same name,
     if it exists.
 
-    Parameters
-    ------------
-    GOOGLE_CLOUD_PROJECT : optional, `str`
-        Project ID of the Google Cloud project to connect to.
-    GOOGLE_APPLICATION_CREDENTIALS : optional, `str`
-        Path to a keyfile containing service account credentials.
-        Either this or both `OAUTH_CLIENT_*` settings are required for successful
-        authentication using `Auth`.
-    OAUTH_CLIENT_ID : optional, `str`
-        Client ID for an OAuth2 connection.
-        Either this and `OAUTH_CLIENT_SECRET`, or the `GOOGLE_APPLICATION_CREDENTIALS`
-        setting, are required for successful authentication using `Auth`.
-    OAUTH_CLIENT_SECRET : optional, `str`
-        Client secret for an OAuth2 connection.
-        Either this and `OAUTH_CLIENT_ID`, or the `GOOGLE_APPLICATION_CREDENTIALS`
-        setting, are required for successful authentication using `Auth`.
+    :param GOOGLE_CLOUD_PROJECT:
+    Project ID of the Google Cloud project to connect to.
+
+    :param GOOGLE_APPLICATION_CREDENTIALS:
+    Path to a keyfile containing service account credentials.
+    Either this or both `OAUTH_CLIENT_*` settings are required for successful
+    authentication using `Auth`.
+
+    :param OAUTH_CLIENT_ID:
+    Client ID for an OAuth2 connection.
+    Either this and `OAUTH_CLIENT_SECRET`, or the `GOOGLE_APPLICATION_CREDENTIALS`
+    setting, are required for successful authentication using `Auth`.
+
+    :param OAUTH_CLIENT_SECRET:
+    Client secret for an OAuth2 connection.
+    Either this and `OAUTH_CLIENT_ID`, or the `GOOGLE_APPLICATION_CREDENTIALS` setting,
+    are required for successful authentication using `Auth`.
     """
+
+    # Parameters
+    # ------------
+    # GOOGLE_CLOUD_PROJECT : optional, `str`
+    #     Project ID of the Google Cloud project to connect to.
+    # GOOGLE_APPLICATION_CREDENTIALS : optional, `str`
+    #     Path to a keyfile containing service account credentials.
+    #     Either this or both `OAUTH_CLIENT_*` settings are required for successful
+    #     authentication using `Auth`.
+    # OAUTH_CLIENT_ID : optional, `str`
+    #     Client ID for an OAuth2 connection.
+    #     Either this and `OAUTH_CLIENT_SECRET`, or the `GOOGLE_APPLICATION_CREDENTIALS`
+    #     setting, are required for successful authentication using `Auth`.
+    # OAUTH_CLIENT_SECRET : optional, `str`
+    #     Client secret for an OAuth2 connection.
+    #     Either this and `OAUTH_CLIENT_ID`, or the `GOOGLE_APPLICATION_CREDENTIALS`
+    #     setting, are required for successful authentication using `Auth`.
 
     GOOGLE_CLOUD_PROJECT = attrs.field(
         factory=lambda: os.getenv("GOOGLE_CLOUD_PROJECT", None)

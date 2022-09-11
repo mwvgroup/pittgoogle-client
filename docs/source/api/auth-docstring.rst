@@ -8,7 +8,7 @@ Usage
 .. note::
 
     To authenticate, you must have completed one of the setup options described in :doc:`/overview/authentication`.
-    **The recommended workflow is to use a** :ref:`service account <service account>` **to** :ref:`set environment variables <set env vars>`.
+    **The recommended workflow is to use a** :ref:`service account <service account>` **and** :ref:`set environment variables <set env vars>`.
     In that case, you will not need to call this module directly.
 
 
@@ -39,7 +39,7 @@ To do that, request them explicitly:
 
     myauth.credentials
 
-This will first look for a service account key file, then fallback to OAuth2.
+It will first look for a service account key file, then fallback to OAuth2.
 
 Classes
 -------

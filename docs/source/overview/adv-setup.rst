@@ -4,7 +4,7 @@ Advanced Setup
 .. note::
 
     Nothing on this page is required for standard access.
-    In most cases, you should just :doc:`install-pittgoogle` instead.
+    In most cases, you should just :ref:`install pittgoogle <install>` instead.
 
 Install Libraries for Google Cloud APIs
 ----------------------------------------

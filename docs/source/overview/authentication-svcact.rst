@@ -9,7 +9,7 @@ Service Account (Recommended)
 These are instructions to create a service account and download a key file that can be
 used for authentication.
 
-#.  Prerequisite: Access to a Google Cloud :doc:`project <projects>`.
+#.  Prerequisite: Access to a Google Cloud :ref:`project <projects>`.
 
 #.  Follow Google's instructions to
     `create a service account <https://cloud.google.com/docs/authentication/getting-started#creating_a_service_account>`__

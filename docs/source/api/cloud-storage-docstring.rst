@@ -11,9 +11,9 @@ of the Google Cloud API), and the gsutil CLI.
 Prerequisites
 -------------
 
-1. Complete the :doc:`initial-setup`. In particular, be sure to:
+1. Complete the initial setup. In particular, be sure to:
 
-   -  :doc:`install-pittgoogle` and/or :ref:`Install the command-line tools <install gcp cli>`.
+   -  :ref:`install` and/or :ref:`Install the command-line tools <install gcp cli>`.
    -  :ref:`service account`
    -  :ref:`Set your environment variables <set env vars>`
 

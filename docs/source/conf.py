@@ -23,9 +23,9 @@ with open(os.path.join(pkg_root, "VERSION.txt")) as version_file:
 
 # -- Project information -----------------------------------------------------
 
-project = "Pitt-Google Broker"
+project = "pittgoogle-client"
 copyright = "2021, The Pitt-Google Broker Team"
-author = "The Pitt-Google Broker Team"
+author = "Troy Raen"
 
 # The full version, including alpha/beta/rc tags
 release = version
@@ -51,8 +51,8 @@ extensions = [
     "sphinx_copybutton",
 ]
 
-# set typing.TYPE_CHECKING = True
-set_type_checking_flag = True
+set_type_checking_flag = True  # set typing.TYPE_CHECKING = True
+typehints_defaults = "braces"  # adds (default: ...) after the type
 
 # Make sure the target is unique
 autosectionlabel_prefix_document = True

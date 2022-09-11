@@ -17,19 +17,17 @@ TL;DR
 
 -   The :ref:`user callback <user callback>` determines how the alerts are processed and stored.
 
--   There are a few different groups of settings in :class:`ConsumerSettings`
-    for things like stopping conditions and the alert format
-    (follow the type definitions of the attributes).
+-   There are settings for the connection, user callback, and flow control.
 
 .. important::
 
     :meth:`Consumer.stream()` opens a streaming pull in a background thread and blocks
-    the main thread while the stream is open
-    (which is determined by stopping conditions in the settings).
-    **Use** `Ctrl + C` **at any time to regain control of the terminal.**
-    If you somehow regain control of the main thread while the stream is still open
-    in the background (which you can do on purpose using the kwarg ``block=False``),
+    the main thread while the stream is open.
+    Use `Ctrl + C` at any time to regain control of the terminal.
+
+    If the main thread unblocks while the stream is still open (e.g., if you send ``block=False``),
     call :meth:`Consumer.stop()`.
+
     In either case, the consumer will attempt to close the stream gracefully
     and exit the background thread.
 
@@ -49,68 +47,55 @@ The most basic instantiation looks like this:
 
     consumer = pubsub.Consumer()
 
-See :class:`ConsumerSettings` to learn everything that's available.
-It contains attributes holding a
+**Connection**:
+This will create a default :class:`SubscriberClient` and connect to a default :class:`Subscription`.
+If the subscription doesn't exist in Pub/Sub, it will be created.
 
--   :class:`SubscriberClient()`
-
--   :class:`Subscription()`
-
--   :class:`FlowConfigs()`
-
--   :class:`CallbackSettings()`
-
-The attributes allow you to call all of their associated properties and methods
-through the consumer.
-For example, you can use:
+The client and subscription are attached as attributes.
+You have access to all of their associated attributes and methods.
+For example, if you want to delete the subscription use:
 
 .. code-block::  python
 
     consumer.subscription.delete()
 
-In the default case shown above, the consumer will try to create a **client** using
-authentication information stored in environment variables.
-It will then connect to a **subscription** using the default settings.
-If the subscription doesn't exist in Pub/Sub, it will be created.
+**Callback**:
+We need to supply a :ref:`user callback <user callback>` to do anything beyond counting the alerts.
+This determines how the alerts are processed and stored.
+There is a template in the user callback section linked above.
+Here, we will use an example function that simply passes the alert back to the consumer,
+requesting that it be stored in :attr:`results` for later access.
+It is provided as a (static) method of the consumer for convenience
+(:meth:`request_to_collect`), but see the warning below.
 
+**Flow configs**:
 The next call will open a streaming pull on the subscription, which will run in
 the background.
-The default **flow configs** include conservative stopping conditions that are meant to
-support you during testing, to prevent the stream from running out of control.
-
-We need to supply a :ref:`user callback <user callback>` in the **callback settings**, which will
-determine how the alerts are processed and stored. There is a template in the user
-callback section. Here, we will use an example function that simply passes the alert
-back to the consumer with a request to store it in :attr:`Consumer.results` for later
-access. It is provided as a (static) method of the consumer for convenience
-(:meth:`Consumer.collect_alert`), but see the warning below.
+The default flow configs include conservative stopping conditions that are meant to
+support testing, to prevent the stream from running out of control.
 
 Open the stream and process messages:
 
 .. code-block:: python
 
-    consumer = Consumer(
-        ConsumerSettings(
-            callback_settings=CallbackSettings(user_callback=Consumer.collect_alert),
-        )
-    )
+    consumer = Consumer(user_callback=Consumer.request_to_collect)
 
-    results = consumer.stream()  # returns consumer.results
+    results = consumer.stream()  # returns consumer.results once the stream closes
 
 By default, the consumer will **block** the main thread while the stream is open.
 **Use** `Ctrl + C` **at any time to close the stream and regain control of the terminal.**
-
 
 .. warning::
 
     If you choose to send results back to the consumer through the
     :attr:`~pittgoogle.types.Response.result` attribute
-    (as is done in :meth:`Consumer.collect_alert`),
-    the results will not be available until the background thread has been closed.
+    (like the callback example :meth:`request_to_collect`),
+    **the results will not be available until the background thread has been closed**.
     This increases the potential that collected results will fill up your memory,
     and also means that the results may be lost if a thread crashes.
-    This option can be useful for testing, but it should not be combined with a
-    large value of :attr:`FlowConfigs.max_results`.
+    This option can be useful for testing, but should be used with caution.
+    In particular, limit the amount of data requested in :attr:`unpack` and/or
+    use a small value for :attr:`max_results`.
 
 .. _callbacks:
 
@@ -120,7 +105,7 @@ Callbacks Explainer
 (You may wish to jump directly to :ref:`user callback <user callback>`.)
 
 In Pub/Sub, a streaming pull happens in a background thread.
-Thus, message processing should be handled by a callback function.
+Thus, message processing should be handled by a callback.
 The callback should process a single message, persist the needed results, and then
 :ref:`ack or nack <ack and nack>` the message.
 The callback is passed into the background thread by the client when it opens the
@@ -129,13 +114,13 @@ stream.
 The :class:`Consumer` uses two callbacks:
 its :ref:`own callback() method <consumer callback>`
 and a :ref:`user callback <user callback>`.
-These are explained below.
+They are explained below.
 
-The callback is perhaps the biggest difference between implementations that use Pub/Sub
-versus Kafka.
+**Kafka comparison**: The callback is perhaps the biggest difference between
+implementations that use Pub/Sub versus Kafka.
 Pulling an Apache Kafka stream typically results in Kafka returning a batch of messages.
 The user can then process messages at-will by iterating through the batch.
-You can mimic this behavior by using :meth:`Consumer.collect_alert` as your
+You can mimic this behavior by using :meth:`Consumer.request_to_collect` as your
 user callback, but this is recommended for testing only.
 See the example above.
 
@@ -144,12 +129,11 @@ See the example above.
 Consumer callback
 ~~~~~~~~~~~~~~~~~~~~~~
 
-The consumer's :meth:`~Consumer.callback()` method is called automatically
-on each incoming message.
-This method will:
+The consumer's :meth:`~Consumer.callback()` method is called on each incoming message.
+It will:
 
 #.  Unpack the Pub/Sub message into an :class:`~pittgoogle.types.Alert()`,
-    populating only the attributes reqested in :attr:`~CallbackSettings.unpack`.
+    populating only the attributes reqested in :attr:`~Consumer.unpack`.
 
 #.  Send the :class:`~pittgoogle.types.Alert()` through the :ref:`user callback <user callback>`.
 
@@ -161,11 +145,10 @@ This method will:
 
 .. _user callback:
 
-**\*\*User callback\*\***
+**\*\* User callback \*\***
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A :attr:`~CallbackSettings.user_callback` is a function supplied by the user that
-should:
+A :attr:`~Consumer.user_callback` is a function supplied by the user that should:
 
 #.  accept a single alert as input (:class:`pittgoogle.types.Alert`)
 
@@ -175,27 +158,29 @@ should:
 
 #.  return a :class:`pittgoogle.types.Response`
 
-Here are some important characteristics of the function:
+Here are some important characteristics:
 
 -   It can include arbitrary logic but it must be self-contained --
-    it will run in the background, and thus
+    it will run in the background and thus it
     **cannot rely on the state of the foreground thread**.
 
--   It can accept keyword arguments, but they must be supplied to the consumer before
-    opening the stream (see :attr:`~CallbackSettings.user_kwargs`).
+-   It can accept keyword arguments, but they must be supplied to the consumer through
+    :attr:`~Consumer.user_kwargs` before opening the stream.
 
--   Idealy, it should store its own results --
+-   It should store its own results --
     for example, by sending to a database or writing to a file.
-    There is an option to have the consumer store results for you,
-    but see the warning above.
+    There is an option to have the consumer save and return the results for you,
+    but this is intended for testing only.
+    See the warning above.
 
 Here is a template:
 
 .. code-block:: python
 
     def my_user_callback(alert):
-        # alert is an instance of pittgoogle.types.Alert
-        # populated according to a callback setting called unpack
+        # alert is a pittgoogle.types.Alert()
+        # populated according to the unpack parameter
+        metadata_dict = alert.metadata
         alert_dict = alert.dict
 
         try:
@@ -209,16 +194,17 @@ Here is a template:
         else:
             ack = True
 
-        return Response(ack=ack, result=None)
+        # see the pittgoogle.types.Response() docstring
+        # to understand what happens next
+        return Response(ack=ack)
 
 And here's how to use it:
 
 .. code-block:: python
 
     consumer = Consumer(
-        ConsumerSettings(
-            callback_settings=CallbackSettings(user_callback=my_user_callback),
-        )
+        user_callback=my_user_callback,
+        unpack=["dict", "metadata"],
     )
 
     consumer.stream()
@@ -231,14 +217,14 @@ By default, this will block until the stream is closed.
 ack and nack
 ~~~~~~~~~~~~~~
 
-A :class:`pittgoogle.types.Response()` (to be returned by a :ref:`user callback <user callback>`)
+A :class:`pittgoogle.types.Response()` (returned by a :ref:`user callback <user callback>`)
 contains the boolean attribute :attr:`~Response.ack`, which indicates whether the message
 should be ack'd (``ack=True``) or nack'd (``ack=False``).
 
 **ack** is short for acknowledge.
 ack should be used when the message has been processed successfully -- or at least to
 an acceptable level such that the client/user does not need to see the message again.
-Once Pub/Sub receives the ack, the message will be dropped from the subscription[*].
+The message will be dropped from the subscription[\*].
 
 **nack** is the opposite of ack.
 A nack'd message will remain in the subscription, and Pub/Sub will redeliver it to a
@@ -250,10 +236,10 @@ In Pub/Sub, the subscriber client should either ack or nack each message it rece
 The consumer's :class:`~Consumer.handle_response()` method does this automatically,
 based on the :class:`~pittgoogle.types.Response()` returned by the :ref:`user callback <user callback>`.
 
+**Kafka comparison**:
 This is a similar concept to setting the offset in an Apache Kafka topic/subscription.
 However, a major difference is that Pub/Sub messages are not ordered[\*], so one cannot
 "fast-forward" or "rewind" the stream in the same way.
-Every Pub/Sub message is delivered, processed, and ack'd or nack'd
-independently.
+Every Pub/Sub message is delivered, processed, and ack'd or nack'd independently.
 
-[\*] Unless the subscription has been explicitly configured to behave otherwise.
+[\*] True by default, but the subscription can be configured differently.
