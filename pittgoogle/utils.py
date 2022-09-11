@@ -111,6 +111,7 @@ class Cast:
         return Cast.avro_to_dict(b64decode(bytes_data))
 
     # --- Work with alert dictionaries
+    @staticmethod
     def alert_dict_to_dataframe(alert_dict: dict) -> pd.DataFrame:
         """Package a ZTF alert dictionary into a dataframe.
 
@@ -128,6 +129,7 @@ class Cast:
         df.objectId = alert_dict["objectId"]
         return df
 
+    @staticmethod
     def alert_dict_to_table(alert_dict: dict) -> Table:
         """Package a ZTF alert dictionary into an Astopy Table."""
         # collect rows for the table
@@ -143,6 +145,7 @@ class Cast:
         table.meta["comments"] = f"ZTF objectId: {alert_dict['objectId']}"
         return table
 
+    @staticmethod
     def _strip_cutouts_ztf(alert_dict: dict) -> dict:
         """Drop the cutouts from the alert dictionary.
 
@@ -158,7 +161,7 @@ class Cast:
     # dates
     @staticmethod
     def jd_to_readable_date(jd):
-        """Convert a julian date to a human readable string.
+        """Convert a Julian date to a human readable string.
 
         Parameters
         -----------
@@ -173,14 +176,14 @@ class Cast:
         return Time(jd, format="jd").strftime("%d %b %Y - %H:%M:%S")
 
 
-def init_defaults(obj):
-    """Return dictionary of default values for args of obj.__init__."""
-    params = inspect.signature(obj.__init__).parameters
-    # ClassDefaults = namedtuple(
-    #     "ClassDefaults", " ".join(name for name in params.keys())
-    # )
-    # return ClassDefaults._make(params[key].default for key in ClassDefaults._fields)
-    return dict((name, params[name].default) for name in params.keys())
+# def init_defaults(obj):
+#     """Return dictionary of default values for args of obj.__init__."""
+#     params = inspect.signature(obj.__init__).parameters
+#     # ClassDefaults = namedtuple(
+#     #     "ClassDefaults", " ".join(name for name in params.keys())
+#     # )
+#     # return ClassDefaults._make(params[key].default for key in ClassDefaults._fields)
+#     return dict((name, params[name].default) for name in params.keys())
 
 
 # --- Survey-specific

@@ -4,8 +4,6 @@
 # the rest of the docstring is in /docs/source/api/pubsub.rst
 
 
-import dataclasses
-import inspect
 import logging
 import os
 import queue
@@ -17,7 +15,7 @@ from google.cloud import pubsub_v1
 
 from .auth import Auth
 from .types import Alert, Response
-from .utils import Cast, PittGoogleProjectIds, init_defaults
+from .utils import Cast, PittGoogleProjectIds
 
 # from google.cloud.pubsub_v1.subscriber.scheduler import ThreadScheduler
 # from concurrent.futures.thread import ThreadPoolExecutor
@@ -26,7 +24,6 @@ from .utils import Cast, PittGoogleProjectIds, init_defaults
 LOGGER = logging.getLogger(__name__)
 
 
-# @dataclasses.dataclass
 @attrs.define
 class Topic:
     """Basic attributes of a Pub/Sub topic.
@@ -63,7 +60,6 @@ class Topic:
         LOGGER.info(f"Topic set to {self}")
 
 
-# @dataclasses.dataclass
 @attrs.define
 class SubscriberClient:
     """Wrapper for a `pubsub_v1.SubscriberClient`.
@@ -139,7 +135,14 @@ class SubscriberClient:
         self._client = None
 
 
-# @dataclasses.dataclass
+def _client_from_arg(value: Union[SubscriberClient, Auth]) -> SubscriberClient:
+    """Return a client. This is a helper for :class:`Subscription`."""
+    if isinstance(value, SubscriberClient):
+        return value
+    elif isinstance(value, Auth):
+        return SubscriberClient(auth=value)
+
+
 @attrs.define
 class Subscription:
     """Basic attributes of a Pub/Sub subscription plus methods to administer it.
@@ -163,7 +166,7 @@ class Subscription:
     """Name of the Pub/Sub subscription."""
     client: Union[SubscriberClient, Auth] = attrs.field(
         factory=SubscriberClient,
-        converter=_Helpers.client_from_auth,
+        converter=_client_from_arg,
         validator=attrs.validators.instance_of(SubscriberClient),
     )
     """:class:`SubscriberClient()` to manage the subscription."""
@@ -390,285 +393,252 @@ class Subscription:
             LOGGER.info(f"Deleted subscription: {self.path}")
 
 
+# @attrs.define
+# class CallbackSettings:
+#     """Settings for the :ref:`callbacks <callbacks>`.
+#
+#     Parameters
+#     ----------
+#     user_callback : callable
+#         A function, supplied by the user, that accepts a single
+#         :class:`pittgoogle.types.Alert` as
+#         its sole argument and returns a :class:`pittgoogle.types.Response`.
+#         The function is allowed to accept arbitrary keyword arguments, but their
+#         values must be passed to the consumer via the `user_kwargs` setting prior
+#         to starting the pull.
+#         See :ref:`user callback <user callback>` for more information.
+#     user_kwargs : `dict`
+#         A dictionary of key/value pairs that will be sent as kwargs to the
+#         ``user_callback`` by the consumer.
+#     unpack : iterable of `str`
+#         :class:`~pittgoogle.types.Alert` attributes that should be populated with data.
+#         This determines which data is available to the user callback.
+#     """
+#
+#     user_callback: Optional[Callable[[Alert], Response]] = None
+#     user_kwargs: Optional[Mapping] = None
+#     unpack: Iterable[str] = tuple(["dict", "metadata"])
+
+
+# @attrs.define
+# class FlowConfigs:
+#     """Stopping conditions and flow control settings for a streaming pull.
+#
+#     Parameters
+#     ----------
+#     max_results : optional, `int`
+#         Maximum number of messages to pull and process before stopping.
+#         Default = 10, use None for no limit.
+#     timeout : optional, `int`
+#         Maximum number of seconds to wait for a new message before stopping.
+#         Default = 30. Use None for no limit.
+#     max_backlog : optional, `int`
+#         Maximum number of pulled but unprocessed messages before pausing the pull.
+#         Default = min(1000, ``max_results``).
+#         This will be cleaned to satisfy ``max_backlog <= max_results``.
+#     """
+#
+#     _max_results: Optional[int] = 10
+#     _timeout: Optional[int] = 30
+#     _max_backlog: int = 1000
+#
+#     @staticmethod
+#     def _basic_clean(key, value) -> Optional[int]:
+#         """Return `value` if passes basic validity checks, else return class default.
+#
+#         Validity check: `value` must be either a positive integer or None.
+#         """
+#         default = init_defaults(FlowConfigs)[key]
+#
+#         # check for None
+#         if value is None:
+#             return value
+#
+#         # check for a positive integer
+#         else:
+#             try:
+#                 int(value)
+#                 assert value > 0
+#
+#             # value is not valid, log warning and return default
+#             except (ValueError, AssertionError):
+#                 LOGGER.warning(
+#                     (
+#                         f"Received invalid flow config {key}: {value}. "
+#                         f"Falling back to default {key}: {default}."
+#                     )
+#                 )
+#                 return default
+#
+#             else:
+#                 return int(value)
+#
+#     # max_results
+#     @property
+#     def max_results(self) -> Optional[int]:
+#         """Maximum number of messages to pull and process before stopping."""
+#         self._max_results = FlowConfigs._basic_clean("max_results", self._max_results)
+#         return self._max_results
+#
+#     @max_results.setter
+#     def max_results(self, value):
+#         self._max_results = value
+#
+#     @max_results.deleter
+#     def max_results(self):
+#         self._max_results = init_defaults(self)["max_results"]
+#
+#     # timeout
+#     @property
+#     def timeout(self) -> Optional[int]:
+#         """Maximum number of seconds to wait for a new message before stopping."""
+#         return FlowConfigs._basic_clean("timeout", self._timeout)
+#
+#     @timeout.setter
+#     def timeout(self, value):
+#         self._timeout = value
+#
+#     @timeout.deleter
+#     def timeout(self):
+#         self._timeout = init_defaults(self)["timeout"]
+#
+#     # max_backlog
+#     @property
+#     def max_backlog(self) -> int:
+#         """Maximum number of pulled but unprocessed messages before pausing the pull."""
+#         max_backlog = FlowConfigs._basic_clean("max_backlog", self._max_backlog)
+#
+#         # check specific validity conditions. upon failure, fall back to default value
+#         default = init_defaults(self)["max_backlog"]
+#
+#         # max_backlog cannot be None
+#         if max_backlog is None:
+#             LOGGER.warning(f"max_backlog cannot be None. Using the default {default}.")
+#             max_backlog = default
+#
+#         # be conservative, ensure max_backlog <= max_results
+#         try:
+#             assert max_backlog <= self.max_results
+#
+#         except AssertionError:
+#             LOGGER.debug(
+#                 (
+#                     "max_backlog > max_results. "
+#                     "This can result in an excessive number of pulled messages that "
+#                     "will never be processed. "
+#                     "Setting max_backlog = max_results."
+#                 )
+#             )
+#             max_backlog = self.max_results
+#
+#         except TypeError:
+#             # max_results is None, so accept any max_backlog
+#             pass
+#
+#         self._max_backlog = max_backlog
+#         return self._max_backlog
+#
+#     @max_backlog.setter
+#     def max_backlog(self, value):
+#         self._max_backlog = value
+#
+#     @max_backlog.deleter
+#     def max_backlog(self):
+#         self._max_backlog = init_defaults(self)["max_backlog"]
+
+
 # @dataclasses.dataclass
-@attrs.define
-class CallbackSettings:
-    """Settings for the :ref:`callbacks <callbacks>`.
-
-    Parameters
-    ----------
-    user_callback : callable
-        A function, supplied by the user, that accepts a single
-        :class:`pittgoogle.types.Alert` as
-        its sole argument and returns a :class:`pittgoogle.types.Response`.
-        The function is allowed to accept arbitrary keyword arguments, but their
-        values must be passed to the consumer via the `user_kwargs` setting prior
-        to starting the pull.
-        See :ref:`user callback <user callback>` for more information.
-    user_kwargs : `dict`
-        A dictionary of key/value pairs that will be sent as kwargs to the
-        ``user_callback`` by the consumer.
-    unpack : iterable of `str`
-        :class:`~pittgoogle.types.Alert` attributes that should be populated with data.
-        This determines which data is available to the user callback.
-    """
-
-    user_callback: Optional[Callable[[Alert], Response]] = None
-    user_kwargs: Optional[Mapping] = None
-    unpack: Iterable[str] = tuple(["dict", "metadata"])
-
-
-# @dataclasses.dataclass
-@attrs.define
-class FlowConfigs:
-    """Stopping conditions and flow control settings for a streaming pull.
-
-    Parameters
-    ----------
-    max_results : optional, `int`
-        Maximum number of messages to pull and process before stopping.
-        Default = 10, use None for no limit.
-    timeout : optional, `int`
-        Maximum number of seconds to wait for a new message before stopping.
-        Default = 30. Use None for no limit.
-    max_backlog : optional, `int`
-        Maximum number of pulled but unprocessed messages before pausing the pull.
-        Default = min(1000, ``max_results``).
-        This will be cleaned to satisfy ``max_backlog <= max_results``.
-    """
-
-    _max_results: Optional[int] = 10
-    _timeout: Optional[int] = 30
-    _max_backlog: int = 1000
-
-    @staticmethod
-    def _basic_clean(key, value) -> Optional[int]:
-        """Return `value` if passes basic validity checks, else return class default.
-
-        Validity check: `value` must be either a positive integer or None.
-        """
-        default = init_defaults(FlowConfigs)[key]
-
-        # check for None
-        if value is None:
-            return value
-
-        # check for a positive integer
-        else:
-            try:
-                int(value)
-                assert value > 0
-
-            # value is not valid, log warning and return default
-            except (ValueError, AssertionError):
-                LOGGER.warning(
-                    (
-                        f"Received invalid flow config {key}: {value}. "
-                        f"Falling back to default {key}: {default}."
-                    )
-                )
-                return default
-
-            else:
-                return int(value)
-
-    # max_results
-    @property
-    def max_results(self) -> Optional[int]:
-        """Maximum number of messages to pull and process before stopping."""
-        self._max_results = FlowConfigs._basic_clean("max_results", self._max_results)
-        return self._max_results
-
-    @max_results.setter
-    def max_results(self, value):
-        self._max_results = value
-
-    @max_results.deleter
-    def max_results(self):
-        self._max_results = init_defaults(self)["max_results"]
-
-    # timeout
-    @property
-    def timeout(self) -> Optional[int]:
-        """Maximum number of seconds to wait for a new message before stopping."""
-        return FlowConfigs._basic_clean("timeout", self._timeout)
-
-    @timeout.setter
-    def timeout(self, value):
-        self._timeout = value
-
-    @timeout.deleter
-    def timeout(self):
-        self._timeout = init_defaults(self)["timeout"]
-
-    # max_backlog
-    @property
-    def max_backlog(self) -> int:
-        """Maximum number of pulled but unprocessed messages before pausing the pull."""
-        max_backlog = FlowConfigs._basic_clean("max_backlog", self._max_backlog)
-
-        # check specific validity conditions. upon failure, fall back to default value
-        default = init_defaults(self)["max_backlog"]
-
-        # max_backlog cannot be None
-        if max_backlog is None:
-            LOGGER.warning(f"max_backlog cannot be None. Using the default {default}.")
-            max_backlog = default
-
-        # be conservative, ensure max_backlog <= max_results
-        try:
-            assert max_backlog <= self.max_results
-
-        except AssertionError:
-            LOGGER.debug(
-                (
-                    "max_backlog > max_results. "
-                    "This can result in an excessive number of pulled messages that "
-                    "will never be processed. "
-                    "Setting max_backlog = max_results."
-                )
-            )
-            max_backlog = self.max_results
-
-        except TypeError:
-            # max_results is None, so accept any max_backlog
-            pass
-
-        self._max_backlog = max_backlog
-        return self._max_backlog
-
-    @max_backlog.setter
-    def max_backlog(self, value):
-        self._max_backlog = value
-
-    @max_backlog.deleter
-    def max_backlog(self):
-        self._max_backlog = init_defaults(self)["max_backlog"]
+# class ConsumerSettings:
+#     """Settings for a :class:`Consumer`.
+#
+#     Parameters:
+#         client:
+#             Either a :class:`SubscriberClient` or the :class:`~pittgoogle.auth.Auth`
+#             or :class:`~pittgoogle.auth.AuthSettings` necessary to create one.
+#
+#         subscription:
+#             Pub/Sub subscription to be pulled.
+#
+#         flow_configs:
+#             Stopping conditions and flow control settings for the streaming pull.
+#
+#         callback_settings:
+#             Settings for the :ref:`callbacks <callbacks>`.
+#             These dictate the message delivery format, processing logic, and data
+#             returned.
+#     """
+#
+#     client: Union[SubscriberClient, Auth, AuthSettings] = AuthSettings()
+#     subscription: Union[str, Subscription] = "ztf-loop"
+#     flow_configs: FlowConfigs = FlowConfigs()
+#     callback_settings: CallbackSettings = CallbackSettings()
 
 
-@dataclasses.dataclass
-class ConsumerSettings:
-    """Settings for a :class:`Consumer`.
-
-    Parameters:
-        client:
-            Either a :class:`SubscriberClient` or the :class:`~pittgoogle.auth.Auth`
-            or :class:`~pittgoogle.auth.AuthSettings` necessary to create one.
-
-        subscription:
-            Pub/Sub subscription to be pulled.
-
-        flow_configs:
-            Stopping conditions and flow control settings for the streaming pull.
-
-        callback_settings:
-            Settings for the :ref:`callbacks <callbacks>`.
-            These dictate the message delivery format, processing logic, and data
-            returned.
-    """
-
-    client: Union[SubscriberClient, Auth, AuthSettings] = AuthSettings()
-    subscription: Union[str, Subscription] = "ztf-loop"
-    flow_configs: FlowConfigs = FlowConfigs()
-    callback_settings: CallbackSettings = CallbackSettings()
+# flow_configs : `FlowConfigs`
+#     Stopping conditions and flow control settings for the streaming pull.
+# callback_settings : `CallbackSettings`
+#     Settings for the :ref:`callbacks <callbacks>`.
+#     These dictate the message delivery format, processing logic, and data
+#     returned.
+#
+# Settings for the :ref:`callbacks <callbacks>`.
 
 
-@attrs.define
-class _Helpers:
-    @staticmethod
-    def client_from_auth(value):
-        if isinstance(value, SubscriberClient):
-            return value
-        elif isinstance(value, Auth):
-            return SubscriberClient(auth=value)
-
-    # @staticmethod
-    # def each_element_in_alert_attrs(inst, attribute, elements):
-    #     alert_attrs = attrs.asdict(Alert()).keys()
-    #     for element in elements:
-    #         if element not in alert_attrs:
-    #             raise ValueError(
-    #                 f"Only attribute names of Alert are allowed in {attribute.name}."
-    #             )
-
-    @staticmethod
-    def backlog_le_results(inst, attribute, value):
-        """Enforce max_backlog <= max_results."""
-        if attribute.name == "max_results":
-            returnval = value
-
-        if (inst.max_results is not None) and (inst.max_backlog > inst.max_results):
-            LOGGER.debug(
-                (
-                    "Setting max_backlog = max_results to prevent an excessive number "
-                    "of pulled messages that will never be processed. "
-                )
-            )
-            inst.max_backlog = inst.max_results
-
-
-@attrs.define
+@attrs.define(kw_only=True)
 class Consumer:
     """Consumer class to pull a Pub/Sub subscription and process messages.
 
-    Initialization does the following:
-
-    #.  Unpack each element of `settings` into a property of `self`.
-
-    #.  Authenticate the client by requesting credentials
-        (``self.client.auth.credentials``).
-
-    #.  Make sure the subscription exists in Pub/Sub (creating it, if necessary), and
-        that the client can connect (``self.subscription.touch()``).
+    All parameters are keyword-only.
 
     Parameters
     -----------
+    # **Connection**
     client : `SubscriberClient` or `Auth`
         Either a client or the auth information necessary to create one.
+        To use environment variables, pass no argument.
     subscription : `Subscription` or `str`
-        Pub/Sub subscription to be pulled. Note that if you pass a `Subscription`, it's
-        `client` will be replaced with this consumer's `client` attribute.
-    flow_configs : `FlowConfigs`
-        Stopping conditions and flow control settings for the streaming pull.
-    callback_settings : `CallbackSettings`
-        Settings for the :ref:`callbacks <callbacks>`.
-        These dictate the message delivery format, processing logic, and data
-        returned.
-
-    Settings for the :ref:`callbacks <callbacks>`.
-
-    Parameters
-    ----------
+        Pub/Sub subscription to be pulled.
+        Instantiation will connect to the subscription in Pub/Sub,
+        creating it if necessary.
+        (To delete, use``consumer.subscription.delete()``.)
+        If you want to create the subscription and
+        control the topic it is connected to, use a ``Subscription``.
+        Note that if you pass a fully instantiated
+        ``Subscription``, it's ``client`` will be replaced with the ``client``
+        created above.
+    **Callback**
+    user_callback : callable
+        A function to process alerts and store results.
+        It should accept a single :class:`pittgoogle.types.Alert` and
+        return a :class:`pittgoogle.types.Response`.
+        It will run in the background.
+        It is allowed to accept arbitrary keyword arguments, but they
+        must be passed via ``user_kwargs`` prior to opening the stream.
+        If no callback is passed, alerts will be pulled and counted but not stored.
+        See :ref:`user callback <user callback>`.
+    user_kwargs : `dict`
+        Keyword arguments that will be available to ``user_callback``.
+    unpack : iterable of `str`
+        Attributes of :class:`~pittgoogle.types.Alert` that should be populated.
+        This determines which data is available to ``user_callback``.
+    **Flow Configs**
     max_results : optional, `int`
         Maximum number of messages to pull and process before stopping.
-        Default = 10, use None for no limit.
+        Use None for no limit.
     timeout : optional, `int`
         Maximum number of seconds to wait for a new message before stopping.
-        Default = 30. Use None for no limit.
+        Use None for no limit.
     max_backlog : optional, `int`
-        Maximum number of pulled but unprocessed messages before pausing the pull.
-        Default = min(1000, ``max_results``).
-        This will be cleaned to satisfy ``max_backlog <= max_results``.
-    user_callback : callable
-        A function, supplied by the user, that accepts a single
-        :class:`pittgoogle.types.Alert` as
-        its sole argument and returns a :class:`pittgoogle.types.Response`.
-        The function is allowed to accept arbitrary keyword arguments, but their
-        values must be passed to the consumer via the `user_kwargs` setting prior
-        to starting the pull.
-        See :ref:`user callback <user callback>` for more information.
-    user_kwargs : `dict`
-        A dictionary of key/value pairs that will be sent as kwargs to the
-        ``user_callback`` by the consumer.
-    unpack : iterable of `str`
-        :class:`~pittgoogle.types.Alert` attributes that should be populated with data.
-        This determines which data is available to the user callback.
+        Maximum number of pulled but unprocessed messages to hold
+        before pausing the streaming pull.
+        This will be coerced to satisfy ``max_backlog <= max_results``.
     """
 
     # client: SubscriberClient  # = attrs.field()
     # subscription: Subscription  # = attrs.field(factory=Subscription)
     # flow_configs: FlowConfigs  # = attrs.field(factory=FlowConfigs)
     # callback_settings: CallbackSettings  # = attrs.field(factory=CallbackSettings)
+    # Connection
     client: SubscriberClient = attrs.field(
         # default=attrs.Factory(SubscriberClient, takes_self=False),
         factory=SubscriberClient,
@@ -676,21 +646,35 @@ class Consumer:
     )
     """:class:`SubscriberClient` for the consumer."""
     subscription: Subscription = attrs.field(
+        default="ztf-loop",
         # default=attrs.Factory(Subscription, takes_self=False),
-        factory=Subscription,
+        # factory=Subscription,
         converter=Subscription,
     )
     """:class:`Subscription` that the consumer will pull."""
-    flow_configs: FlowConfigs = attrs.field(
-        # default=attrs.Factory(FlowConfigs, takes_self=False)
-        factory=FlowConfigs,
-    )
-    """:class:`FlowConfigs`"""
+    # flow_configs: FlowConfigs = attrs.field(
+    #     # default=attrs.Factory(FlowConfigs, takes_self=False)
+    #     factory=FlowConfigs,
+    # )
+    # """:class:`FlowConfigs`"""
     # callback_settings: CallbackSettings = attrs.field(
     #     # default=attrs.Factory(CallbackSettings, takes_self=False)
     #     factory=CallbackSettings,
     # )
-    # """:class:`CallbackSettings`"""
+    # Flow configs
+    max_results: int = attrs.field(
+        default=10,
+        validator=attrs.validators.optional(attrs.validators.gt(0)),
+    )
+    """Maximum number of messages to pull and process before stopping."""
+    timeout: int = attrs.field(
+        default=30, validator=attrs.validators.optional(attrs.validators.gt(0))
+    )
+    """Maximum number of seconds to wait for a new message before stopping."""
+    # coerced to max_backlog <= max_results by stream()
+    max_backlog: int = attrs.field(default=1000, validator=attrs.validators.gt(0))
+    """Maximum number of pulled but unprocessed messages before pausing the pull."""
+    # Callback
     user_callback: Optional[Callable[[Alert], Response]] = attrs.field(
         default=None, validator=attrs.validators.optional(attrs.validators.is_callable)
     )
@@ -699,101 +683,108 @@ class Consumer:
     """Keyword arguments for `user_callback`."""
     unpack: Iterable[str] = attrs.field(
         default=["dict", "metadata"],
-        # validator=_Helpers.each_element_in_alert_attrs,
+        # each element must be an attribute of Alert
         validator=attrs.validators.deep_iterable(
             attrs.validators.in_(attrs.asdict(Alert()).keys())
         ),
     )
-    """:class:`~pittgoogle.types.Alert` attributes that will be populated with data."""
-    max_results: int = attrs.field(
-        default=10,
-        validator=attrs.validators.optional(attrs.validators.gt(0)),
-        on_setattr=_Helpers.backlog_le_results,
+    """Attributes of :class:`~pittgoogle.types.Alert` to be populated and available."""
+    # init=False
+    results: list = attrs.field(factory=list, init=False)
+    """Container storing values returned from ``user callback``."""
+    _proceed: bool = attrs.field(
+        default=None,
+        init=False,
+        converter=attrs.converters.optional(attrs.converters.to_bool),
     )
-    """Maximum number of messages to pull and process before stopping."""
-    timeout: int = attrs.field(
-        default=30, validator=attrs.validators.optional(attrs.validators.gt(0))
+    """Whether to proceed with the pull even if no user callback was supplied."""
+    _queue: queue.Queue = attrs.field(
+        factory=queue.Queue,
+        init=False,
+        on_setattr=attrs.validators.instance_of(queue.Queue),
     )
-    """Maximum number of seconds to wait for a new message before stopping."""
-    max_backlog: int = attrs.field(default=1000, on_setattr=_Helpers.backlog_le_results)
-    """Maximum number of pulled but unprocessed messages before pausing the pull."""
+    """Queue to communicate between threads and enforce stopping conditions."""
+    _block: bool = attrs.field(
+        default=True,
+        init=False,
+    )
 
     def __attrs_post_init__(self):
-        """Force the `subscription` to use `self.client`."""
+        LOGGER.debug("Replacing the subscription's client with the consumer's client.")
         self.subscription.client = self.client
 
     # custom init so that we can accept **kwargs
-    def __init__(
-        self,
-        **kwargs,
-    ):
-        def _kwargs_then_attrs(kwargs, obj):
-            init_varnames = inspect.signature(obj.__init__).parameters.keys()
-            # field_names = [field.name for field in dataclasses.fields(obj)]
-            return dict((k, kwargs.get(k, getattr(obj, k))) for k in init_varnames)
+    # def __init__(
+    #     self,
+    #     **kwargs,
+    # ):
+    #     def _kwargs_then_attrs(kwargs, obj):
+    #         init_varnames = inspect.signature(obj.__init__).parameters.keys()
+    #         # field_names = [field.name for field in dataclasses.fields(obj)]
+    #         return dict((k, kwargs.get(k, getattr(obj, k))) for k in init_varnames)
+    #
+    #     # create client
+    #     myattrs = dict(
+    #         client=SubscriberClient(
+    #             **_kwargs_then_attrs(kwargs, kwargs.get("client", SubscriberClient()))
+    #         )
+    #     )
+    #
+    #     # the subscription should use this same client
+    #     kwargs["client"] = attrs["client"]
+    #
+    #     # create other attributes
+    #     for attr, factory in (
+    #         ("subscription", Subscription),
+    #         ("flow_configs", FlowConfigs),
+    #         ("callback_settings", CallbackSettings),
+    #     ):
+    #         myattrs[attr] = factory(
+    #             **_kwargs_then_attrs(kwargs, kwargs.get(attr, factory()))
+    #         )
+    # subscription = Subscription(
+    #     **_kwargs_then_attrs(kwargs, kwargs.get("subscription", Subscription()))
+    # )
+    # flow_configs = FlowConfigs(
+    #     **_kwargs_then_attrs(kwargs, kwargs.get("flow_configs", FlowConfigs()))
+    # )
+    # callback_settings = CallbackSettings(
+    #     **_kwargs_then_attrs(
+    #         kwargs, kwargs.get("callback_settings", CallbackSettings())
+    #     )
+    # )
+    # self.__attrs_init__(**attrs)
+    # subscription = Subscription(kwargs.pop("subscription", None))
+    # flow_configs = kwargs.pop("flow_configs", FlowConfigs())
+    # callback_settings = kwargs.pop("callback_settings", CallbackSettings())
+    #
+    # self.__attrs_init__(
+    #     client=client,
+    #     subscription=Subscription(
+    #         **_kwargs_then_attrs(
+    #             dict(**kwargs, client=client), Subscription(subscription)
+    #         )
+    #     ),
+    #     flow_configs=FlowConfigs(**_kwargs_then_attrs(kwargs, flow_configs)),
+    #     callback_settings=CallbackSettings(
+    #         **_kwargs_then_attrs(kwargs, callback_settings)
+    #     ),
+    # )
 
-        # create client
-        myattrs = dict(
-            client=SubscriberClient(
-                **_kwargs_then_attrs(kwargs, kwargs.get("client", SubscriberClient()))
-            )
-        )
-
-        # the subscription should use this same client
-        kwargs["client"] = attrs["client"]
-
-        # create other attributes
-        for attr, factory in (
-            ("subscription", Subscription),
-            ("flow_configs", FlowConfigs),
-            ("callback_settings", CallbackSettings),
-        ):
-            myattrs[attr] = factory(
-                **_kwargs_then_attrs(kwargs, kwargs.get(attr, factory()))
-            )
-        # subscription = Subscription(
-        #     **_kwargs_then_attrs(kwargs, kwargs.get("subscription", Subscription()))
-        # )
-        # flow_configs = FlowConfigs(
-        #     **_kwargs_then_attrs(kwargs, kwargs.get("flow_configs", FlowConfigs()))
-        # )
-        # callback_settings = CallbackSettings(
-        #     **_kwargs_then_attrs(
-        #         kwargs, kwargs.get("callback_settings", CallbackSettings())
-        #     )
-        # )
-        self.__attrs_init__(**attrs)
-        # subscription = Subscription(kwargs.pop("subscription", None))
-        # flow_configs = kwargs.pop("flow_configs", FlowConfigs())
-        # callback_settings = kwargs.pop("callback_settings", CallbackSettings())
-        #
-        # self.__attrs_init__(
-        #     client=client,
-        #     subscription=Subscription(
-        #         **_kwargs_then_attrs(
-        #             dict(**kwargs, client=client), Subscription(subscription)
-        #         )
-        #     ),
-        #     flow_configs=FlowConfigs(**_kwargs_then_attrs(kwargs, flow_configs)),
-        #     callback_settings=CallbackSettings(
-        #         **_kwargs_then_attrs(kwargs, callback_settings)
-        #     ),
-        # )
-
-        # # authenticate and store credentials
-        # self.client.auth.credentials
-        # self.projectid = self.client.auth.GOOGLE_CLOUD_PROJECT
-        #
-        # # check connection to the subscription
-        # if self.subscription._client is None:
-        #     self.subscription._client = self._client
-        # self.subscription.touch()
-        #
-        # # list of results of user processing. stored and returned upon user request
-        # self._results = None
-        #
-        # # instantiate a queue to communicate with the background thread
-        # self.__queue = None
+    # # authenticate and store credentials
+    # self.client.auth.credentials
+    # self.projectid = self.client.auth.GOOGLE_CLOUD_PROJECT
+    #
+    # # check connection to the subscription
+    # if self.subscription._client is None:
+    #     self.subscription._client = self._client
+    # self.subscription.touch()
+    #
+    # # list of results of user processing. stored and returned upon user request
+    # self._results = None
+    #
+    # # instantiate a queue to communicate with the background thread
+    # self.__queue = None
 
     # subscriber client
     # @property
@@ -855,60 +846,71 @@ class Consumer:
     # self._subscription = None
 
     # stream
-    @property
-    def _queue(self) -> queue.Queue:
-        """Queue to communicate between threads and enforce stopping conditions."""
-        if self.__queue is None:
-            self.__queue = queue.Queue()
-        return self.__queue
+    # @property
+    # def _queue(self) -> queue.Queue:
+    #     """Queue to communicate between threads and enforce stopping conditions."""
+    #     if self.__queue is None:
+    #         self.__queue = queue.Queue()
+    #     return self.__queue
 
     def stream(self, block: bool = True) -> Optional[List]:
-        """Execute a streaming pull and process messages through the :ref:`callbacks <callbacks>`.
+        """Open the stream and process messages through the :ref:`callbacks <callbacks>`.
 
-        This method starts a streaming pull in a background thread.
-        Subsequent behavior is determined by the `block` kwarg.
+        This starts a streaming pull on the subscription, in a background thread.
+        To close the stream before stopping conditions are met,
+        use `Ctrl-C` or :meth:`~Consumer.stop()` as described below.
 
-        Args:
-            block:
-                Whether to block the foreground thread during the pull.
+        :param block: Whether to block the foreground thread while the stream is open.
+            If True (default), the consumer manages the flow of messages using a
+            `Queue` and enforces the stopping conditions
+            (``max_messages``, ``timeout``).
+            Use `Ctrl-C` at any time to close the stream and unblock the terminal.
 
-                If True (default), the consumer manages the flow of messages and
-                enforces the stopping conditions set in the
-                :attr:`~ConsumerSettings.flow_configs` attribute.
+            If False, returns immediately after opening the stream.
+            Use this with caution.
+            The pull will continue in the background, but the consumer will not
+            enforce the stopping conditions -- thus it can run indefinitely.
+            Stop it manually with :meth:`~Consumer.stop()`.
 
-                If False, this method returns immediately after opening the stream.
-                Use this option with caution.
-                The pull will continue in the background, but the consumer will not
-                automatically control the flow (e.g., it will not enforce the stopping
-                conditions).
-                Thus the pull can run in the background indefinitely.
-                You can stop it manually by calling :meth:`Consumer().stop()`.
+            If this (block=False) is the desired behavior,
+            consider calling the Pub/Sub API directly.
+            You will have more control over the pull, including the option
+            to parallelize.
+            The command is
+            `google.cloud.pubsub_v1.subscriber.client.Client.subscribe() <https://googleapis.dev/python/pubsub/latest/subscriber/api/client.html#google.cloud.pubsub_v1.subscriber.client.Client.subscribe>`__.
+            You can call it using the consumer's underlying Pub/Sub ``Client``:
 
-                If block=False gives the desired behavior,
-                consider opening the stream by calling the Pub/Sub API directly.
-                This will give you more control over the pull, including the option
-                to parallelize it.
-                The Pub/Sub command is documented
-                `here <https://googleapis.dev/python/pubsub/latest/subscriber/api/client.html#google.cloud.pubsub_v1.subscriber.client.Client.subscribe>`__.
-                It can be executed using the consumer's client:
+            .. code-block:: python
 
-                .. code-block:: python
+                from pittgoogle import pubsub
 
-                    from pittgoogle import pubsub
+                consumer = pubsub.Consumer()
 
-                    consumer = pubsub.Consumer(pubsub.ConsumerSettings())
-                    consumer.streaming_pull_future = consumer.client.client.subscribe()
+                # consumer.client.client is a
+                # google.cloud.pubsub_v1.subscriber.client.Client()
+                # Call its subscribe() method to start a streaming pull
+                # (include desired args/kwargs):
 
-                (also send appropriate args/kwargs).
-                Assigning the result to ``consumer.streaming_pull_future``
-                will allow you to use ``consumer.stop()``.
+                consumer.streaming_pull_future = consumer.client.client.subscribe()
+
+            Assigning the result to ``consumer.streaming_pull_future``
+            allows you to use the Pitt-Google ``consumer`` to stop the streaming pull
+            and exit the background thread gracefully:
+
+            .. code-block:: python
+
+                consumer.stop()
 
         Return:
             List of results, if any, that the user callback passed back to the consumer
             via :attr:`~pittgoogle.types.Response.result`.
         """
         # tell the callback whether the consumer is actively managing the queue
-        self.callback_settings.block = block
+        self._block = block
+        # we want to run some checks just before opening the stream
+        self._backlog_le_results()
+        if not self._confirm_no_user_callback():
+            return
 
         # multi-threading
         # Google API has a thread scheduler that can run multiple background threads
@@ -918,55 +920,17 @@ class Consumer:
 
         # open a streaming-pull connection to the subscription
         # and process incoming messages through the callback, in a background thread
-        LOGGER.info(
-            (
-                f"Starting a streaming pull on the subscription: {self.subscription}"
-                f"using flow_configs: {self.flow_configs} "
-                f"and callback_settings: {self.callback_settings}"
-            )
-        )
-        self.streaming_pull_future = self.client.client.subscribe(
-            self.subscription.path,
-            self.callback,
-            flow_control=pubsub_v1.types.FlowControl(
-                max_messages=self.flow_configs.max_backlog
-            ),
-            # scheduler=self.scheduler,
-            # await_callbacks_on_shutdown=True,
-        )
+        LOGGER.info(f"Opening a streaming pull on subscription: {self.subscription}")
+        self._open_stream()
 
-        if not block:
+        if not self._block:
+            LOGGER.info(
+                "The stream is open in the background. Use consumer.stop() to close it."
+            )
             return
 
         try:
-            # Use the queue to count the processed messages and
-            # stop when we hit a max_results or timeout stopping condition.
-            total_count = 0
-            while True:
-                try:
-                    total_count += self._queue.get(
-                        block=True, timeout=self.flow_configs.timeout
-                    )
-
-                except queue.Empty:
-                    LOGGER.info(
-                        "Timeout stopping condition reached. Stopping the stream."
-                    )
-                    break
-
-                else:
-                    self._queue.task_done()
-
-                    if (
-                        self.flow_configs.max_results & total_count
-                        >= self.flow_configs.max_results
-                    ):
-                        LOGGER.info(
-                            "Max results stopping condition reached. "
-                            "Stopping the stream."
-                        )
-                        break
-
+            total_count = self._manage_flow()
             self.stop()
 
         # We must catch all errors so we can
@@ -989,44 +953,94 @@ class Consumer:
         if len(self.results) > 0:
             return self.results
 
+    def _backlog_le_results(self) -> None:
+        """Enforce max_backlog <= max_results."""
+        if (self.max_results is not None) and (self.max_backlog > self.max_results):
+            LOGGER.debug(
+                (
+                    "Setting max_backlog = max_results to prevent an excessive number "
+                    "of pulled messages that will never be processed. "
+                )
+            )
+            self.max_backlog = self.max_results
+
+    def _confirm_no_user_callback(self) -> bool:
+        """Make the user confirm in order to proceed without a user callback."""
+        if self.user_callback is None:
+            self._proceed = input(
+                (
+                    "Warning: No user_callback supplied. "
+                    "Messages will be acknowledged to Pub/Sub "
+                    "but not stored locally -- thus they will be lost. "
+                    "\n\nDo you want to proceed anyway? (yes/no)\n\n"
+                    "If you're not sure what to do, exit (using 'no'), "
+                    "then try using the consumer's static method `request_to_collect` "
+                    "as the user callback (http://pittgoogle-client.rtfd.io)."
+                    "\n\n(yes/no):  "
+                )
+            )
+        else:
+            self._proceed = True
+
+        return self._proceed
+
+    def _open_stream(self) -> None:
+        self.streaming_pull_future = self.client.client.subscribe(
+            self.subscription.path,
+            self.callback,
+            flow_control=pubsub_v1.types.FlowControl(max_messages=self.max_backlog),
+            # scheduler=self.scheduler,
+            # await_callbacks_on_shutdown=True,
+        )
+
+    def _manage_flow(self) -> int:
+        """Control the flow, return when stopping conditions are met."""
+        total_count = 0
+        while True:
+            try:
+                total_count += self._queue.get(block=True, timeout=self.timeout)
+
+            except queue.Empty:
+                LOGGER.info("Timeout stopping condition reached.")
+                break
+
+            else:
+                self._queue.task_done()
+
+                if (self.max_results) & (total_count >= self.max_results):
+                    LOGGER.info("Max results stopping condition reached.")
+                    break
+
+        return total_count
+
     def callback(self, message: pubsub_v1.types.PubsubMessage) -> None:
-        """Unpack the message, run the :attr:`~CallbackSettings.user_callback` and handle the response."""
-        # Unpack the message, saving what's been requested
+        """Unpack the message, run the :attr:`~Consumer.user_callback` and handle the response."""
+        # unpack, saving what's been requested
         try:
             alert = self._unpack_msg(message)  # Alert
 
-        # catch any remaining error. log, nack, and return.
+        # catch any remaining error.
+        # log, nack, and return.
         except Exception as e:
-            LOGGER.debug(
-                (
-                    "Error unpacking message; it will not be processed or acknowledged."
-                    f"\nError: {e}\nMessage: {message}"
-                )
+            LOGGER.warning(
+                f"Error unpacking. Nack'ing the message. Error: {e} Message: {message}"
             )
             message.nack()  # nack so message does not leave subscription
             return
 
-        # Run the user_callback
-        if self.callback_settings.user_callback is not None:
-            response = self._execute_user_callback(alert)
+        # user_callback
+        if self.user_callback is not None:
+            response = self._execute_user_callback(alert, **self.user_kwargs)
 
-        # No user_callback was supplied. respond with success but log a warning
         else:
-            LOGGER.warning(
-                (
-                    "No user_callback was supplied. The message will be acknowledged "
-                    "but not stored, and thus it will be lost. "
-                    "If you're not sure what to do, try using the "
-                    "Consumer.collect_alert method (http://pittgoogle-client.rtfd.io)."
-                )
-            )
+            # user has requested to proceed anyway
             response = Response(ack=True, result=None)
 
-        # take action on the response. ack and store as requested.
+        # ack and store as requested
         self.handle_response(response, message)
 
     def _unpack_msg(self, message: pubsub_v1.types.PubsubMessage) -> Alert:
-        """Return an :class:`~pittgoogle.types.Alert` with data requested in :attr:`~CallbackSettings.unpack."""
+        """Return an :class:`~pittgoogle.types.Alert` with data requested in :attr:`~Consumer.unpack."""
 
         def _my_bytes(message):
             """Return the message payload without changing the format."""
@@ -1058,7 +1072,7 @@ class Consumer:
         LOGGER.debug(
             (
                 "Unpacking the message into a pittgoogle.types.Alert. "
-                f"Populating attributes {self.callback_settings.unpack}"
+                f"Populating attributes as requested in unpack: {self.unpack}"
             )
         )
 
@@ -1070,10 +1084,10 @@ class Consumer:
         )
 
         def _my_unpack(self, key, message):
-            """Unpack the data if `key` in `self.callback_settings.unpack`."""
-            if key in self.callback_settings.unpack:
-                if key == "metadata":
-                    print(unpack_fncs.get(key)(message))
+            """Unpack the data if ``key`` in ``self.unpack``."""
+            if key in self.unpack:
+                # if key == "metadata":
+                #     print(unpack_fncs.get(key)(message))
                 return unpack_fncs.get(key)(message)
             else:
                 LOGGER.debug(f"Alert.{key} not requested. Populating with None.")
@@ -1081,13 +1095,13 @@ class Consumer:
         return Alert._make(_my_unpack(self, k, message) for k in Alert._fields)
 
     def _execute_user_callback(self, alert: Alert) -> Response:
-        """Try to execute the :attr:`~CallbackSettings.user_callback`, return an appropriate Response."""
-        kwargs = self.callback_settings.user_kwargs
+        """Try to execute the :attr:`~Consumer.user_callback`, return an appropriate Response."""
+        kwargs = self.user_kwargs
         if kwargs is None:
             kwargs = dict()
 
         try:
-            response = self.callback_settings.user_callback(alert, **kwargs)  # Response
+            response = self.user_callback(alert, **kwargs)  # Response
 
         # catch any remaining error, log it, and nack the msg
         except Exception as e:
@@ -1101,34 +1115,36 @@ class Consumer:
             # if user requested to nack, log it
             if not response.ack:
                 LOGGER.debug(
-                    (
-                        "user_callback requested to NOT acknowledge the message."
-                        f"\nAlert: {alert}"
-                    )
+                    f"user_callback requested to nack the message. Alert: {alert}"
                 )
 
         return response
 
     @staticmethod
-    def collect_alert(alert: Alert) -> Response:
+    def request_to_collect(alert: Alert) -> Response:
         """:ref:`user callback <user callback>` example that simply requests that the alert be collected.
 
-        Returns:
-            ``Response(ack=True, result=alert)``
+        Parameters
+        ----------
+        alert : `Alert`
+            An `Alert()` with attributes populated according to the request in
+            :attr:`unpack`
+        Returns
+        ---------
+        response : `Response`
+            ``response = Response(ack=True, result=alert)``
 
-        Use this as the :attr:`~CallbackSettings.user_callback` if you want the alerts
+        Use this as the :attr:`~Consumer.user_callback` if you want the alerts
         stored in the consumer's :attr:`~Consumer.results` attribute for later access.
-
-        consumer.callback_settings.user_callback = Consumer.collect_alert
         """
         return Response(ack=True, result=alert)
 
-    @property
-    def results(self):
-        """Container to store results returned from a :ref:`user callback <user callback>`."""
-        if self._results is None:
-            self._results = list()
-        return self._results
+    # @property
+    # def results(self) -> list:
+    #     """Container storing values returned from ``user callback``."""
+    #     if self._results is None:
+    #         self._results = list()
+    #     return self._results
 
     def handle_response(
         self, response: Response, message: pubsub_v1.types.PubsubMessage
@@ -1158,9 +1174,9 @@ class Consumer:
             )
 
         # Communicate with the main thread
-        if self.callback_settings.block:
+        if self._block:
             self._queue.put(count)
-            if self.flow_configs.max_results is not None:
+            if self.max_results is not None:
                 # block until main thread acknowledges so we don't ack msgs that get lost
                 self._queue.join()  # single background thread => one-in-one-out
 
@@ -1174,5 +1190,6 @@ class Consumer:
 
     def stop(self) -> None:
         """Shutdown the streaming pull and exit the background thread gracefully."""
+        LOGGER.info("Closing the stream.")
         self.streaming_pull_future.cancel()  # Trigger the shutdown.
         self.streaming_pull_future.result()  # Block until the shutdown is complete.
