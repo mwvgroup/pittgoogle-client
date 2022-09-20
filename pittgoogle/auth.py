@@ -22,48 +22,9 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger(__name__)
 
 
-# @attrs.define
-# class AuthSettings:
-#     """Settings for authentication to Google Cloud.
-#
-#     Missing attributes will be obtained from an environment variable of the same name,
-#     if it exists.
-#
-#     GOOGLE_CLOUD_PROJECT:
-#         Project ID of the Google Cloud project to connect to.
-#
-#     GOOGLE_APPLICATION_CREDENTIALS:
-#         Path to a keyfile containing service account credentials.
-#         Either this or both `OAUTH_CLIENT_*` settings are required for successful
-#         authentication using `Auth`.
-#
-#     OAUTH_CLIENT_ID:
-#         Client ID for an OAuth2 connection.
-#         Either this and `OAUTH_CLIENT_SECRET`, or the `GOOGLE_APPLICATION_CREDENTIALS`
-#         setting, are required for successful authentication using `Auth`.
-#
-#     OAUTH_CLIENT_SECRET:
-#         Client secret for an OAuth2 connection.
-#         Either this and `OAUTH_CLIENT_ID`, or the `GOOGLE_APPLICATION_CREDENTIALS`
-#         setting, are required for successful authentication using `Auth`.
-#     """
-#
-#     GOOGLE_CLOUD_PROJECT = attrs.field(
-#         factory=lambda: os.getenv("GOOGLE_CLOUD_PROJECT", None)
-#     )
-#     GOOGLE_APPLICATION_CREDENTIALS = attrs.field(
-#         factory=lambda: os.getenv("GOOGLE_APPLICATION_CREDENTIALS", None)
-#     )
-#     OAUTH_CLIENT_ID = attrs.field(factory=lambda: os.getenv("OAUTH_CLIENT_ID", None))
-#     OAUTH_CLIENT_SECRET = attrs.field(
-#         factory=lambda: os.getenv("OAUTH_CLIENT_SECRET", None)
-#     )
-#
-
-# @dataclass
 @attrs.define
 class Auth:
-    """Credentials and/or OAuth session for authentication to a Google Cloud project.
+    """Credentials for authentication to a Google Cloud project.
 
     Missing parameters will be obtained from an environment variable of the same name,
     if it exists.
@@ -87,23 +48,6 @@ class Auth:
     are required for successful authentication using `Auth`.
     """
 
-    # Parameters
-    # ------------
-    # GOOGLE_CLOUD_PROJECT : optional, `str`
-    #     Project ID of the Google Cloud project to connect to.
-    # GOOGLE_APPLICATION_CREDENTIALS : optional, `str`
-    #     Path to a keyfile containing service account credentials.
-    #     Either this or both `OAUTH_CLIENT_*` settings are required for successful
-    #     authentication using `Auth`.
-    # OAUTH_CLIENT_ID : optional, `str`
-    #     Client ID for an OAuth2 connection.
-    #     Either this and `OAUTH_CLIENT_SECRET`, or the `GOOGLE_APPLICATION_CREDENTIALS`
-    #     setting, are required for successful authentication using `Auth`.
-    # OAUTH_CLIENT_SECRET : optional, `str`
-    #     Client secret for an OAuth2 connection.
-    #     Either this and `OAUTH_CLIENT_ID`, or the `GOOGLE_APPLICATION_CREDENTIALS`
-    #     setting, are required for successful authentication using `Auth`.
-
     GOOGLE_CLOUD_PROJECT = attrs.field(
         factory=lambda: os.getenv("GOOGLE_CLOUD_PROJECT", None)
     )
@@ -117,44 +61,6 @@ class Auth:
     _credentials = attrs.field(default=None, init=False)
     _oauth2 = attrs.field(default=None, init=False)
 
-    # def __init__(self, settings: Union[AuthSettings, "Auth", None] = None, **kwargs):
-    #     """`kwargs` can include any individual attribute of `AuthSettings`.
-    #
-    #     Order of precedence is: kwargs, settings, environment variables.
-    #
-    #     Sending no arguments will load a default `AuthSettings()`.
-    #
-    #     Passing an `Auth()` instance as the only argument is idempotent.
-    #
-    #     Initiallization does not load credentials.
-    #     To do that, call the `credentials` or `session` attribute explicitly.
-    #     """
-    #     # initialization should be idempotent. unpack settings
-    #     if isinstance(settings, Auth):
-    #
-    #         # for key, val in settings.__dict__.items():
-    #         #     setattr(self, key, val)
-    #
-    #     else:
-    #         # get defaults
-    #         env_settings = AuthSettings()
-    #         if settings is None:
-    #             settings = env_settings
-    #
-    #         # look for attribute in order of precedence. then set it
-    #         for field in attrs.fields(AuthSettings):
-    #             key = field.name
-    #             val = kwargs.get(key, None)
-    #             if val is None:
-    #                 # try settings, fallback to env_settings
-    #                 val = getattr(settings, key, getattr(env_settings, key, None))
-    #             setattr(self, key, val)
-    #
-    #     # initialize credentials but don't make a request for them
-    #     # these may not be None if settings is an Auth() instance
-    #     self._credentials = getattr(self, "_credentials", None)
-    #     self._oauth2 = getattr(self, "_oauth2", None)
-    #
     # credentials
     @property
     def credentials(
@@ -223,10 +129,7 @@ class Auth:
                 )
 
         LOGGER.info(
-            (
-                f"Authenticated to Google Cloud project {self.GOOGLE_CLOUD_PROJECT} with "
-                f"credentials {credentials}."
-            )
+            f"Authenticated to Google Cloud project {self.GOOGLE_CLOUD_PROJECT}"
         )
 
         return credentials
@@ -296,10 +199,7 @@ class Auth:
             client_secret=client_secret,
         )
         LOGGER.info(
-            (
-                f"Authenticated to Google Cloud project {self.GOOGLE_CLOUD_PROJECT} with "
-                f"OAuth2Session {oauth2}."
-            )
+            f"Authenticated to Google Cloud project {self.GOOGLE_CLOUD_PROJECT}"
         )
 
         return oauth2

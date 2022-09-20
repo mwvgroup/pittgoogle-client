@@ -12,9 +12,9 @@ from google.cloud import bigquery
 import pandas as pd
 from tabulate import tabulate
 
-from .utils import PittGoogleProjectIds
+from .utils import ProjectIds
 
-pgb_project_id = PittGoogleProjectIds.production
+pgb_project_id = ProjectIds.pittgoogle
 
 # --- BigQuery Client
 user_bq_client, user_project_id = None, None  # module's global Client, related id

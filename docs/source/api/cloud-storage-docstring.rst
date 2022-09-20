@@ -42,7 +42,7 @@ Name some things
     local_dir = ''
 
     my_project_id = os.getenv('GOOGLE_CLOUD_PROJECT')
-    pgb_project_id = pittgoogle.utils.PittGoogleProjectIds.production
+    pgb_project_id = pittgoogle.utils.ProjectIds.pittgoogle
 
 Download files
 ~~~~~~~~~~~~~~

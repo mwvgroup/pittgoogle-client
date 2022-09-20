@@ -6,7 +6,6 @@
 
 from base64 import b64decode, b64encode
 from collections import OrderedDict
-import inspect
 from io import BytesIO
 import json
 import logging
@@ -23,15 +22,20 @@ LOGGER = logging.getLogger(__name__)
 
 # --- Other
 @attrs.define
-class PittGoogleProjectIds:
-    """Pitt-Google broker's Google Cloud project IDs."""
+class ProjectIds:
+    """Registry of Google Cloud Project IDs."""
 
-    production: ClassVar[str] = "ardent-cycling-243415"
-    """Production project."""
-    testing: ClassVar[str] = "avid-heading-329016"
-    """Testing project."""
-    billing: ClassVar[str] = "light-cycle-328823"
-    """Billing project."""
+    pittgoogle: ClassVar[str] = "ardent-cycling-243415"
+    """Pitt-Google's production project."""
+
+    pittgoogle_dev: ClassVar[str] = "avid-heading-329016"
+    """Pitt-Google's development project."""
+
+    pittgoogle_billing: ClassVar[str] = "light-cycle-328823"
+    """Pitt-Google's billing project."""
+
+    elasticc: ClassVar[str] = "elasticc-challenge"
+    """Project running a classifier for ELAsTiCC alerts and reporting to DESC."""
 
 
 class Cast:
@@ -55,8 +59,24 @@ class Cast:
             return b64encode(bytes_data).decode("utf-8")
 
     @staticmethod
-    def base64_to_dict(bytes_data):
-        """Convert base64 encoded bytes data to a dict.
+    def json_to_dict(bytes_data):
+        """Convert json serialized bytes data to a dict.
+
+        Parameters
+        -----------
+        bytes_data : `bytes`
+            Data to be converted to a dictionary.
+
+        Returns:
+        data : `dict`
+            ``bytes_data`` unpacked into a dictionary.
+        """
+        if bytes_data is not None:
+            return json.loads(bytes_data)
+
+    @staticmethod
+    def b64json_to_dict(bytes_data):
+        """Convert base64 encoded, json serialized bytes data to a dict.
 
         Parameters
         -----------
@@ -68,7 +88,7 @@ class Cast:
             ``bytes_data`` unpacked into a dictionary.
         """
         if bytes_data is not None:
-            return json.loads(b64decode(bytes_data).decode("utf-8"))
+            return Cast.json_to_dict(b64decode(bytes_data))
 
     @staticmethod
     def avro_to_dict(bytes_data):
@@ -87,6 +107,8 @@ class Cast:
         if bytes_data is not None:
             with BytesIO(bytes_data) as fin:
                 alert_dicts = [r for r in fastavro.reader(fin)]  # list with single dict
+            if len(alert_dicts) != 1:
+                LOGGER.warning(f"Expected 1 Avro record. Found {len(alert_dicts)}.")
             return alert_dicts[0]
 
     @staticmethod
@@ -103,11 +125,6 @@ class Cast:
         data : `dict`
             ``bytes_data`` unpacked into a dictionary.
         """
-        # if bytes_data is not None:
-        #     with BytesIO(b64decode(bytes_data)) as fin:
-        #         alert_dicts = [r for r in fastavro.reader(fin)]
-        # list with single dict
-        #     return alert_dicts[0]
         return Cast.avro_to_dict(b64decode(bytes_data))
 
     # --- Work with alert dictionaries

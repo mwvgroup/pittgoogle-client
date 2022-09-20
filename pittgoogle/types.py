@@ -5,39 +5,73 @@
 from typing import TYPE_CHECKING, Any, ByteString, Dict, Optional
 
 import attrs
+from utils import Cast
 
 if TYPE_CHECKING:
     from google.cloud import pubsub_v1
 
 
-@attrs.frozen(kw_only=True)
+@attrs.define(kw_only=True)
 class Alert:
     """Pitt-Google container for an alert delivered by Pub/Sub.
 
     Parameters
     ------------
     bytes : `bytes`
-        Message payload (i.e., alert packet data) in its original format --
-        Avro or JSON serialized bytes.
+        Alert packet as a byte string. It may be Avro or JSON serialized.
     dict : `dict`
-        Message payload (i.e., alert packet data) unpacked into a dictionary.
+        Alert packet as a dictionary.
     metadata : `dict`
-        The message metadata and Pitt-Google's custom attributes.
-        These include, for example, the message `publish_time` and the alert's
-        `sourceId`.
+        Pub/Sub metadata.
     msg : `google.cloud.pubsub_v1.types.PubsubMessage`
         The Pub/Sub message object,
         documented at `<https://googleapis.dev/python/pubsub/latest/types.html>`__.
     """
 
-    bytes: Optional[ByteString] = None
+    _bytes: Optional[ByteString] = None
     """Message payload in original format -- Avro or JSON serialized bytes."""
-    dict: Optional[Dict] = None
+    _dict: Optional[Dict] = None
     """Message payload unpacked into a dictionary."""
-    metadata: Optional[Dict] = None
+    _metadata: Optional[Dict] = None
     """Message metadata and Pitt-Google's custom attributes."""
     msg: Optional["pubsub_v1.types.PubsubMessage"] = None
     """Original Pub/Sub message object."""
+
+    @property
+    def bytes(self):
+        """."""
+        if self._bytes is None:
+            # add try-except when we know what we're looking for
+            self._bytes = self.msg.data
+            if self._bytes is None:
+                with open(self.path, "rb") as f:
+                    self._bytes = f.read()
+        return self._bytes
+
+    @property
+    def dict(self):
+        """."""
+        if self._dict is None:
+            # add try-except when we know what we're looking for
+            self._dict = Cast._avro_to_dict(self.bytes)
+            if self._dict is None:
+                self._dict = Cast._json_to_dict(self.bytes)
+        return self._dict
+
+    @property
+    def metadata(self):
+        """Return the message metadata and custom attributes as a dictionary."""
+        if self._metadata is None:
+            self._metadata = {
+                "message_id": self.msg.message_id,
+                "publish_time": self.msg.publish_time,
+                # ordering must be enabled on the subscription for this to be useful
+                "ordering_key": self.msg.ordering_key,
+                # flatten the dict containing our custom attributes
+                **self.msg.attributes,
+                # **dict((k, v) for k, v in self.msg.attributes.items()),
+            }
+        return self._metadata
 
 
 @attrs.frozen(kw_only=True)
@@ -73,3 +107,23 @@ class Response:
 
     ack: bool = attrs.field(default=True, converter=attrs.converters.to_bool)
     result: Any = attrs.field(default=None)
+
+    @property
+    def _count(self) -> int:
+        """Return the number of times this result should be counted towards a total.
+
+        Returns 0 if ``self.result`` is ``False``, else 1.
+        """
+        if isinstance(self.result, bool) and not self.result:  # self.result == False
+            return 0
+        return 1
+
+    @property
+    def _store(self) -> bool:
+        """Whether ``self.result`` should be stored for later processing.
+
+        Returns False if ``self._count`` == 0 or ``self.result`` is ``None``, else True.
+        """
+        if self._count == 0 or self.result is None:
+            return False
+        return True
