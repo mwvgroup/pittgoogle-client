@@ -3,13 +3,18 @@
 
 """Tools for interacting with Pitt-Google Broker data resources."""
 
-import importlib.metadata
+try:
+    from importlib import metadata
+
+except ImportError:  # for Python<3.8
+    import importlib_metadata as metadata
+
 import logging
 import os as os
 
 from . import bigquery, figures, pubsub, utils
 
-__version__ = importlib.metadata.version(__package__)
+__version__ = metadata.version(__package__)
 
 logger = logging.getLogger(__name__)
 
