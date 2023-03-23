@@ -1,6 +1,48 @@
-[build-system]
-requires = [
-    "setuptools>=42",
-    "wheel"
+[tool.poetry]
+name = "pittgoogle-client"
+repository = "https://github.com/mwvgroup/pittgoogle-client"
+version = "0.0.0"
+description = "Client utilities for the Pitt-Google astronomical alert broker."
+keywords = ["astronomy", "alert", "broker"]
+authors = ["Troy Raen"]
+license = "BSD-3-Clause"
+readme = "README.md"
+packages = [{ include = "pittgoogle" }]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Physics",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
 ]
-build-backend = "setuptools.build_meta"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+aplpy = "*"
+astropy = "*"  # required by figures.plot_stamp(), see comments there
+fastavro = "*"
+google-cloud-bigquery = "*"
+google-cloud-pubsub = ">=2.0"  # request syntax is different than in v1.x
+google-cloud-storage = "*"
+matplotlib = "<3.5"
+numpy = "*"
+pandas = "*"
+tabulate = "*"
+typing = "*"
+
+[tool.poetry.group.docs]
+optional = true
+
+[tool.poetry.group.docs.dependencies]
+docutils = "<0.17" # render lists properly
+myst-parser = "*"
+sphinx = "*"
+sphinx-copybutton = "*"
+sphinx_autodoc_typehints = "*"
+sphinx_rtd_theme = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
