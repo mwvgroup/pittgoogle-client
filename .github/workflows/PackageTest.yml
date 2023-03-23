@@ -1,4 +1,4 @@
-name: Tests
+name: Test Package
 
 on:
   workflow_dispatch:
@@ -29,5 +29,5 @@ jobs:
       - name: Run tests with coverage
         run: |
           coverage run -m unittest discover 
-          coverage report --omit="tests/*"
           coverage xml --omit="tests/*" -o report_${{ matrix.python-version }}.xml
+          coverage report --omit="tests/*"

@@ -14,7 +14,7 @@ import os as os
 
 from . import bigquery, figures, pubsub, utils
 
-__version__ = metadata.version(__package__)
+__version__ = metadata.version('pittgoogle-client')
 
 logger = logging.getLogger(__name__)
 
