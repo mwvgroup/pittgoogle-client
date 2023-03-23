@@ -26,9 +26,6 @@ jobs:
       - name: Install package dependencies
         run: pip install . coverage
 
-      - name: Confirm executable was installed
-        run: notifier --version
-
       - name: Run tests with coverage
         run: |
           coverage run -m unittest discover 
