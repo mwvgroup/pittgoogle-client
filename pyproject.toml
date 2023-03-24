@@ -35,10 +35,10 @@ optional = true
 [tool.poetry.group.docs.dependencies]
 docutils = "<0.17" # render lists properly
 myst-parser = "*"
-sphinx = "*"
-sphinx-copybutton = "*"
-sphinx_autodoc_typehints = "*"
-sphinx_rtd_theme = "*"
+sphinx = "5.3.0"
+sphinx-copybutton = "0.5.1"
+sphinx_autodoc_typehints = "1.22"
+sphinx_rtd_theme = "1.2.0"
 
 [build-system]
 requires = ["poetry-core"]
