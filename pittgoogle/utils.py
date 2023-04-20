@@ -2,9 +2,10 @@
 Pitt-Google Broker's data and services.
 """
 
-from astropy.table import Table
 from collections import OrderedDict
+
 import pandas as pd
+from astropy.table import Table
 
 
 def ztf_fid_names() -> dict:

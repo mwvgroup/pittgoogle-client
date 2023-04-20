@@ -1,20 +1,19 @@
 """The `pubsub` module facilitates access to Pitt-Google Pub/Sub streams."""
 
+import json
+import os
+from io import BytesIO
+from typing import Callable, List, Optional, Tuple, Union
+
+import pandas as pd
 from astropy.table import Table
 from fastavro import reader
 from google.cloud import pubsub_v1
-
 # note: the 'v1' refers to the underlying API, not the google.cloud.pubsub version
 from google.cloud.pubsub_v1.subscriber.futures import StreamingPullFuture
 from google.cloud.pubsub_v1.types import PubsubMessage, ReceivedMessage, Subscription
-from io import BytesIO
-import json
-import os
-import pandas as pd
-from typing import Callable, List, Optional, Tuple, Union
 
 from . import utils as pgbu
-
 
 pgb_project_id = "ardent-cycling-243415"
 

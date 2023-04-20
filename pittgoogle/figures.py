@@ -1,16 +1,17 @@
 """``figures`` contains functions for plotting alert and history data.
 """
 
-import aplpy
-from astropy.io import fits
-from astropy.time import Time
 import gzip
 import io
+from typing import Optional
+
+import aplpy
 import matplotlib as mpl
-from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
-from typing import Optional
+from astropy.io import fits
+from astropy.time import Time
+from matplotlib import pyplot as plt
 
 from . import utils as pgbu
 

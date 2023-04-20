@@ -2,13 +2,13 @@
 BigQuery databases and reading the results.
 """
 
+from typing import Generator, List, Optional, Tuple, Union
+
 import astropy
+import pandas as pd
 from astropy import coordinates as coord
 from google.cloud import bigquery
-import pandas as pd
 from tabulate import tabulate
-from typing import List, Tuple, Optional, Union, Generator
-
 
 pgb_project_id = "ardent-cycling-243415"
 
@@ -345,7 +345,7 @@ def dry_run(query: str, notify: bool = True):
     query_job = user_bq_client.query(query, job_config=job_config)
 
     if notify:
-        nbytes, TiB = query_job.total_bytes_processed, 2**40
+        nbytes, TiB = query_job.total_bytes_processed, 2 ** 40
         pTiB = nbytes / TiB * 100  # nbytes as a percent of 1 TiB
         print(f"\nQuery statement:")
         print(f'\n"{query}"\n')
