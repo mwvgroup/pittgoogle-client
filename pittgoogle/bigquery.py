@@ -22,6 +22,7 @@ def create_client(project_id: str):
     Args:
         project_id: User's Google Cloud Platform project ID
     """
+
     global user_bq_client
     global user_project_id
 
@@ -40,6 +41,7 @@ def _create_client_raise_exception_if_not_connected(project_id: str):
     """Checks that the user's client can successfully connect to our tables
     by executing a dry run query.
     """
+
     global user_bq_client
 
     query = f"SELECT candid FROM `{pgb_project_id}.ztf_alerts.salt2`"
@@ -101,6 +103,7 @@ def get_table_info(table: Union[str, list] = "all", dataset: str = "ztf_alerts")
 
         dataset: Name of BigQuery dataset that the table(s) belong to.
     """
+
     # if a bigquery Client does not exist, help the user instantiate one
     stop = _create_client_if_needed()
     if stop:  # the user has chosen to exit rather than create a client
@@ -132,8 +135,9 @@ def get_table_schema(table: str, dataset: str = "ztf_alerts") -> pd.DataFrame:
         table: Name of the BigQuery table
         dataset: Name of BigQuery dataset that the table(s) belong to.
     Returns
-        df: Column information from the BigQuery table schema.
+        Column information from the BigQuery table schema.
     """
+
     # if a bigquery Client does not exist, help the user instantiate one
     stop = _create_client_if_needed()
     if stop:  # the user has chosen to exit rather than create a client
@@ -171,8 +175,9 @@ def get_dataset_table_names(dataset: str = "ztf_alerts") -> List[str]:
         dataset: Name of the BigQuery dataset.
 
     Returns:
-        tables: List of table names in the dataset.
+        List of table names in the dataset.
     """
+
     # if a bigquery Client does not exist, help the user instantiate one
     stop = _create_client_if_needed()
     if stop:  # the user has chosen to exit rather than create a client
@@ -190,22 +195,15 @@ def get_dataset_table_names(dataset: str = "ztf_alerts") -> List[str]:
 # --- Setup to query for object histories
 def get_history_column_names() -> List[str]:
     """
-    Returns:
-        historycols: Column names appropriate for querying object histories.
+    It would be convenient to also return the column descriptions, but
+    that is more complicated, and this function will be completely
+    obsolete if we change the database structure to store only the
+    "candidate" observation and metadata.
 
-    Note: It would be convenient to also return the column descriptions, but
-         that is more complicated, and this function will be completely
-         obsolete if we change the database structure to store only the
-         "candidate" observation and metadata.
+    Returns:
+        Column names appropriate for querying object histories.
     """
-    objectcols = [
-        "objectId",
-    ]
-    flatcols = [
-        "schemavsn",
-        "publisher",
-        "candid",
-    ]
+
     dropcols = ["prv_candidates", "cutoutScience", "cutoutDifference", "cutoutTemplate"]
 
     sdf = get_table_schema("alerts")
@@ -237,6 +235,7 @@ def _split_good_bad_history_column_names(
     """Split columns list into "good" and "bad" according to whether they are
     suitable for querying an object's history.
     """
+
     badcols = list(set(columns) - set(get_history_column_names()))
     goodcols = columns.copy()
     for bc in badcols:
@@ -247,14 +246,14 @@ def _split_good_bad_history_column_names(
 def object_history_sql_statement(
     columns: List[str], objectIds: Optional[list] = None, limit: Optional[int] = None
 ) -> str:
-    """Convience function that generates the SQL string needed to
+    """Convince function that generates the SQL string needed to
     query the alerts table and aggregate data by objectId.
     When the resulting SQL query is executed, the query job will contain
     one row for each objectId, with the object's data aggregated into
     arrays (one array per column in columns) ordered by the observation date.
 
     Note: Arrays may contain duplicated observations; it is the user's
-    responsiblity to clean them.
+    responsibility to clean them.
 
     Args:
         columns: Names of columns to select from the alerts table.
@@ -264,8 +263,9 @@ def object_history_sql_statement(
         limit: Maximum number of rows to be returned.
 
     Returns:
-        query: SQL statement to query the alerts table and aggregate data by objectId.
+        SQL statement to query the alerts table and aggregate data by objectId.
     """
+
     dataset = "ztf_alerts"
     table = "alerts"
     objectcols = [
@@ -308,6 +308,7 @@ def _list_aggcols_sql_statements(columns: List[str]) -> List[str]:
     """Create a list of SQL string query segments that will aggregate
     all columns not in objectcols.
     """
+
     objectcols = [
         "objectId",
     ]
@@ -338,6 +339,7 @@ def dry_run(query: str, notify: bool = True):
     Args:
         query: SQL query statement
     """
+
     global user_project_id
     _check_client_isinstance()  # make sure we have a bigquery.client
 
@@ -393,8 +395,8 @@ def query_objects(
         dry_run: If True, `pittgoogle.bigquery.dry_run` will be called first and the
                  user will be asked to confirm before continuing.
 
-    Returns: Query results in the requested format. If `iterator` is True,
-             yields one object at a time; else all results are returned together.
+    Returns:
+        Query results in the requested format.
     """
 
     # make sure we have appropriate column names
@@ -432,10 +434,12 @@ def query_objects(
 
 def _query_objects_check_history_column_names(columns: List[str]) -> List[str]:
     """Make sure user-submitted column names are appropriate for `query_objects()`.
+
     Returns one of:
         Columns stripped of bad column names.
         Empty list if there were bad columns and the user wants to abort the query.
     """
+
     goodcols, badcols = _split_good_bad_history_column_names(columns)
 
     try:
@@ -479,6 +483,7 @@ def format_history_query_results(
     Returns:
         histories: Input query results converted to requested format
     """
+
     # make sure we have an appropriate param combination
     do_job, do_row = query_job is not None, row is not None
     good_format = format in ["pandas", "json"]
@@ -507,6 +512,7 @@ def _format_history_query_results_to_df(query_job: bigquery.job.QueryJob):
     to a DataFrame.
     Any duplicate observations will be dropped.
     """
+
     dflist = []
     for r, row in enumerate(query_job):
         # convert to DataFrame
@@ -525,6 +531,7 @@ def _format_history_row_to_df(row: Union[dict, bigquery.table.Row]):
     """Convert a single object's history from a query row to a DataFrame.
     Any duplicate observations will be dropped.
     """
+
     d = dict(row.items())
     oid, cid = d.pop("objectId"), d.pop("candid")
     df = pd.DataFrame(data=d, index=pd.Index(cid, name="candid"))
@@ -561,9 +568,10 @@ def cone_search(
         dry_run: If True, `pittgoogle.bigquery.dry_run` will be called first and the
                  user will be asked to confirm before continuing.
 
-    Returns: Query results in the requested format. If `iterator` is True,
-             returns a generator; else all results are returned together.
+    Returns:
+        Query results in the requested format.
     """
+
     # make sure we have required columns
     for c in ["jd", "ra", "dec"]:
         if c not in columns:
@@ -621,6 +629,7 @@ def _do_cone_search_iterator(
     Args:
         objects: DataFrame containing histories of multiple objectIds.
     """
+
     for df in objects:
         in_cone = object_is_in_cone(df, center, radius)
 
@@ -644,6 +653,7 @@ def _do_cone_search_all(
     Args:
         objects: DataFrame containing histories of multiple objectIds.
     """
+
     gb = objects.groupby(level="objectId")
     objects_in_cone = gb.filter(lambda df: object_is_in_cone(df, center, radius))
     if format == "json":
@@ -666,8 +676,9 @@ def object_is_in_cone(
         radius: Radius of the cone to search within.
 
     Returns:
-        in_cone: True if object is within radius of center, else False
+        True if object is within radius of center, else False
     """
+
     # get the SkyCoords of the most recent observation
     # to do: use the epoch with highest S/N instead
     obs = object.loc[object["jd"] == object["jd"].max(), :]

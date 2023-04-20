@@ -82,6 +82,7 @@ def plot_stamp(stamp, fig=None, subplot=None, **kwargs):
     """Adapted from:
     https://github.com/ZwickyTransientFacility/ztf-avro-alert/blob/master/notebooks/Filtering_alerts.ipynb
     """
+
     with gzip.open(io.BytesIO(stamp), "rb") as f:
         with fits.open(io.BytesIO(f.read())) as hdul:
             if fig is None:
@@ -102,6 +103,7 @@ def plot_cutouts(alert_dict):
     """Adapted from:
     https://github.com/ZwickyTransientFacility/ztf-avro-alert/blob/master/notebooks/Filtering_alerts.ipynb
     """
+
     # fig, axes = plt.subplots(1,3, figsize=(12,4))
     fig = plt.figure(figsize=(12, 4))
     for i, cutout in enumerate(["Science", "Template", "Difference"]):
@@ -115,6 +117,7 @@ def plot_lightcurve_cutouts(alert_dict):
     """Adapted from:
     https://github.com/ZwickyTransientFacility/ztf-avro-alert/blob/master/notebooks/Filtering_alerts.ipynb
     """
+
     fig = plt.figure(figsize=(16, 4))
     dflc = pgbu.alert_dict_to_dataframe(alert_dict)
     plot_lightcurve(dflc, ax=plt.subplot(1, 4, 1))

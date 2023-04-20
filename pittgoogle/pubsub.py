@@ -48,6 +48,7 @@ def pull(
         A list of messages. If `msg_only` is True, the messages are bytes containing
         the message data only. Otherwise the messages are the full message packets.
     """
+
     if project_id is None:
         project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
 
@@ -122,6 +123,7 @@ def streamingPull(
         an error.
         Use Control+C to stop streaming.
     """
+
     if project_id is None:
         project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
 
@@ -171,6 +173,7 @@ def publish(
     Returns:
         published message ID
     """
+
     if project_id is None:
         project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
 
@@ -208,6 +211,7 @@ def create_subscription(
     Returns:
         A Pub/Sub `Subscription` instance
     """
+
     if project_id is None:
         project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
     if subscription_name is None:
@@ -248,6 +252,7 @@ def delete_subscription(
                     GOOGLE_CLOUD_PROJECT will be used. The subscription will be
                     created in this account.
     """
+
     if project_id is None:
         project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
 
@@ -288,6 +293,7 @@ def decode_message(
         returned as a tuple where the first element is the alert packet in the
         requested format, and the second element is the value added products as a dict.
     """
+
     # decode the message
     try:
         # decode message with avro encoding
