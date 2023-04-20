@@ -56,23 +56,6 @@ jobs:
     uses: ./.github/workflows/DocumentationBuild.yml
     secrets: inherit
 
-  publish-docs:
-    name: Deploy Documentation
-    needs: [ build-docs, publish-package ]
-
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    steps:
-      - name: Setup Pages
-        uses: actions/configure-pages@v3
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v2
-
   publish-package:
     name: Publish Distribution
     needs: [ build-package, build-docs ]
@@ -100,3 +83,20 @@ jobs:
           repository_url: ${{ matrix.host }}
           user: ${{ secrets.REPO_USER }}
           password: ${{ secrets.REPO_PASSWORD }}
+
+  publish-docs:
+    name: Deploy Documentation
+    needs: [ build-docs, publish-package ]
+
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2

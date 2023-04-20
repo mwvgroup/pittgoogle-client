@@ -1,0 +1,38 @@
+name: "Build Sphinx Documentation"
+description: "Build and upload HTML documentation to artifact storage."
+
+inputs:
+  python-version:
+    description: "Python version to use when building documentation."
+    default: "3.11"
+  artifact-name:
+    description: "Artifact name to use when uploading the compiled documentation"
+    default: "github-pages"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python ${{ inputs.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        virtualenvs-create: false
+
+    - name: Install dependencies
+      shell: bash
+      run: poetry install --with docs
+
+    - name: Build Docs
+      shell: bash
+      working-directory: docs
+      run: make html SPHINXOPTS="-W"
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v1
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: docs/build/html
