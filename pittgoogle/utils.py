@@ -1,18 +1,16 @@
-#!/usr/bin/env python3
-# -*- coding: UTF-8 -*-
-
 """``utils`` contains functions that facilitate interacting with
 Pitt-Google Broker's data and services.
 """
 
-
-from astropy.table import Table
 from collections import OrderedDict
+
 import pandas as pd
+from astropy.table import Table
 
 
 def ztf_fid_names() -> dict:
     """Return a dictionary mapping the ZTF `fid` (filter ID) to the common name."""
+
     return {1: "g", 2: "r", 3: "i"}
 
 
@@ -35,7 +33,8 @@ def alert_dict_to_dataframe(alert_dict: dict) -> pd.DataFrame:
 
 
 def alert_dict_to_table(alert_dict: dict) -> Table:
-    """Package a ZTF alert dictionary into an Astopy Table."""
+    """Package a ZTF alert dictionary into an Astropy Table."""
+
     # collect rows for the table
     candidate = OrderedDict(alert_dict["candidate"])
     rows = [candidate]
@@ -58,6 +57,7 @@ def _strip_cutouts_ztf(alert_dict: dict) -> dict:
     Returns:
         `alert_data` with the cutouts (postage stamps) removed
     """
+
     cutouts = ["cutoutScience", "cutoutTemplate", "cutoutDifference"]
     alert_stripped = {k: v for k, v in alert_dict.items() if k not in cutouts}
     return alert_stripped
