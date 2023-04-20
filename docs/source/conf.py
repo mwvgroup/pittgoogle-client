@@ -6,21 +6,18 @@
 
 # -- Path setup --------------------------------------------------------------
 
+import sys
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 # -- Path setup --------------------------------------------------------------
-import os
 from pathlib import Path
-import sys
-
 
 pkg_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(pkg_root))
-with open(os.path.join(pkg_root, "VERSION.txt")) as version_file:
-    version = version_file.read().strip()
 
+from pittgoogle import __version__ as version
 
 # -- Project information -----------------------------------------------------
 

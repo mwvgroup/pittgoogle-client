@@ -3,21 +3,20 @@
 
 """Tools for interacting with Pitt-Google Broker data resources."""
 
-from . import bigquery, figures, pubsub, utils
-import os as os
-from pathlib import Path
+try:
+    from importlib import metadata
 
-# from warnings import warn as _warn
+except ImportError:  # for Python<3.8
+    import importlib_metadata as metadata
+
 import logging
+import os as os
 
+from . import bigquery, figures, pubsub, utils
+
+__version__ = metadata.version('pittgoogle-client')
 
 logger = logging.getLogger(__name__)
-
-
-pkg_root = Path(__file__).parent.parent
-with open(os.path.join(pkg_root, "VERSION.txt")) as version_file:
-    __version__ = version_file.read().strip()
-
 
 env_vars = ["GOOGLE_CLOUD_PROJECT", "GOOGLE_APPLICATION_CREDENTIALS"]
 for var in env_vars:

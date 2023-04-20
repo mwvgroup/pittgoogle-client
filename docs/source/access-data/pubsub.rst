@@ -115,8 +115,8 @@ Pull Messages
 
 The code below pulls and acknowledges messages from a subscription.
 
-Method A: Python
-~~~~~~~~~~~~~~~~
+Method A: Pull Using Python
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In Python you have the option to either
 (1) pull a fixed number of messages and then process them, or
@@ -183,8 +183,8 @@ The message object is described `here
 For more information, view the docstring and source code for
 :meth:`pittgoogle.pubsub.streamingPull`.
 
-Method B: Command line
-~~~~~~~~~~~~~~~~~~~~~~
+Method B: Pull Using The Command line
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This method returns a fixed number (maximum) of messages.
 See `gcloud pubsub subscriptions pull
@@ -212,8 +212,8 @@ Cleanup: Delete a subscription
 
 If you are done with a subscription you can delete it.
 
-Method A: Python
-~~~~~~~~~~~~~~~~
+Method A: Cleanup Using Python
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code:: python
 
@@ -225,8 +225,8 @@ Method A: Python
 For more information, view the docstring and source code for
 :meth:`pittgoogle.pubsub.delete_subscription`.
 
-Method B: Command line
-~~~~~~~~~~~~~~~~~~~~~~
+Method B: Cleanup Using The Command line
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code:: bash
 
