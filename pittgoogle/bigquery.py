@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: UTF-8 -*-
 """The ``bigquery`` module facilitates querying Pitt-Google Broker's
 BigQuery databases and reading the results.
 """

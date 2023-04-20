@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: UTF-8 -*-
-
 """The `pubsub` module facilitates access to Pitt-Google Pub/Sub streams."""
 
 from astropy.table import Table
