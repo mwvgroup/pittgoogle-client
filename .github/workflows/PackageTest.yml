@@ -35,12 +35,13 @@ jobs:
         run: |
           pip install coverage
           coverage run -m unittest discover 
-          coverage xml --omit="tests/*" -o report_${{ matrix.python-version }}.xml
+          coverage xml --omit="tests/*" -o coverage.xml
           coverage report --omit="tests/*"
 
       # Report test coverage to codacy for the python version being tested
       - name: Report partial coverage results
-        run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report --partial -l Python -r report_${{ matrix.python-version }}.xml
+        if: ${{ github.event_name != 'release' }}
+        run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report --partial -l Python -r coverage.xml
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
 
