@@ -18,7 +18,7 @@ class Alert:
     Parameters
     ------------
     bytes : `bytes`
-        Alert packet as a byte string. It may be Avro or JSON serialized.
+        Alert packet as a byte string. It may be Avro or JSON serialized depending on the topic.
     dict : `dict`
         Alert packet as a dictionary.
     metadata : `dict`
@@ -28,13 +28,13 @@ class Alert:
         documented at `<https://googleapis.dev/python/pubsub/latest/types.html>`__.
     """
 
-    _bytes: Optional[ByteString] = None
+    _bytes: Optional[ByteString] = attrs.field(default=None)
     """Message payload in original format -- Avro or JSON serialized bytes."""
-    _dict: Optional[Dict] = None
+    _dict: Optional[Dict] = attrs.field(default=None)
     """Message payload unpacked into a dictionary."""
-    _metadata: Optional[Dict] = None
+    _metadata: Optional[Dict] = attrs.field(default=None)
     """Message metadata and Pitt-Google's custom attributes."""
-    msg: Optional["pubsub_v1.types.PubsubMessage"] = None
+    msg: Optional["pubsub_v1.types.PubsubMessage"] = attrs.field(default=None)
     """Original Pub/Sub message object."""
 
     @property

@@ -10,6 +10,74 @@ Usage
     This module relies on :mod:`pittgoogle.auth` to authenticate API calls.
     The examples given below assume the use of a :ref:`service account <service account>` and :ref:`environment variables <set env vars>`.
 
+This API/module/Consumer is a thin layer on top of Google's python API for Pub/Sub: `google.cloud.pubsub_v1`.
+
+Google Pub/Sub is very similar to Apache Kafka in that they both make it possible to operate data **streams** by facilitating message publishing \& receiving, plus all the storage \& delivery tasks that are necessary in between.
+However, Pub/Sub's fundamental design is very different than Kafka's.
+This means that anyone familiar with Kafka can easily understand the basic workflow of Pub/Sub, but may be surprised and/or confused by some of its implementation details.
+
+It is important to understand the following about Google Pub/Sub:
+
+**Topics and subscriptions are distinct entities**
+
+    -   A message can only be *published* to a *topic*, and it can only be *received* via a *subscription*.
+
+**Messages are *independent* of each other**
+
+    This is fundamental to Pub/Sub's design and its workflow.
+    This is also a major difference between Pub/Sub and Kafka, and is the underlying reason for some of the Pub/Sub client's implementation details that may be unexpected for previously-Kafka-only users.
+
+    In particular:
+    -   Messages are *tracked and treated individually* throughout their lifecycle.
+        There is no specific association between any two messages, and the fate of one does not affect the fate of another.
+    -   Messages are *not ordered*\footnote{by default. need to connect this same footnote to lots of things}.
+        In other words, nothing can be inferred about the order in which two messages were *published* based solely on the order in which they are *received*.
+
+    Two notes on *batching*:
+        -   It is possible to receive a batch of messages, but the batching is simply for transport.
+            Each message is still handled and tracked individually, and nothing can be inferred from the fact that two messages end up in the same batch.
+        -   While a batch pull can be handy when you just want to pull down a few messages and look at them, long-running python listeners (subscriber clients) should not use them.
+            Instead, they should use a "streaming" pull, whereby messages are streamed to the client individually as soon as they are available.
+            This is Google's recommendation, and it has also been my (Troy) experience that listeners using streaming pulls run more smoothly and are less error prone than those pulling batches.
+
+**The basic lifecycle of a message is as follows:**
+
+    -   A publisher client sends the message to a topic.
+    -   Pub/Sub immediately delivers a separate copy to each subscription that is attached to the topic.
+        *No other subscription will ever be able to access the message*, even if that subscription was / is attached to the same topic at an earlier / later time.
+    -   The message will remain in a given subscription until either:
+            a)  it is delivered to a subscriber client *and* the client returns an acknowledgement, or(\* by default footnote... retaining msgs after an acknowledgement is possible)
+            b)  the maximum message retention time elapses.
+                The maximum message retention time is a setting on the *subscription* (not an individual message, or a topic).
+                Both the default and the upper limit for this setting is 7 days.
+
+**Message acknowledgement**
+
+The message acknowledgement process deserves a little more explanation:
+
+-   Pub/Sub sends messages to a subscriber client on time-limited "leases".
+    -   A message is only dropped (i.e., deleted) from the subscription if and when Pub/Sub receives a positive acknowledgement of that message back from the client.
+    -   The client must acknowledge each message individually.
+    -   If the client returns a negative acknowledgement, or does not return any acknowledgement before the lease expires, Pub/Sub will release the message back into the subscription.
+        -   Pub/Sub will then re-deliver the message to a subscriber client at some arbitrary time in the future.
+
+One result of this is that there is no\footnote{default...} Pub/Sub equivalent to resetting the offset of a Kafka stream -- one cannot "rewind" a Pub/Sub stream and listen to the same series of messages again.
+
+
+**Streaming pull:**
+
+    -   always runs in a *background* thread.
+        This means that
+        -   the messages must be processed via a *callback*, and that the callback will be sent into the background thread *before* the stream is opened.
+        .. -   thus, the callback must operate as a stand-alone function.
+        -   Thus it will not have access to the main thread's environment *while* it is processing messages.
+    -   In addition, it's important to understand that:
+        1.  The callback will receive a single message as input.
+        2.  The *callback* must send an acknowledgement of the message to Pub/Sub.
+        3.  As soon as Pub/Sub receives a positive acknowledgement it will *permanently delete* the message from the subscription\footnote{by default...}.
+    -   This means that a client *cannot* collect multiple messages and then process them as a batch *before* telling Pub/Sub that it's okay to permanently delete all of those messages from the subscription.
+        -   Thus the callback itself must ensure that the message (or at least the result obtained from processing the message) is stored securely and available for later access.
+
 TL;DR
 ~~~~~~~
 

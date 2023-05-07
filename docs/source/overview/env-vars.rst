@@ -28,27 +28,22 @@ Conda can simplify this.
 The following commands will configure it to automatically set these
 variables when your environment is activated, and erase them when it is deactivated.
 
-Activate your Conda environment, then:
+Activate your Conda environment and make sure the variables
+``GOOGLE_CLOUD_PROJECT`` and ``GOOGLE_APPLICATION_CREDENTIALS`` are set.
+Then:
 
 .. code-block:: bash
 
-    # cd to the environment's directory
-    ogdir=$(pwd)
-    cd "${CONDA_PREFIX}"
+    # create the activate/deactivate files if they don't already exist
+    mkdir -p "${CONDA_PREFIX}/etc/conda/activate.d"
+    mkdir -p "${CONDA_PREFIX}/etc/conda/deactivate.d"
+    touch "${CONDA_PREFIX}/etc/conda/activate.d/env_vars.sh"
+    touch "${CONDA_PREFIX}/etc/conda/deactivate.d/env_vars.sh"
 
-    # if the activate/deactivate files don't already exist, create them
-    mkdir -p ./etc/conda/activate.d
-    mkdir -p ./etc/conda/deactivate.d
-    touch ./etc/conda/activate.d/env_vars.sh
-    touch ./etc/conda/deactivate.d/env_vars.sh
+    # store the variables to export them automatically when the environment is activated
+    echo "export GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" >> "${CONDA_PREFIX}/etc/conda/activate.d/env_vars.sh"
+    echo "export GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}" >> "${CONDA_PREFIX}/etc/conda/activate.d/env_vars.sh"
 
-    # export variables when environment is activated
-    echo "export GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}" >> ./etc/conda/activate.d/env_vars.sh
-    echo "export GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}" >> ./etc/conda/activate.d/env_vars.sh
-
-    # remove variables when environment is deactivated
-    echo "unset GOOGLE_CLOUD_PROJECT" >> ./etc/conda/deactivate.d/env_vars.sh
-    echo "unset GOOGLE_APPLICATION_CREDENTIALS" >> ./etc/conda/deactivate.d/env_vars.sh
-
-    # cd back to where you started
-    cd "${ogdir}"
+    # remove the variables automatically when the environment is deactivated
+    echo "unset GOOGLE_CLOUD_PROJECT" >> "${CONDA_PREFIX}/etc/conda/deactivate.d/env_vars.sh"
+    echo "unset GOOGLE_APPLICATION_CREDENTIALS" >> "${CONDA_PREFIX}/etc/conda/deactivate.d/env_vars.sh"

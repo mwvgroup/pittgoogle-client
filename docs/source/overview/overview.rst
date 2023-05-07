@@ -5,7 +5,8 @@
 pittgoogle-client
 ==============================================
 
-pittgoogle-client is a python library that facilitates access to astronomical alert data through the `Pitt-Google broker <https://github.com/mwvgroup/Pitt-Google-Broker>`__.
+`pittgoogle-client` is a python library that facilitates access to astronomy data that lives in Google Cloud services.
+It is being developed  the `Pitt-Google alert broker <https://github.com/mwvgroup/Pitt-Google-Broker>`__ is curated and maintained  available in Google Cloud.
 
 **Initial setup** for data access requires 2 steps:
 
