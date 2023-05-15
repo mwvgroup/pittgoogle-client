@@ -10,14 +10,20 @@ permissions:
   id-token: write
 
 jobs:
-  test-package:
-    name: Run Tests
+  run-tests:
+    name: Tests
     uses: ./.github/workflows/PackageTest.yml
     secrets: inherit
 
-  build-package:
-    name: Build Source Distribution
-    needs: test-package
+  build-docs:
+    name: Docs
+    needs: run-tests
+    uses: ./.github/workflows/DocumentationBuild.yml
+    secrets: inherit
+
+  publish-package:
+    name: Publish Distribution
+    needs: build-docs
     runs-on: ubuntu-latest
 
     steps:
@@ -35,52 +41,20 @@ jobs:
           virtualenvs-create: false
 
       # Get the new package version from the release tag
-      # Release tags are expected to start with "refs/tags/v", so the first 11 characters are stripped
+      # Git release tags are expected to start with "refs/tags/v"
       - name: Set package version
         run: |
-          tag=${{github.ref}}
-          poetry version "${tag:11}"
+          release_tag=${{github.ref}}
+          poetry version "${release_tag#refs/tags/v}"
 
       - name: Build package
         run: poetry build -v
 
-      - name: Upload distribution to artifact storage
-        uses: actions/upload-artifact@v3
-        with:
-          name: package-build
-          path: dist
-          retention-days: 7
-
-  build-docs:
-    needs: test-package
-    uses: ./.github/workflows/DocumentationBuild.yml
-    secrets: inherit
-
-  publish-package:
-    name: Publish Distribution
-    needs: [ build-package, build-docs ]
-    runs-on: ubuntu-latest
-    environment: ${{ matrix.environment }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - host: https://upload.pypi.org/legacy/
-            environment: publish-h2p
-
-    steps:
-      - name: Download distribution from artifact storage
-        uses: actions/download-artifact@v3
-        with:
-          name: package-build
-          path: dist
-
       - name: Publish package
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          verbose: true
-          repository_url: ${{ matrix.host }}
+          print-hash: true
+          repository-url: ${{ matrix.host }}
           user: ${{ secrets.REPO_USER }}
           password: ${{ secrets.REPO_PASSWORD }}
 

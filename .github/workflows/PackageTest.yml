@@ -15,42 +15,36 @@ jobs:
         python-version: [ "3.8", "3.9", "3.10", "3.11" ]
 
     steps:
-      - name: Checkout source
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
+      - name: Install poetry
+        run: |
+          pip install poetry
+          poetry env use python${{ matrix.python_version }}
 
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          virtualenvs-create: false
-
-      - name: Install package dependencies
+      - name: Install dependencies
         run: poetry install --with tests
 
       - name: Run tests with coverage
         run: |
-          pip install coverage
-          coverage run -m unittest discover 
-          coverage xml --omit="tests/*" -o coverage.xml
-          coverage report --omit="tests/*"
+          poetry run coverage run -m unittest discover 
+          poetry run coverage report --omit="tests/*"
+          poetry run coverage xml --omit="tests/*" -o coverage.xml
 
-      # Report test coverage to codacy for the python version being tested
+      # Report partial coverage results to codacy for the current python version
       - name: Report partial coverage results
-        if: ${{ github.event_name != 'release' }}
+        if: github.event_name != 'release'
         run: bash <(curl -Ls https://coverage.codacy.com/get.sh) report --partial -l Python -r coverage.xml
         env:
           CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
 
   # Tell codacy we are done reporting test coverage
   report-code-coverage:
-    name: Report Code Coverage
-    runs-on: ubuntu-latest
+    name: Report Coverage
+    if: github.event_name != 'release'
     needs: run-tests
-    if: ${{ github.event_name != 'release' }}
+    runs-on: ubuntu-latest
     steps:
       - name: Finish reporting coverage
         run: bash <(curl -Ls https://coverage.codacy.com/get.sh) final
@@ -60,10 +54,10 @@ jobs:
   # Use this job for branch protection rules
   report-test-status:
     name: Report Test Status
-    runs-on: ubuntu-latest
-    needs: run-tests
     if: always()
+    needs: run-tests
+    runs-on: ubuntu-latest
     steps:
-      - name: Report failure
+      - name: Check build status
         if: ${{ contains(needs.*.result, 'failure') }}
         run: exit 1
