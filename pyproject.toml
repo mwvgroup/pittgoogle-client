@@ -7,19 +7,19 @@ name = "pittgoogle-client"
 repository = "https://github.com/mwvgroup/pittgoogle-client"
 version = "0.0.0"
 description = "Client utilities for the Pitt-Google astronomical alert broker."
-keywords = ["astronomy", "alert", "broker"]
-authors = ["Troy Raen"]
+keywords = ["astronomy", "alert", "broker", "rubin"]
+authors = ["MWV Research Group"]
 license = "BSD-3-Clause"
 readme = "README.md"
 packages = [{ include = "pittgoogle" }]
 classifiers = [
-    "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Astronomy",
     "Topic :: Scientific/Engineering :: Physics",
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "License :: OSI Approved :: BSD License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
+    "Typing :: Typed"
 ]
 
 [tool.poetry.dependencies]
