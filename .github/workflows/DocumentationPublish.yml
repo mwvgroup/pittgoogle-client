@@ -10,12 +10,13 @@ permissions:
 
 jobs:
   build:
+    name: Build
     uses: ./.github/workflows/DocumentationBuild.yml
     secrets: inherit
 
   deploy:
     name: Deploy Documentation
-    needs: build
+    needs: [ build ]
 
     runs-on: ubuntu-latest
     environment:
