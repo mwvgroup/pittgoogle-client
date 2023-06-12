@@ -218,7 +218,7 @@ class Subscription:
         raise TypeError("A str or pittgoogle.pubsub.Subscription is required.")
 
 
-def basic_callback(self, alert: Alert) -> Response:
+def basic_callback(alert: Alert) -> Response:
     """Return a :class:`Response` indicating the message should be ack'd and counted."""
     return Response(ack=True, result=None)
 
@@ -280,7 +280,7 @@ class Consumer:
     """Maximum number of pulled but unprocessed messages before pausing the pull."""
     # Callback
     msg_callback: Callable[[Alert], Response] = attrs.field(
-        validator=attrs.validators.is_callable
+        validator=attrs.validators.is_callable()
     )
     """A :ref:`user callback <user callback>` or None."""
     callback_kwargs: Mapping = attrs.field(factory=dict)
@@ -291,6 +291,9 @@ class Consumer:
     _queue: queue.Queue = attrs.field(factory=queue.Queue, init=False)
     """Queue to communicate between threads and enforce stopping conditions."""
     _block: bool = attrs.field(default=True, init=False)
+    streaming_pull_future: pubsub_v1.subscriber.futures.StreamingPullFuture = attrs.field(
+        default=None, init=False
+    )
 
     def stream(self, block: bool = True) -> Optional[List]:
         """Open the stream and process messages through the :ref:`callbacks <callbacks>`.
@@ -357,10 +360,8 @@ class Consumer:
             self.max_backlog = self.max_results
 
     def _open_stream(self) -> None:
-        self.logger.info(
-            f"Opening a streaming pull on subscription: {self.subscription.path}"
-        )
-        self.streaming_pull_future = self.client.client.subscribe(
+        self.logger.info(f"Opening a streaming pull on subscription: {self.subscription.path}")
+        self.streaming_pull_future = self.subscription.client.subscribe(
             self.subscription.path,
             self._callback,
             flow_control=pubsub_v1.types.FlowControl(max_messages=self.max_backlog),
