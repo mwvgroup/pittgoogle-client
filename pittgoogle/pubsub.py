@@ -45,27 +45,23 @@ Stream block param
         consumer.stop()
 """
 # the rest of the docstring is in /docs/source/api/pubsub.rst
-
-
 import logging
 import queue
+from concurrent.futures import ThreadPoolExecutor
+from time import sleep
 from typing import Callable, List, Mapping, Optional, Union
 
-import attrs
+from attrs import define, field, validators
 from google.api_core.exceptions import NotFound
 from google.cloud import pubsub_v1
 
 from .auth import Auth
 from .types import Alert, Response
 
-# from google.cloud.pubsub_v1.subscriber.scheduler import ThreadScheduler
-# from concurrent.futures.thread import ThreadPoolExecutor
-
-
 LOGGER = logging.getLogger(__name__)
 
 
-@attrs.define
+@define
 class Topic:
     """Basic attributes of a Pub/Sub topic.
 
@@ -78,13 +74,10 @@ class Topic:
         Note: :attr:`pittgoogle.utils.ProjectIds` is a registry containing project IDs.
     """
 
-    # name: str = attrs.field(default="ztf-loop")
-    name: str
+    name: str = field()
     """Name of the Pub/Sub topic."""
-    # projectid: str = attrs.field(default=ProjectIds.pittgoogle)
-    projectid: str
+    projectid: str = field()
     """Topic owner's Google Cloud project ID."""
-    logger: logging.Logger = attrs.field(default=LOGGER)
 
     @property
     def path(self) -> str:
@@ -98,7 +91,7 @@ class Topic:
         return Topic(name, projectid)
 
 
-@attrs.define
+@define
 class Subscription:
     """Basic attributes of a Pub/Sub subscription plus methods to manage it.
 
@@ -110,18 +103,17 @@ class Subscription:
         Credentials for access to the Google Cloud project that owns this subscription.
     """
 
-    name: str = attrs.field()
+    name: str = field()
     """Name of the Pub/Sub subscription."""
-    auth: Auth = attrs.field(factory=Auth, validator=attrs.validators.instance_of(Auth))
+    auth: Auth = field(factory=Auth, validator=validators.instance_of(Auth))
     """:class:`Auth()` with credentials for the subscription's Google Cloud project."""
-    topic: Optional[Topic] = attrs.field(
+    topic: Optional[Topic] = field(
         default=None,
-        validator=attrs.validators.optional(attrs.validators.instance_of(Topic)),
+        validator=validators.optional(validators.instance_of(Topic)),
     )
     """Topic this subscription should be attached to."""
-    _client: Optional[pubsub_v1.SubscriberClient] = attrs.field(default=None)
+    _client: Optional[pubsub_v1.SubscriberClient] = field(default=None)
     """Pub/Sub client that will be used to access the subscription."""
-    logger: logging.Logger = attrs.field(default=LOGGER)
 
     @property
     def projectid(self) -> str:
@@ -168,25 +160,21 @@ class Subscription:
 
         try:
             subscrip = self.client.get_subscription(subscription=self.path)
-            self.logger.info("Subscription exists")
+            LOGGER.info("subscription exists")
 
         except NotFound:
             subscrip = self._create()
-            self.logger.info("Subscription created")
+            LOGGER.info("subscription created")
 
         self._validate_topic(subscrip.topic)
-        self.logger.info("Topic validated")
+        LOGGER.info("topic validated")
 
     def _create(self) -> pubsub_v1.types.Subscription:
         if self.topic is None:
-            raise TypeError(
-                "The subscription needs to be created but no topic was provided."
-            )
+            raise TypeError("The subscription needs to be created but no topic was provided.")
 
         try:
-            return self.client.create_subscription(
-                name=self.path, topic=self.topic.path
-            )
+            return self.client.create_subscription(name=self.path, topic=self.topic.path)
 
         # this error message is not very clear. let's help.
         except NotFound as nfe:
@@ -205,25 +193,23 @@ class Subscription:
         try:
             self.client.delete_subscription(subscription=self.path)
         except NotFound:
-            self.logger.info(f"Nothing to delete. Subscription not found: {self.path}")
+            LOGGER.info(f"nothing to delete. subscription not found: {self.path}")
         else:
-            self.logger.info(f"Deleted subscription: {self.path}")
-
-    @staticmethod
-    def _from_name_idempotent(name) -> "Subscription":
-        if isinstance(name, str):
-            return Subscription(name)
-        if isinstance(name, Subscription):
-            return name
-        raise TypeError("A str or pittgoogle.pubsub.Subscription is required.")
+            LOGGER.info(f"deleted subscription: {self.path}")
 
 
-def basic_callback(alert: Alert) -> Response:
-    """Return a :class:`Response` indicating the message should be ack'd and counted."""
-    return Response(ack=True, result=None)
+def example_msg_callback(alert: Alert) -> Response:
+    print(f"objectid: {alert.dict['objectId']}")
+    return Response(ack=True, result=alert.dict)
 
 
-@attrs.define(kw_only=True)
+def example_batch_callback(batch: list) -> None:
+    oids = set(alert["objectId"] for alert in batch)
+    print(f"num oids: {len(oids)}")
+    print(f"batch length: {len(batch)}")
+
+
+@define(kw_only=True)
 class Consumer:
     """Consumer class to pull a Pub/Sub subscription and process messages.
 
@@ -257,161 +243,120 @@ class Consumer:
     """
 
     # Connection
-    subscription: Union[str, Subscription] = attrs.field(
-        # default="ztf-loop",
-        # default=attrs.Factory(Subscription, takes_self=False),
-        # factory=Subscription,
-        converter=Subscription._from_name_idempotent,
-        validator=attrs.validators.instance_of(Subscription),
+    _subscription: Union[str, Subscription] = field(
+        validator=validators.instance_of((str, Subscription))
     )
     """:class:`Subscription` that the consumer will pull."""
     # Flow configs
-    max_results: Optional[int] = attrs.field(
-        default=10,
-        validator=attrs.validators.optional(attrs.validators.gt(0)),
-    )
-    """Maximum number of messages to pull and process before stopping."""
-    timeout: int = attrs.field(
-        default=30, validator=attrs.validators.optional(attrs.validators.gt(0))
-    )
-    """Maximum number of seconds to wait for a new message before stopping."""
-    # coerced to max_backlog <= max_results by stream()
-    max_backlog: int = attrs.field(default=1000, validator=attrs.validators.gt(0))
+    max_backlog: int = field(default=1000, validator=validators.gt(0))
     """Maximum number of pulled but unprocessed messages before pausing the pull."""
-    # Callback
-    msg_callback: Callable[[Alert], Response] = attrs.field(
-        validator=attrs.validators.is_callable()
+    # Scheduler
+    max_workers: Optional[int] = field(
+        default=None, validator=validators.optional(validators.instance_of(int))
     )
-    """A :ref:`user callback <user callback>` or None."""
-    callback_kwargs: Mapping = attrs.field(factory=dict)
-    """Keyword arguments for `callback`."""
-    logger: logging.Logger = attrs.field(default=LOGGER)
-    results: list = attrs.field(factory=list, init=False)
-    """Container for temporary storage of results returned by ``msg_callback``."""
-    _queue: queue.Queue = attrs.field(factory=queue.Queue, init=False)
-    """Queue to communicate between threads and enforce stopping conditions."""
-    _block: bool = attrs.field(default=True, init=False)
-    streaming_pull_future: pubsub_v1.subscriber.futures.StreamingPullFuture = attrs.field(
+    _executor: ThreadPoolExecutor = field(
+        default=None, validator=validators.optional(validators.instance_of(ThreadPoolExecutor))
+    )
+    # Callbacks
+    msg_callback: Callable[[Alert], Response] = field(validator=validators.is_callable())
+    """Callback for an individual message."""
+    batch_callback: Optional[Callable[[list], None]] = field(
+        default=None, validator=validators.optional(validators.is_callable())
+    )
+    """Callback for a batch of messages."""
+    batch_maxn: int = field(default=100, converter=int)
+    """Max number of messages in a batch."""
+    batch_maxwait: int = field(default=30, converter=int)
+    """Max time to wait in seconds for a single message before processing a batch."""
+    _queue: queue.Queue = field(factory=queue.Queue, init=False)
+    """Queue to communicate between threads."""
+    streaming_pull_future: pubsub_v1.subscriber.futures.StreamingPullFuture = field(
         default=None, init=False
     )
 
+    @property
+    def subscription(self):
+        if isinstance(self._subscription, str):
+            self._subscription = Subscription(self._subscription)
+            self._subscription.touch()
+        return self._subscription
+
+    @property
+    def executor(self):
+        if self._executor is None:
+            self._executor = ThreadPoolExecutor(self.max_workers)
+        return self._executor
+
     def stream(self, block: bool = True) -> Optional[List]:
-        """Open the stream and process messages through the :ref:`callbacks <callbacks>`.
-
-        This starts a streaming pull on the subscription, in a background thread.
-        To close the stream before stopping conditions are met,
-        use `Ctrl-C` or :meth:`~Consumer.stop()` as described below.
-
-
-        Return:
-            List of results, if any, that the msg_callback passed back to the consumer
-            via :attr:`~pittgoogle.types.Response.result`.
-        """
-        # tell the callback whether the consumer is actively managing the queue
-        self._block = block
-        # we want to run some checks just before opening the stream
-        # if not self._confirm_no_callback():
-        #     return
-        self._backlog_le_results()
-
-        # Google API has a thread scheduler that can run multiple background threads
-        # self.scheduler = ThreadScheduler(ThreadPoolExecutor(max_workers))
-        # self.scheduler.schedule(self._callback)
-
-        # open a streaming-pull connection to the subscription
-        # and process incoming messages through the callback, in a background thread
+        """Open the stream and process messages through the :ref:`callbacks <callbacks>`."""
+        # open a streaming-pull and process messages through the callback, in the background
         self._open_stream()
 
-        if not self._block:
-            self.logger.info(
-                "The stream is open in the background. "
-                "Call the consumer's stop method to close it."
-            )
+        if not block:
+            msg = "The stream is open in the background. Use consumer.stop() to close it."
+            print(msg)
+            LOGGER.info(msg)
             return
 
         try:
-            total_count = self._manage_flow()
-            self.stop()
+            self._process_batches()
 
-        # catch all excptions and attempt to close the stream before raising them
+        # catch all exceptions and attempt to close the stream before raising
         except (KeyboardInterrupt, Exception):
             self.stop()
             raise
 
-        self.logger.info(
-            f"Processed {total_count} messages from {self.subscription.path}. "
-            "The actual number of messages that were pulled and acknowledged "
-            "may be higher if the user elected not to count some messages."
-        )
-
-        # if any results were collected, return them
-        if len(self.results) > 0:
-            return self.results
-
-    def _backlog_le_results(self) -> None:
-        """Enforce max_backlog <= max_results."""
-        if (self.max_results is not None) and (self.max_backlog > self.max_results):
-            self.logger.info(
-                (
-                    "Setting max_backlog = max_results to prevent an excessive number "
-                    "of pulled messages that will never be processed. "
-                )
-            )
-            self.max_backlog = self.max_results
-
     def _open_stream(self) -> None:
-        self.logger.info(f"Opening a streaming pull on subscription: {self.subscription.path}")
+        LOGGER.info(f"opening a streaming pull on subscription: {self.subscription.path}")
         self.streaming_pull_future = self.subscription.client.subscribe(
             self.subscription.path,
             self._callback,
             flow_control=pubsub_v1.types.FlowControl(max_messages=self.max_backlog),
-            # scheduler=self.scheduler,
+            scheduler=pubsub_v1.subscriber.scheduler.ThreadScheduler(executor=self.executor),
             # await_callbacks_on_shutdown=True,
         )
 
-    def _manage_flow(self) -> int:
-        """Control the flow, return when stopping conditions are met."""
-        total_count = 0
+    def _process_batches(self) -> None:
+        # if there's no batch_callback there's nothing to do except wait until the process is killed
+        if self.batch_callback is None:
+            while True:
+                sleep(60)
+
+        batch, count = [], 0
         while True:
             try:
-                total_count += self._queue.get(block=True, timeout=self.timeout)
+                batch.append(self._queue.get(block=True, timeout=self.batch_maxwait))
 
             except queue.Empty:
-                self.logger.info("Timeout stopping condition reached.")
-                break
+                # hit the max wait. process the batch
+                self.batch_callback(batch)
+                batch, count = [], 0
 
             else:
                 self._queue.task_done()
+                count += 1
 
-                if (self.max_results) & (total_count >= self.max_results):
-                    self.logger.info("Max results stopping condition reached.")
-                    break
-
-        return total_count
+            if count == self.batch_maxn:
+                # hit the max number of results. process the batch
+                self.batch_callback(batch)
+                batch, count = [], 0
 
     def _callback(self, message: pubsub_v1.types.PubsubMessage) -> None:
         """Unpack the message, run the :attr:`~Consumer.msg_callback` and handle the response."""
-        response = self.msg_callback(
-            Alert(msg=message), **self.callback_kwargs
-        )  # Response
+        # LOGGER.info("callback started")
+        response = self.msg_callback(Alert(msg=message))  # Response
+        # LOGGER.info(f"{response.result}")
 
-        if response._store:
-            self.results.append(response.result)
+        if response.result is not None:
+            self._queue.put(response.result)
 
         if response.ack:
             message.ack()
         else:
             message.nack()
 
-        # Communicate with the main thread
-        if self._block:
-            self._queue.put(response._count)
-            if self.max_results is not None:
-                # block until main thread acknowledges so we don't ack future msgs that get lost
-                self._queue.join()  # single background thread => one-in-one-out
-
     def stop(self) -> None:
         """Attempt to shutdown the streaming pull and exit the background thread gracefully."""
-        self.logger.info("Closing the stream.")
+        LOGGER.info("closing the stream")
         self.streaming_pull_future.cancel()  # Trigger the shutdown.
         self.streaming_pull_future.result()  # Block until the shutdown is complete.
