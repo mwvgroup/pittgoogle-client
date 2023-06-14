@@ -5,7 +5,7 @@
 from typing import TYPE_CHECKING, Any, ByteString, Dict, Optional
 
 import attrs
-from utils import Cast
+from .utils import Cast
 
 if TYPE_CHECKING:
     from google.cloud import pubsub_v1
@@ -53,9 +53,9 @@ class Alert:
         """."""
         if self._dict is None:
             # add try-except when we know what we're looking for
-            self._dict = Cast._avro_to_dict(self.bytes)
+            self._dict = Cast.avro_to_dict(self.bytes)
             if self._dict is None:
-                self._dict = Cast._json_to_dict(self.bytes)
+                self._dict = Cast.json_to_dict(self.bytes)
         return self._dict
 
     @property
