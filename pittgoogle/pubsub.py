@@ -49,7 +49,7 @@ import logging
 import queue
 from concurrent.futures import ThreadPoolExecutor
 from time import sleep
-from typing import Callable, List, Mapping, Optional, Union
+from typing import Callable, List, Optional, Union
 
 from attrs import define, field, validators
 from google.api_core.exceptions import NotFound
@@ -136,7 +136,7 @@ class Subscription:
         return self._client
 
     def touch(self, topic: Optional[Topic] = None) -> None:
-        """Connect to the subscription in Google Cloud, creating it if necessary.
+        """Test the connection to the subscription, creating it if necessary.
 
         Note that messages published to the topic before the subscription is created are
         not available.
@@ -160,14 +160,13 @@ class Subscription:
 
         try:
             subscrip = self.client.get_subscription(subscription=self.path)
-            LOGGER.info("subscription exists")
+            LOGGER.info(f"subscription exists: {self.path}")
 
         except NotFound:
             subscrip = self._create()
-            LOGGER.info("subscription created")
+            LOGGER.info(f"subscription created: {self.path}")
 
         self._validate_topic(subscrip.topic)
-        LOGGER.info("topic validated")
 
     def _create(self) -> pubsub_v1.types.Subscription:
         if self.topic is None:
@@ -187,6 +186,7 @@ class Subscription:
                 f"Subscription topic: {connected_topic_path}. Expected topic: {self.topic.path}."
             )
         self.topic = Topic.from_path(connected_topic_path)
+        LOGGER.debug("topic validated")
 
     def delete(self) -> None:
         """Delete the subscription."""
@@ -198,14 +198,14 @@ class Subscription:
             LOGGER.info(f"deleted subscription: {self.path}")
 
 
-def example_msg_callback(alert: Alert) -> Response:
-    print(f"objectid: {alert.dict['objectId']}")
-    return Response(ack=True, result=alert.dict)
+def msg_callback_example(alert: Alert) -> Response:
+    print(f"msgid: {alert.metadata['message_id']}")
+    return Response(ack=True, result=alert)
 
 
-def example_batch_callback(batch: list) -> None:
-    oids = set(alert["objectId"] for alert in batch)
-    print(f"num oids: {len(oids)}")
+def batch_callback_example(batch: list) -> None:
+    # oids = set(alert.dict["objectId"] for alert in batch)
+    # print(f"num oids: {len(oids)}")
     print(f"batch length: {len(batch)}")
 
 
@@ -290,7 +290,7 @@ class Consumer:
     def stream(self, block: bool = True) -> Optional[List]:
         """Open the stream and process messages through the :ref:`callbacks <callbacks>`."""
         # open a streaming-pull and process messages through the callback, in the background
-        self._open_stream()
+        self.open_stream()
 
         if not block:
             msg = "The stream is open in the background. Use consumer.stop() to close it."
@@ -299,24 +299,38 @@ class Consumer:
             return
 
         try:
-            self._process_batches()
+            self.process_batches()
 
         # catch all exceptions and attempt to close the stream before raising
         except (KeyboardInterrupt, Exception):
             self.stop()
             raise
 
-    def _open_stream(self) -> None:
+    def open_stream(self) -> None:
         LOGGER.info(f"opening a streaming pull on subscription: {self.subscription.path}")
         self.streaming_pull_future = self.subscription.client.subscribe(
             self.subscription.path,
-            self._callback,
+            self.callback,
             flow_control=pubsub_v1.types.FlowControl(max_messages=self.max_backlog),
             scheduler=pubsub_v1.subscriber.scheduler.ThreadScheduler(executor=self.executor),
-            # await_callbacks_on_shutdown=True,
+            await_callbacks_on_shutdown=True,
         )
 
-    def _process_batches(self) -> None:
+    def callback(self, message: pubsub_v1.types.PubsubMessage) -> None:
+        """Unpack the message, run the :attr:`~Consumer.msg_callback` and handle the response."""
+        # LOGGER.info("callback started")
+        response = self.msg_callback(Alert(msg=message))  # Response
+        # LOGGER.info(f"{response.result}")
+
+        if response.result is not None:
+            self._queue.put(response.result)
+
+        if response.ack:
+            message.ack()
+        else:
+            message.nack()
+
+    def process_batches(self) -> None:
         # if there's no batch_callback there's nothing to do except wait until the process is killed
         if self.batch_callback is None:
             while True:
@@ -340,20 +354,6 @@ class Consumer:
                 # hit the max number of results. process the batch
                 self.batch_callback(batch)
                 batch, count = [], 0
-
-    def _callback(self, message: pubsub_v1.types.PubsubMessage) -> None:
-        """Unpack the message, run the :attr:`~Consumer.msg_callback` and handle the response."""
-        # LOGGER.info("callback started")
-        response = self.msg_callback(Alert(msg=message))  # Response
-        # LOGGER.info(f"{response.result}")
-
-        if response.result is not None:
-            self._queue.put(response.result)
-
-        if response.ack:
-            message.ack()
-        else:
-            message.nack()
 
     def stop(self) -> None:
         """Attempt to shutdown the streaming pull and exit the background thread gracefully."""
