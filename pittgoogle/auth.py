@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 """A class to handle authentication with Google Cloud."""
-# the rest of the docstring is in /docs/source/api/auth.rst
-
-
 import logging
 import os
 from typing import TYPE_CHECKING, Union
@@ -14,7 +11,6 @@ from google_auth_oauthlib.helpers import credentials_from_session
 from requests_oauthlib import OAuth2Session
 
 if TYPE_CHECKING:
-    # from google.oauth2.credentials import Credentials as oauth2Credentials
     import google
     import requests_oauthlib
 
@@ -30,34 +26,30 @@ class Auth:
     if it exists.
 
     :param GOOGLE_CLOUD_PROJECT:
-    Project ID of the Google Cloud project to connect to.
+        Project ID of the Google Cloud project to connect to.
 
     :param GOOGLE_APPLICATION_CREDENTIALS:
-    Path to a keyfile containing service account credentials.
-    Either this or both `OAUTH_CLIENT_*` settings are required for successful
-    authentication using `Auth`.
+        Path to a keyfile containing service account credentials.
+        Either this or both `OAUTH_CLIENT_*` settings are required for successful
+        authentication using `Auth`.
 
     :param OAUTH_CLIENT_ID:
-    Client ID for an OAuth2 connection.
-    Either this and `OAUTH_CLIENT_SECRET`, or the `GOOGLE_APPLICATION_CREDENTIALS`
-    setting, are required for successful authentication using `Auth`.
+        Client ID for an OAuth2 connection.
+        Either this and `OAUTH_CLIENT_SECRET`, or the `GOOGLE_APPLICATION_CREDENTIALS`
+        setting, are required for successful authentication using `Auth`.
 
     :param OAUTH_CLIENT_SECRET:
-    Client secret for an OAuth2 connection.
-    Either this and `OAUTH_CLIENT_ID`, or the `GOOGLE_APPLICATION_CREDENTIALS` setting,
-    are required for successful authentication using `Auth`.
+        Client secret for an OAuth2 connection.
+        Either this and `OAUTH_CLIENT_ID`, or the `GOOGLE_APPLICATION_CREDENTIALS` setting,
+        are required for successful authentication using `Auth`.
     """
 
-    GOOGLE_CLOUD_PROJECT = attrs.field(
-        factory=lambda: os.getenv("GOOGLE_CLOUD_PROJECT", None)
-    )
+    GOOGLE_CLOUD_PROJECT = attrs.field(factory=lambda: os.getenv("GOOGLE_CLOUD_PROJECT", None))
     GOOGLE_APPLICATION_CREDENTIALS = attrs.field(
         factory=lambda: os.getenv("GOOGLE_APPLICATION_CREDENTIALS", None)
     )
     OAUTH_CLIENT_ID = attrs.field(factory=lambda: os.getenv("OAUTH_CLIENT_ID", None))
-    OAUTH_CLIENT_SECRET = attrs.field(
-        factory=lambda: os.getenv("OAUTH_CLIENT_SECRET", None)
-    )
+    OAUTH_CLIENT_SECRET = attrs.field(factory=lambda: os.getenv("OAUTH_CLIENT_SECRET", None))
     _credentials = attrs.field(default=None, init=False)
     _oauth2 = attrs.field(default=None, init=False)
 
@@ -65,9 +57,7 @@ class Auth:
     @property
     def credentials(
         self,
-    ) -> Union[
-        "google.auth.credentials.Credentials", "google.oauth2.credentials.Credentials"
-    ]:
+    ) -> Union["google.auth.credentials.Credentials", "google.oauth2.credentials.Credentials"]:
         """Credentials, loaded from a service account key file or an OAuth2 session."""
         if self._credentials is None:
             self._credentials = self.get_credentials()
@@ -83,9 +73,7 @@ class Auth:
 
     def get_credentials(
         self,
-    ) -> Union[
-        "google.auth.credentials.Credentials", "google.oauth2.credentials.Credentials"
-    ]:
+    ) -> Union["google.auth.credentials.Credentials", "google.oauth2.credentials.Credentials"]:
         """Load user credentials from a service account key file or an OAuth2 session.
 
         Try the service account first, fall back to OAuth2.
@@ -128,9 +116,7 @@ class Auth:
                     )
                 )
 
-        LOGGER.info(
-            f"Authenticated to Google Cloud project {self.GOOGLE_CLOUD_PROJECT}"
-        )
+        LOGGER.info(f"Authenticated to Google Cloud project {self.GOOGLE_CLOUD_PROJECT}")
 
         return credentials
 
@@ -198,8 +184,6 @@ class Auth:
             authorization_response=authorization_response,
             client_secret=client_secret,
         )
-        LOGGER.info(
-            f"Authenticated to Google Cloud project {self.GOOGLE_CLOUD_PROJECT}"
-        )
+        LOGGER.info(f"Authenticated to Google Cloud project {self.GOOGLE_CLOUD_PROJECT}")
 
         return oauth2

@@ -3,7 +3,7 @@
 Set Environment Variables
 ==========================
 
-(Note: If you are using OAuth2, you need the environment variables described :ref:`here
+(Note: If you are using OAuth2, you will also need the environment variables described :ref:`here
 <oauth2>`.)
 
 Setting these two environment variables will support a smooth authentication process

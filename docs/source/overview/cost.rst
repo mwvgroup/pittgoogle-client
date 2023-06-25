@@ -3,15 +3,13 @@
 Costs
 --------------
 
-A baseline level of data access is free.
-This is structured as a usage quota that renews monthly --  the first `X` (amount) of
-usage each month is free, where `X` depends on the service (Pub/Sub,
-BigQuery, Cloud Storage).
+Pitt-Google Broker makes astronomy data available in Google Cloud services like Pub/Sub, BigQuery, and Cloud Storage.
+Google provides a baseline level of access for free with no credit card or billing account required.
+The free tier is structured as a usage quota that renews monthly.
+Access beyond the free tier is "pay-as-you-go".
 Some examples are given in the table below.
-If you exceed the limit and have not set up billing your access will be restricted until
+If you exceed the free-tier quota and have not set up billing, your access will be restricted until
 the quota renews.
-:ref:`Projects <projects>` are free.
-No credit card is required.
 
 .. list-table:: Pricing Examples (as of Aug. 2021)
     :class: tight-table
@@ -30,11 +28,6 @@ No credit card is required.
       - message delivery
       - 10 GB per month
       - $40 per TB
-
-You cannot be charged unless you create a billing account and attach it to your project.
-In this case, the pricing structure is "pay-as-you-go".
-There are some options listed below to offset costs.
-Free quotas still apply.
 
 Here are links that might be useful:
 

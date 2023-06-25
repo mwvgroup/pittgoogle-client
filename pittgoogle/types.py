@@ -17,29 +17,26 @@ class Alert:
 
     Parameters
     ------------
-    bytes : `bytes`
+    bytes : `bytes`, optional
         Alert packet as a byte string. It may be Avro or JSON serialized depending on the topic.
-    dict : `dict`
+    dict : `dict`, optional
         Alert packet as a dictionary.
-    metadata : `dict`
+    metadata : `dict`, optional
         Pub/Sub metadata.
-    msg : `google.cloud.pubsub_v1.types.PubsubMessage`
+    msg : `google.cloud.pubsub_v1.types.PubsubMessage`, optional
         The Pub/Sub message object,
         documented at `<https://googleapis.dev/python/pubsub/latest/types.html>`__.
     """
 
     _bytes: Optional[ByteString] = attrs.field(default=None)
-    """Message payload in original format -- Avro or JSON serialized bytes."""
     _dict: Optional[Dict] = attrs.field(default=None)
-    """Message payload unpacked into a dictionary."""
     _metadata: Optional[Dict] = attrs.field(default=None)
-    """Message metadata and Pitt-Google's custom attributes."""
     msg: Optional["pubsub_v1.types.PubsubMessage"] = attrs.field(default=None)
     """Original Pub/Sub message object."""
 
     @property
-    def bytes(self):
-        """."""
+    def bytes(self) -> bytes:
+        """Message payload in original format (Avro or JSON serialized bytes)."""
         if self._bytes is None:
             # add try-except when we know what we're looking for
             self._bytes = self.msg.data
@@ -49,8 +46,8 @@ class Alert:
         return self._bytes
 
     @property
-    def dict(self):
-        """."""
+    def dict(self) -> dict:
+        """Message payload unpacked into a dictionary."""
         if self._dict is None:
             # add try-except when we know what we're looking for
             self._dict = Cast.avro_to_dict(self.bytes)
@@ -59,8 +56,8 @@ class Alert:
         return self._dict
 
     @property
-    def metadata(self):
-        """Return the message metadata and custom attributes as a dictionary."""
+    def metadata(self) -> dict:
+        """Message metadata."""
         if self._metadata is None:
             self._metadata = {
                 "message_id": self.msg.message_id,
@@ -69,14 +66,13 @@ class Alert:
                 "ordering_key": self.msg.ordering_key,
                 # flatten the dict containing our custom attributes
                 **self.msg.attributes,
-                # **dict((k, v) for k, v in self.msg.attributes.items()),
             }
         return self._metadata
 
 
 @attrs.frozen(kw_only=True)
 class Response:
-    """Container for a response, to be returned by a :attr:`Consumer.user_callback`.
+    """Container for a response, to be returned by a :attr:`Consumer.msg_callback`.
 
     Parameters
     ------------
@@ -89,11 +85,11 @@ class Response:
         Any object the user wishes to return after processing the alert.
         This will be handled by a :class:`~pittgoogle.pubsub.Consumer` as follows:
 
-        -   None: This is the recommended value, if the user_callback ran
+        -   None: This is the recommended value, if the msg_callback ran
             successfully.
             This value will NOT be stored in :attr:`~Consumer.results`, but the message
             WILL be counted against :attr:`~Consumer.max_results`.
-            The assumption is that the :attr:`~Consumer.user_callback`
+            The assumption is that the :attr:`~Consumer.msg_callback`
             saved any results that it wants.
 
         -   False: This option allows the user to drop messages that do not pass a

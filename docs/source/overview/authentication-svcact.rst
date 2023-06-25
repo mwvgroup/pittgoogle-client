@@ -12,8 +12,7 @@ used for authentication.
 #.  Prerequisite: Access to a Google Cloud :ref:`project <projects>`.
 
 #.  Follow Google's instructions to
-    `create a service account <https://cloud.google.com/docs/authentication/getting-started#creating_a_service_account>`__
-    (ignore the other sections on that page).
+    `create a service account <https://cloud.google.com/iam/docs/service-accounts-create#creating>`__.
     You will:
 
     -   Create a service account with the **Project > Owner** role.

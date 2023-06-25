@@ -1,57 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
-"""Classes to facilitate connections to Pub/Sub streams.
-
-Stream block param
-:param block: Whether to block the foreground thread while the stream is open.
-    If True (default), the consumer manages the flow of messages using a
-    `Queue` and enforces the stopping conditions
-    (``max_messages``, ``timeout``).
-    Use `Ctrl-C` at any time to close the stream and unblock the terminal.
-
-    If False, returns immediately after opening the stream.
-    Use this with caution.
-    The pull will continue in the background, but the consumer will not
-    enforce the stopping conditions -- thus it can run indefinitely.
-    Stop it manually with :meth:`~Consumer.stop()`.
-
-    If this (block=False) is the desired behavior,
-    consider calling the Pub/Sub API directly.
-    You will have more control over the pull, including the option
-    to parallelize.
-    The command is
-    `google.cloud.pubsub_v1.subscriber.client.Client.subscribe() <https://googleapis.dev/python/pubsub/latest/subscriber/api/client.html#google.cloud.pubsub_v1.subscriber.client.Client.subscribe>`__.
-    You can call it using the consumer's underlying Pub/Sub ``Client``:
-
-    .. code-block:: python
-
-        from pittgoogle import pubsub
-
-        consumer = pubsub.Consumer()
-
-        # consumer.client.client is a
-        # google.cloud.pubsub_v1.subscriber.client.Client()
-        # Call its subscribe() method to start a streaming pull
-        # (include desired args/kwargs):
-
-        consumer.streaming_pull_future = consumer.client.client.subscribe()
-
-    Assigning the result to ``consumer.streaming_pull_future``
-    allows you to use the Pitt-Google ``consumer`` to stop the streaming pull
-    and exit the background thread gracefully:
-
-    .. code-block:: python
-
-        consumer.stop()
-"""
-# the rest of the docstring is in /docs/source/api/pubsub.rst
+"""Classes to facilitate connections to Pub/Sub streams."""
 import logging
 import queue
 from concurrent.futures import ThreadPoolExecutor
 from time import sleep
-from typing import Callable, List, Optional, Union
+from typing import Callable, Optional, Union
 
-from attrs import define, field, validators
+from attrs import define, field
+from attrs.validators import gt, instance_of, is_callable, optional
 from google.api_core.exceptions import NotFound
 from google.cloud import pubsub_v1
 
@@ -59,6 +16,17 @@ from .auth import Auth
 from .types import Alert, Response
 
 LOGGER = logging.getLogger(__name__)
+
+
+def msg_callback_example(alert: Alert) -> Response:
+    print(f"processing message: {alert.metadata['message_id']}")
+    return Response(ack=True, result=alert.dict)
+
+
+def batch_callback_example(batch: list) -> None:
+    oids = set(alert.dict["objectId"] for alert in batch)
+    print(f"num oids: {len(oids)}")
+    print(f"batch length: {len(batch)}")
 
 
 @define
@@ -70,50 +38,50 @@ class Topic:
     name : `str`
         Name of the Pub/Sub topic.
     projectid : `str`
-        The topic owner's Google Cloud project ID.
-        Note: :attr:`pittgoogle.utils.ProjectIds` is a registry containing project IDs.
+        The topic owner's Google Cloud project ID. Note: :attr:`pittgoogle.utils.ProjectIds`
+        is a registry containing Pitt-Google's project IDs.
     """
 
     name: str = field()
-    """Name of the Pub/Sub topic."""
     projectid: str = field()
-    """Topic owner's Google Cloud project ID."""
 
     @property
     def path(self) -> str:
         """Fully qualified path to the topic."""
         return f"projects/{self.projectid}/topics/{self.name}"
 
-    @staticmethod
-    def from_path(path) -> "Topic":
-        """Parse `path` and return a new `Topic`."""
+    @classmethod
+    def from_path(cls, path) -> "Topic":
+        """Parse the `path` and return a new `Topic`."""
         _, projectid, _, name = path.split("/")
-        return Topic(name, projectid)
+        return cls(name, projectid)
 
 
 @define
 class Subscription:
-    """Basic attributes of a Pub/Sub subscription plus methods to manage it.
+    """Basic attributes of a Pub/Sub subscription and methods to manage it.
 
     Parameters
     -----------
     name : `str`
         Name of the Pub/Sub subscription.
-    auth : `pittgoogle.auth.Auth`
-        Credentials for access to the Google Cloud project that owns this subscription.
+    auth : :class:`pittgoogle.auth.Auth`, optional
+        Credentials for the Google Cloud project that owns this subscription. If not provided,
+        it will be created from environment variables.
+    topic : :class:`pittgoogle.pubsub.Topic`, optional
+        Topic this subscription should be attached to. Required only when the subscription needs
+        to be created.
+    client : `pubsub_v1.SubscriberClient`, optional
+        Pub/Sub client that will be used to access the subscription. This kwarg is useful if you
+        want to reuse a client. If None, a new client will be created.
     """
 
     name: str = field()
-    """Name of the Pub/Sub subscription."""
-    auth: Auth = field(factory=Auth, validator=validators.instance_of(Auth))
-    """:class:`Auth()` with credentials for the subscription's Google Cloud project."""
-    topic: Optional[Topic] = field(
-        default=None,
-        validator=validators.optional(validators.instance_of(Topic)),
+    auth: Auth = field(factory=Auth, validator=instance_of(Auth))
+    topic: Optional[Topic] = field(default=None, validator=optional(instance_of(Topic)))
+    _client: Optional[pubsub_v1.SubscriberClient] = field(
+        default=None, validator=optional(instance_of(pubsub_v1.SubscriberClient))
     )
-    """Topic this subscription should be attached to."""
-    _client: Optional[pubsub_v1.SubscriberClient] = field(default=None)
-    """Pub/Sub client that will be used to access the subscription."""
 
     @property
     def projectid(self) -> str:
@@ -127,37 +95,30 @@ class Subscription:
 
     @property
     def client(self) -> pubsub_v1.SubscriberClient:
-        """`pubsub_v1.SubscriberClient` instance.
-
-        The client is authenticated using `self.auth.credentials`.
+        """Pub/Sub client that will be used to access the subscription. If not provided, a new
+        client will be created using `self.auth.credentials`.
         """
         if self._client is None:
             self._client = pubsub_v1.SubscriberClient(credentials=self.auth.credentials)
         return self._client
 
-    def touch(self, topic: Optional[Topic] = None) -> None:
+    def touch(self) -> None:
         """Test the connection to the subscription, creating it if necessary.
 
-        Note that messages published to the topic before the subscription is created are
-        not available.
-
-        Parameters
-        -----------
-        topic : optional, `Topic`
-            If not None, self.topic will be set to this value before anything else happens.
+        Note that messages published to the topic before the subscription was created are
+        not available to the subscription.
 
         Raises
         ------
-        TypeError if the subscription needs to be created but no topic was provided.
+        `TypeError`
+            if the subscription needs to be created but no topic was provided.
 
-        AssertionError if the subscription exists but it is not attached to self.topic,
-        and self.topic is not None.
+        `NotFound`
+            if the subscription needs to be created but the topic does not exist in Google Cloud.
 
-        NotFound
+        `AssertionError`
+            if the subscription exists but it is not attached to self.topic and self.topic is not None.
         """
-        if topic is not None:
-            self.topic = topic
-
         try:
             subscrip = self.client.get_subscription(subscription=self.path)
             LOGGER.info(f"subscription exists: {self.path}")
@@ -179,11 +140,10 @@ class Subscription:
         except NotFound as nfe:
             raise NotFound(f"The topic does not exist: {self.topic.path}") from nfe
 
-    def _validate_topic(self, connected_topic_path):
+    def _validate_topic(self, connected_topic_path) -> None:
         if (self.topic is not None) and (connected_topic_path != self.topic.path):
             raise AssertionError(
-                f"Subscription is not attached to the expected topic. "
-                f"Subscription topic: {connected_topic_path}. Expected topic: {self.topic.path}."
+                f"The subscription is attached to topic {connected_topic_path}. Expected {self.topic.path}"
             )
         self.topic = Topic.from_path(connected_topic_path)
         LOGGER.debug("topic validated")
@@ -198,17 +158,6 @@ class Subscription:
             LOGGER.info(f"deleted subscription: {self.path}")
 
 
-def msg_callback_example(alert: Alert) -> Response:
-    print(f"msgid: {alert.metadata['message_id']}")
-    return Response(ack=True, result=alert)
-
-
-def batch_callback_example(batch: list) -> None:
-    # oids = set(alert.dict["objectId"] for alert in batch)
-    # print(f"num oids: {len(oids)}")
-    print(f"batch length: {len(batch)}")
-
-
 @define(kw_only=True)
 class Consumer:
     """Consumer class to pull a Pub/Sub subscription and process messages.
@@ -217,80 +166,63 @@ class Consumer:
 
     Parameters
     -----------
-    subscription : `Subscription` or `str`
-        Pub/Sub subscription to be pulled. This must already exist in Google Cloud.
+    subscription : `str` or :class:`pittgoogle.pubsub.Subscription`
+        Pub/Sub subscription to be pulled (it must already exist in Google Cloud).
     msg_callback : `callable`
-        Function that will process a single message.
-        It should accept a single :class:`pittgoogle.types.Alert` and
-        return a :class:`pittgoogle.types.Response`.
-    nbatch : optional, `int`
+        Function that will process a single message. It should accept a
+        :class:`pittgoogle.types.Alert` and return a :class:`pittgoogle.types.Response`.
+    batch_callback : `callable`, optional
+        Function that will process a batch of results. It should accept a list of the results
+        returned by the `msg_callback`.
+    batch_maxn : `int`, optional
+        Maximum number of messages in a batch. This has no effect if `batch_callback` is None.
+    batch_maxwait : `int`, optional
+        Max number of seconds to wait between messages before before processing a batch.
         This has no effect if `batch_callback` is None.
-    batch_callback : optional, `callable`
-        Function that will process a batch of results.
-        It should accept a sequence of results .
-    callback_kwargs : `dict`
-        Keyword arguments for both ``msg_callback`` and `batch_callback`.
-    max_results : optional, `int`
-        Maximum number of messages to pull and process before stopping.
-        Use None for no limit.
-    timeout : optional, `int`
-        Maximum number of seconds to wait for a new message before stopping.
-        Use None for no limit.
-    max_backlog : optional, `int`
-        Maximum number of pulled but unprocessed messages to hold
-        before pausing the streaming pull.
-        This will be coerced to satisfy ``max_backlog <= max_results``.
+    max_backlog : `int`, optional
+        Maximum number of pulled but unprocessed messages before pausing the pull.
+    max_workers : `int`, optional
+        Maximum number of workers for the `executor`. This has no effect if an `executor` is provided.
+    executor : `concurrent.futures.ThreadPoolExecutor`, optional
+        Executor that will be used by the Google API to pull and process messages in the background.
     """
 
-    # Connection
-    _subscription: Union[str, Subscription] = field(
-        validator=validators.instance_of((str, Subscription))
-    )
-    """:class:`Subscription` that the consumer will pull."""
-    # Flow configs
-    max_backlog: int = field(default=1000, validator=validators.gt(0))
-    """Maximum number of pulled but unprocessed messages before pausing the pull."""
-    # Scheduler
-    max_workers: Optional[int] = field(
-        default=None, validator=validators.optional(validators.instance_of(int))
-    )
-    _executor: ThreadPoolExecutor = field(
-        default=None, validator=validators.optional(validators.instance_of(ThreadPoolExecutor))
-    )
-    # Callbacks
-    msg_callback: Callable[[Alert], Response] = field(validator=validators.is_callable())
-    """Callback for an individual message."""
+    _subscription: Union[str, Subscription] = field(validator=instance_of((str, Subscription)))
+    msg_callback: Callable[[Alert], Response] = field(validator=is_callable())
     batch_callback: Optional[Callable[[list], None]] = field(
-        default=None, validator=validators.optional(validators.is_callable())
+        default=None, validator=optional(is_callable())
     )
-    """Callback for a batch of messages."""
     batch_maxn: int = field(default=100, converter=int)
-    """Max number of messages in a batch."""
     batch_maxwait: int = field(default=30, converter=int)
-    """Max time to wait in seconds for a single message before processing a batch."""
+    max_backlog: int = field(default=1000, validator=gt(0))
+    max_workers: Optional[int] = field(default=None, validator=optional(instance_of(int)))
+    _executor: ThreadPoolExecutor = field(
+        default=None, validator=optional(instance_of(ThreadPoolExecutor))
+    )
     _queue: queue.Queue = field(factory=queue.Queue, init=False)
-    """Queue to communicate between threads."""
     streaming_pull_future: pubsub_v1.subscriber.futures.StreamingPullFuture = field(
         default=None, init=False
     )
 
     @property
-    def subscription(self):
+    def subscription(self) -> Subscription:
+        """Subscription to be consumed."""
         if isinstance(self._subscription, str):
             self._subscription = Subscription(self._subscription)
             self._subscription.touch()
         return self._subscription
 
     @property
-    def executor(self):
+    def executor(self) -> ThreadPoolExecutor:
+        """Executor to be used by the Google API to pull and process messages in the background."""
         if self._executor is None:
             self._executor = ThreadPoolExecutor(self.max_workers)
         return self._executor
 
-    def stream(self, block: bool = True) -> Optional[List]:
+    def stream(self, block: bool = True) -> None:
         """Open the stream and process messages through the :ref:`callbacks <callbacks>`."""
         # open a streaming-pull and process messages through the callback, in the background
-        self.open_stream()
+        self._open_stream()
 
         if not block:
             msg = "The stream is open in the background. Use consumer.stop() to close it."
@@ -299,24 +231,25 @@ class Consumer:
             return
 
         try:
-            self.process_batches()
+            self._process_batches()
 
         # catch all exceptions and attempt to close the stream before raising
         except (KeyboardInterrupt, Exception):
             self.stop()
             raise
 
-    def open_stream(self) -> None:
+    def _open_stream(self) -> None:
+        """Open a streaming pull and process messages in the background."""
         LOGGER.info(f"opening a streaming pull on subscription: {self.subscription.path}")
         self.streaming_pull_future = self.subscription.client.subscribe(
             self.subscription.path,
-            self.callback,
+            self._callback,
             flow_control=pubsub_v1.types.FlowControl(max_messages=self.max_backlog),
             scheduler=pubsub_v1.subscriber.scheduler.ThreadScheduler(executor=self.executor),
             await_callbacks_on_shutdown=True,
         )
 
-    def callback(self, message: pubsub_v1.types.PubsubMessage) -> None:
+    def _callback(self, message: pubsub_v1.types.PubsubMessage) -> None:
         """Unpack the message, run the :attr:`~Consumer.msg_callback` and handle the response."""
         # LOGGER.info("callback started")
         response = self.msg_callback(Alert(msg=message))  # Response
@@ -330,7 +263,11 @@ class Consumer:
         else:
             message.nack()
 
-    def process_batches(self) -> None:
+    def _process_batches(self):
+        """Run the batch callback if provided, otherwise just sleep.
+
+        This never returns -- it runs until it encounters an error.
+        """
         # if there's no batch_callback there's nothing to do except wait until the process is killed
         if self.batch_callback is None:
             while True:
@@ -346,6 +283,11 @@ class Consumer:
                 self.batch_callback(batch)
                 batch, count = [], 0
 
+            # catch anything else and try to process the batch before raising
+            except (KeyboardInterrupt, Exception):
+                self.batch_callback(batch)
+                raise
+
             else:
                 self._queue.task_done()
                 count += 1
@@ -358,5 +300,5 @@ class Consumer:
     def stop(self) -> None:
         """Attempt to shutdown the streaming pull and exit the background thread gracefully."""
         LOGGER.info("closing the stream")
-        self.streaming_pull_future.cancel()  # Trigger the shutdown.
-        self.streaming_pull_future.result()  # Block until the shutdown is complete.
+        self.streaming_pull_future.cancel()  # trigger the shutdown
+        self.streaming_pull_future.result()  # block until the shutdown is complete

@@ -7,10 +7,9 @@ Google Cloud Projects
     :depth: 2
     :local:
 
-In order to make API calls accessing data from Pitt-Google you will need to be authenticated to a Google Cloud project.
-
+In order to make API calls accessing data from Pitt-Google's cloud resources you will need to be authenticated to a Google Cloud project.
 Projects are free.
-They are easy to create \& delete.
+They are easy to create and delete.
 Each user can have many projects and users can share projects.
 
 .. _setup project:

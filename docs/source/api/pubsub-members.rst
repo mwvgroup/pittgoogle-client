@@ -20,13 +20,6 @@ Classes
    :members:
    :member-order: bysource
 
-`SubscriberClient`
-~~~~~~~~~~~~~~~~~~~
-
-.. autoclass:: pittgoogle.pubsub.SubscriberClient
-   :members:
-   :member-order: bysource
-
 `Topic`
 ~~~~~~~~~~~~~~~~~~~
 
