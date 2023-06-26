@@ -41,13 +41,14 @@ import logging
 import os
 from typing import TYPE_CHECKING, Union
 
+import google.auth
+import google_auth_oauthlib.helpers
 from attrs import define, field
-from google import auth as gauth
-from google_auth_oauthlib.helpers import credentials_from_session
 from requests_oauthlib import OAuth2Session
 
 if TYPE_CHECKING:
-    import google
+    import google.auth.credentials
+    import google.oauth2.credentials
     import requests_oauthlib
 
 
@@ -107,12 +108,12 @@ class Auth:
         """
         # service account credentials
         try:
-            credentials, project = gauth.load_credentials_from_file(
+            credentials, project = google.auth.load_credentials_from_file(
                 self.GOOGLE_APPLICATION_CREDENTIALS
             )
 
         # OAuth2
-        except (TypeError, gauth.exceptions.DefaultCredentialsError) as ekeyfile:
+        except (TypeError, google.auth.exceptions.DefaultCredentialsError) as ekeyfile:
             LOGGER.warning(
                 (
                     "Service account credentials not found for "
@@ -124,7 +125,7 @@ class Auth:
                 )
             )
             try:
-                credentials = credentials_from_session(self.oauth2)
+                credentials = google_auth_oauthlib.helpers.credentials_from_session(self.oauth2)
 
             except Exception as eoauth:
                 raise PermissionError("Cannot obtain credentials.") from Exception(
