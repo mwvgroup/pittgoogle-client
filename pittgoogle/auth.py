@@ -49,7 +49,6 @@ from requests_oauthlib import OAuth2Session
 if TYPE_CHECKING:
     import google.auth.credentials
     import google.oauth2.credentials
-    import requests_oauthlib
 
 
 LOGGER = logging.getLogger(__name__)
@@ -149,13 +148,13 @@ class Auth:
         return credentials
 
     @property
-    def oauth2(self) -> "requests_oauthlib.OAuth2Session":
+    def oauth2(self) -> OAuth2Session:
         """`requests_oauthlib.OAuth2Session` connected to the Google Cloud project."""
         if self._oauth2 is None:
             self._oauth2 = self._authenticate_with_oauth2()
         return self._oauth2
 
-    def _authenticate_with_oauth2(self) -> "requests_oauthlib.OAuth2Session":
+    def _authenticate_with_oauth2(self) -> OAuth2Session:
         """Guide user through authentication and create `OAuth2Session` for credentials.
 
         The user will need to visit a URL, authenticate themselves, and authorize
