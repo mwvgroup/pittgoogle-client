@@ -386,3 +386,104 @@ class Consumer:
         LOGGER.info("closing the stream")
         self.streaming_pull_future.cancel()  # trigger the shutdown
         self.streaming_pull_future.result()  # block until the shutdown is complete
+
+
+@define(kw_only=True)
+class Alert:
+    """Pitt-Google container for a Pub/Sub message.
+
+    Typical usage is to instantiate an `Alert` using only a `msg`, and then the other attributes
+    will be automatically extracted and returned (lazily).
+
+    All parameters are keyword only.
+
+    Parameters
+    ------------
+    bytes : `bytes`, optional
+        The message payload, as returned by Pub/Sub. It may be Avro or JSON serialized depending
+        on the topic.
+    dict : `dict`, optional
+        The message payload as a dictionary.
+    metadata : `dict`, optional
+        The message metadata.
+    msg : `google.cloud.pubsub_v1.types.PubsubMessage`, optional
+        The Pub/Sub message object, documented at
+        `<https://googleapis.dev/python/pubsub/latest/types.html>`__.
+    """
+
+    _bytes: Optional[ByteString] = field(default=None)
+    _dict: Optional[dict] = field(default=None)
+    _metadata: Optional[dict] = field(default=None)
+    msg: Optional["pubsub_v1.types.PubsubMessage"] = field(default=None)
+    """Original Pub/Sub message object."""
+
+    @property
+    def bytes(self) -> bytes:
+        """Message payload in original format (Avro or JSON serialized bytes)."""
+        if self._bytes is None:
+            # add try-except when we know what we're looking for
+            self._bytes = self.msg.data
+            if self._bytes is None:
+                # if we add a "path" attribute for the path to an avro file on disk
+                # we can load it like this:
+                #     with open(self.path, "rb") as f:
+                #         self._bytes = f.read()
+                pass
+        return self._bytes
+
+    @property
+    def dict(self) -> dict:
+        """Message payload as a dictionary.
+
+        Raises
+        ------
+        :class:`pittgoogle.exceptions.OpenAlertError`
+            if unable to deserialize the alert bytes.
+        """
+        if self._dict is None:
+            # this should be rewritten to catch specific errors
+            # for now, just try avro then json, catching basically all errors in the process
+            try:
+                self._dict = Cast.avro_to_dict(self.bytes)
+            except Exception:
+                try:
+                    self._dict = Cast.json_to_dict(self.bytes)
+                except Exception:
+                    raise OpenAlertError("failed to deserialize the alert bytes")
+        return self._dict
+
+    @property
+    def metadata(self) -> dict:
+        """Message metadata as a flat dictionary."""
+        if self._metadata is None:
+            self._metadata = {
+                "message_id": self.msg.message_id,
+                "publish_time": self.msg.publish_time,
+                # ordering must be enabled on the subscription for this to be useful
+                "ordering_key": self.msg.ordering_key,
+                # flatten the dict containing our custom attributes
+                **self.msg.attributes,
+            }
+        return self._metadata
+
+
+@define(kw_only=True, frozen=True)
+class Response:
+    """Container for a response, to be returned by a :meth:`pittgoogle.pubsub.Consumer.msg_callback`.
+
+    Parameters
+    ------------
+    ack : `bool`
+        Whether to acknowledge the message. Use `True` if the message was processed successfully,
+        `False` if an error was encountered and you would like Pub/Sub to redeliver the message at
+        a later time. Note that once a message is acknowledged to Pub/Sub it is permanently deleted
+        (unless the subscription has been explicitly configured to retain acknowledged messages).
+
+    result : `Any`
+        Anything the user wishes to return. If not `None`, the Consumer will collect the results
+        in a list and pass the list to the user's batch callback for further processing.
+        If there is no batch callback the results will be lost.
+    """
+
+    ack: bool = field(default=True, converter=converters.to_bool)
+    result: Any = field(default=None)
