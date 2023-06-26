@@ -64,14 +64,17 @@ Pub/Sub Message Streams
       - Description
 
     * - ztf-alerts
-      - Full ZTF alert stream.
+      - Full ZTF alert stream
 
-    * - ztf-exgalac_trans_cf
-      - ZTF alert stream filtered for likely extragalactic transients.
+    * - ztf-lite
+      - Lite version of ztf-alerts (every alert, subset of fields)
+
+    * - ztf-tagged
+      - ztf-lite with basic categorizations such as “is pure” and “is likely extragalactic
+        transient” added to the message metadata.
 
     * - ztf-SuperNNova
-      - SuperNNova classification results (Ia vs non-Ia) + alert contents for
-        alerts that passed the likely-extragalactic-transients filter.
+      - ztf-tagged plus SuperNNova classification results (Ia vs non-Ia).
 
     * - ztf-alert_avros
       - Notification stream from the ztf-alert_avros Cloud Storage bucket indicating
