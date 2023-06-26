@@ -105,6 +105,39 @@ def batch_callback_example(batch: list) -> None:
     print(f"batch length: {len(batch)}")
 
 
+def pull_batch(
+    subscription: Union[str, "Subscription"],
+    max_messages: int = 1,
+    **subscription_kwargs,
+) -> List["Alert"]:
+    """Pull a single batch of messages from the `subscription`.
+
+    Parameters
+    ----------
+    subscription : `str` or :class:pittgoogle.pubsub.Subscription
+        Subscription to be pulled. If `str`, the name of the subscription.
+    max_messages : `int`
+        Maximum number of messages to be pulled.
+    subscription_kwargs
+        Keyword arguments sent to :class:pittgoogle.pubsub.Subscription.
+        Ignored if `subscription` is a :class:pittgoogle.pubsub.Subscription.
+    """
+    if isinstance(subscription, str):
+        subscription = Subscription(subscription, **subscription_kwargs)
+
+    response = subscription.client.pull(
+        {"subscription": subscription.path, "max_messages": max_messages}
+    )
+
+    message_list = [Alert(msg=msg.message) for msg in response.received_messages]
+    ack_ids = [msg.ack_id for msg in response.received_messages]
+
+    if len(ack_ids) > 0:
+        subscription.client.acknowledge({"subscription": subscription.path, "ack_ids": ack_ids})
+
+    return message_list
+
+
 @define
 class Topic:
     """Basic attributes of a Pub/Sub topic.
@@ -386,6 +419,19 @@ class Consumer:
         LOGGER.info("closing the stream")
         self.streaming_pull_future.cancel()  # trigger the shutdown
         self.streaming_pull_future.result()  # block until the shutdown is complete
+
+    def pull_batch(self, max_messages: int = 1) -> List["Alert"]:
+        """Pull a single batch of messages.
+
+        Recommended for testing. Not recommended for long-running listeners (use the :meth:`~Consumer.stream`
+        method instead).
+
+        Parameters
+        ----------
+        max_messages : `int`
+            Maximum number of messages to be pulled.
+        """
+        return pull_batch(self.subscription, max_messages)
 
 
 @define(kw_only=True)
