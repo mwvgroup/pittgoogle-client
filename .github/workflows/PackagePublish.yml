@@ -1,0 +1,76 @@
+name: Publish Package
+
+on:
+  release:
+    types: [ released ]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  run-tests:
+    name: Tests
+    uses: ./.github/workflows/PackageTest.yml
+    secrets: inherit
+
+  build-docs:
+    name: Docs
+    needs: run-tests
+    uses: ./.github/workflows/DocumentationBuild.yml
+    secrets: inherit
+
+  publish-package:
+    name: Publish Distribution
+    needs: build-docs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: false
+
+      # Get the new package version from the release tag
+      # Git release tags are expected to start with "refs/tags/v"
+      - name: Set package version
+        run: |
+          release_tag=${{github.ref}}
+          poetry version "${release_tag#refs/tags/v}"
+
+      - name: Build package
+        run: poetry build -v
+
+      - name: Publish package
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          print-hash: true
+          repository-url: ${{ matrix.host }}
+          user: ${{ secrets.REPO_USER }}
+          password: ${{ secrets.REPO_PASSWORD }}
+
+  publish-docs:
+    name: Deploy Documentation
+    needs: [ build-docs, publish-package ]
+
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2

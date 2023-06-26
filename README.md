@@ -5,6 +5,9 @@
 
 # pittgoogle-client
 
+[![](https://app.codacy.com/project/badge/Grade/ec909deaf09840f3b3f645f045dea468)](https://app.codacy.com/gh/mwvgroup/pittgoogle-client/dashboard)
+[![](https://app.codacy.com/project/badge/Coverage/ec909deaf09840f3b3f645f045dea468)](https://app.codacy.com/gh/mwvgroup/pittgoogle-client/dashboard)
+
 Read the docs: [http://pittgoogle-client.rtfd.io/](http://pittgoogle-client.rtfd.io/).
 
 This is the client package for the

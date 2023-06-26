@@ -1,0 +1,36 @@
+name: Build Documentation
+
+on:
+  workflow_dispatch:
+  workflow_call:
+  pull_request:
+
+jobs:
+  build:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout project source
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: false
+
+      - name: Install dependencies
+        run: poetry install --with docs
+
+      - name: Build docs
+        working-directory: docs
+        run: make html SPHINXOPTS="-W"
+
+      - name: Upload docs to artifact storage
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: docs/build/html
