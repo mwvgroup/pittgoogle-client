@@ -5,8 +5,6 @@ See the tutorial for usage help.
 """
 from typing import Generator, List, Optional, Tuple, Union
 
-from typing import Generator, List, Optional, Tuple, Union
-
 import astropy
 import pandas as pd
 from astropy import coordinates as coord

@@ -177,7 +177,7 @@ class Auth:
         oauth2 = OAuth2Session(client_id, redirect_uri=redirect_uri, scope=scopes)
 
         # instruct the user to authorize
-        authorization_url, state = oauth2.authorization_url(
+        authorization_url, _ = oauth2.authorization_url(
             authorization_base_url,
             access_type="offline",
             # access_type="online",
