@@ -1,27 +1,22 @@
-#!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
-
 """Functions to support working with alerts and related data."""
-
-
+import json
+import logging
 from base64 import b64decode, b64encode
 from collections import OrderedDict
 from io import BytesIO
-import json
-import logging
 from typing import ClassVar
 
-from astropy.table import Table
-from astropy.time import Time
-import attrs
 import fastavro
 import pandas as pd
+from astropy.table import Table
+from astropy.time import Time
+from attrs import define
 
 LOGGER = logging.getLogger(__name__)
 
 
-# --- Other
-@attrs.define
+@define
 class ProjectIds:
     """Registry of Google Cloud Project IDs."""
 
@@ -31,13 +26,14 @@ class ProjectIds:
     pittgoogle_dev: ClassVar[str] = "avid-heading-329016"
     """Pitt-Google's development project."""
 
-    pittgoogle_billing: ClassVar[str] = "light-cycle-328823"
-    """Pitt-Google's billing project."""
+    # pittgoogle_billing: ClassVar[str] = "light-cycle-328823"
+    # """Pitt-Google's billing project."""
 
     elasticc: ClassVar[str] = "elasticc-challenge"
     """Project running a classifier for ELAsTiCC alerts and reporting to DESC."""
 
 
+@define
 class Cast:
     """Methods to convert data types."""
 
@@ -92,7 +88,7 @@ class Cast:
 
     @staticmethod
     def avro_to_dict(bytes_data):
-        """Convert Avro serialized bytes data to a dict.
+        """Convert Avro serialized bytes data to a dict. The schema must be attached in the header.
 
         Parameters
         ------------
@@ -106,7 +102,7 @@ class Cast:
         """
         if bytes_data is not None:
             with BytesIO(bytes_data) as fin:
-                alert_dicts = [r for r in fastavro.reader(fin)]  # list with single dict
+                alert_dicts = list(fastavro.reader(fin))  # list with single dict
             if len(alert_dicts) != 1:
                 LOGGER.warning(f"Expected 1 Avro record. Found {len(alert_dicts)}.")
             return alert_dicts[0]
@@ -191,16 +187,6 @@ class Cast:
             ``jd`` in the format 'day mon year hour:min'
         """
         return Time(jd, format="jd").strftime("%d %b %Y - %H:%M:%S")
-
-
-# def init_defaults(obj):
-#     """Return dictionary of default values for args of obj.__init__."""
-#     params = inspect.signature(obj.__init__).parameters
-#     # ClassDefaults = namedtuple(
-#     #     "ClassDefaults", " ".join(name for name in params.keys())
-#     # )
-#     # return ClassDefaults._make(params[key].default for key in ClassDefaults._fields)
-#     return dict((name, params[name].default) for name in params.keys())
 
 
 # --- Survey-specific

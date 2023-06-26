@@ -1,20 +1,18 @@
-#!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
-
 """``figures`` contains functions for plotting alert and history data.
+See the tutorials for usage help.
 """
-
 import gzip
 import io
 from typing import Optional
 
 import aplpy
-from astropy.io import fits
-from astropy.time import Time
 import matplotlib as mpl
-from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
+from astropy.io import fits
+from astropy.time import Time
+from matplotlib import pyplot as plt
 
 from . import utils as pgbu
 

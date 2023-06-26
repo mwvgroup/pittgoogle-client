@@ -47,7 +47,7 @@ setup(
     keywords="astronomy, alert broker",
     url="https://github.com/mwvgroup/pittgoogle-client",
     author="Troy Raen",
-    author_email="troy.raen@pitt.edu",
+    author_email="raen.troy@gmail.com",
     packages=find_packages(),  # Required
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/en/latest/requirements.html

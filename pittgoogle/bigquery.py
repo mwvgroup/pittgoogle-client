@@ -1,18 +1,18 @@
-#!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 """The ``bigquery`` module facilitates querying Pitt-Google Broker's
 BigQuery databases and reading the results.
+See the tutorial for usage help.
 """
-
 from typing import Generator, List, Optional, Tuple, Union
 
 import astropy
+import pandas as pd
 from astropy import coordinates as coord
 from google.cloud import bigquery
-import pandas as pd
 from tabulate import tabulate
 
 from .utils import ProjectIds
+
 
 pgb_project_id = ProjectIds.pittgoogle
 
@@ -329,9 +329,7 @@ def _list_aggcols_sql_statements(columns: List[str]) -> List[str]:
     # complete list of columns to be aggregated (group by) objectId
     aggcols = fcols + ncols
     # attach the ARRAY_AGG, ORDER By, and AS statements to the aggcols
-    aggcols = [
-        f'ARRAY_AGG({c} ORDER BY candidate.jd) AS {c.split(".")[-1]}' for c in aggcols
-    ]
+    aggcols = [f'ARRAY_AGG({c} ORDER BY candidate.jd) AS {c.split(".")[-1]}' for c in aggcols]
 
     return aggcols
 
@@ -427,9 +425,7 @@ def query_objects(
     if format == "query_job":
         return query_job
     elif iterator:  # return a generator that cycles through the objects/rows
-        return (
-            format_history_query_results(row=row, format=format) for row in query_job
-        )
+        return (format_history_query_results(row=row, format=format) for row in query_job)
     else:  # format and return all rows at once
         return format_history_query_results(query_job=query_job, format=format)
 

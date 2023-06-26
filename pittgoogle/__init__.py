@@ -1,14 +1,11 @@
-#!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
-
-"""Tools for interacting with Pitt-Google Broker data resources."""
-
-# from warnings import warn as _warn
+"""Tools for interacting with Pitt-Google Broker data resources on Google Cloud Platform."""
 import logging
-
-# from . import auth, bigquery, figures, pubsub, types, utils
 import os as os
 from pathlib import Path
+
+from . import auth, bigquery, exceptions, figures, pubsub, utils
+
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +20,5 @@ for var in env_vars:
     if var not in os.environ:
         logger.warning(
             f"Warning: The environment variable {var} is not set. "
-            "This may impact your ability to connect to your "
-            "Google Cloud Platform project."
+            "This may impact your ability to connect to your Google Cloud Platform project."
         )

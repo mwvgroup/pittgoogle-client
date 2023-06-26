@@ -18,11 +18,20 @@
     overview/adv-setup
 
 .. toctree::
+    :caption: Tutorials
+    :maxdepth: 3
+    :hidden:
+
+    tutorials/bigquery
+    tutorials/cloud-storage
+
+.. toctree::
     :caption: API Reference
     :maxdepth: 3
     :hidden:
 
     api/auth
+    api/bigquery
+    api/figures
     api/pubsub
-    api/types
     api/utils

@@ -1,11 +1,47 @@
-#!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
-"""A class to handle authentication with Google Cloud."""
+"""A class to handle authentication with Google Cloud.
+
+.. contents::
+   :local:
+   :depth: 2
+
+.. note::
+
+    To authenticate, you must have completed one of the setup options described in
+    :doc:`/overview/authentication`. The recommended workflow is to use a
+    :ref:`service account <service account>` and :ref:`set environment variables <set env vars>`.
+    In that case, you will not need to call this module directly.
+
+Usage Example
+--------------
+
+The basic call is:
+
+.. code-block:: python
+
+    from pittgoogle import auth
+
+    myauth = auth.Auth()
+
+This will load authentication settings from your :ref:`environment variables <set env vars>`.
+You can override this behavior with keyword arguments. This does not automatically load the
+credentials. To do that, request them explicitly:
+
+.. code-block:: python
+
+    myauth.credentials
+
+It will first look for a service account key file, then fallback to OAuth2.
+
+API
+----
+
+"""
 import logging
 import os
 from typing import TYPE_CHECKING, Union
 
-import attrs
+from attrs import define, field
 from google import auth as gauth
 from google_auth_oauthlib.helpers import credentials_from_session
 from requests_oauthlib import OAuth2Session
@@ -18,7 +54,7 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger(__name__)
 
 
-@attrs.define
+@define
 class Auth:
     """Credentials for authentication to a Google Cloud project.
 
@@ -44,16 +80,15 @@ class Auth:
         are required for successful authentication using `Auth`.
     """
 
-    GOOGLE_CLOUD_PROJECT = attrs.field(factory=lambda: os.getenv("GOOGLE_CLOUD_PROJECT", None))
-    GOOGLE_APPLICATION_CREDENTIALS = attrs.field(
+    GOOGLE_CLOUD_PROJECT = field(factory=lambda: os.getenv("GOOGLE_CLOUD_PROJECT", None))
+    GOOGLE_APPLICATION_CREDENTIALS = field(
         factory=lambda: os.getenv("GOOGLE_APPLICATION_CREDENTIALS", None)
     )
-    OAUTH_CLIENT_ID = attrs.field(factory=lambda: os.getenv("OAUTH_CLIENT_ID", None))
-    OAUTH_CLIENT_SECRET = attrs.field(factory=lambda: os.getenv("OAUTH_CLIENT_SECRET", None))
-    _credentials = attrs.field(default=None, init=False)
-    _oauth2 = attrs.field(default=None, init=False)
+    OAUTH_CLIENT_ID = field(factory=lambda: os.getenv("OAUTH_CLIENT_ID", None))
+    OAUTH_CLIENT_SECRET = field(factory=lambda: os.getenv("OAUTH_CLIENT_SECRET", None))
+    _credentials = field(default=None, init=False)
+    _oauth2 = field(default=None, init=False)
 
-    # credentials
     @property
     def credentials(
         self,

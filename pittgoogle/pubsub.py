@@ -1,24 +1,100 @@
-#!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
-"""Classes to facilitate connections to Pub/Sub streams."""
+"""Classes to facilitate connections to Pub/Sub streams.
+
+.. contents::
+   :local:
+   :depth: 2
+
+.. note::
+
+    This module relies on :mod:`pittgoogle.auth` to authenticate API calls.
+    The examples given below assume the use of a :ref:`service account <service account>` and
+    :ref:`environment variables <set env vars>`. In this case, :mod:`pittgoogle.auth` does not
+    need to be called explicitly.
+
+Usage Examples
+---------------
+
+.. code-block:: python
+
+    import pittgoogle
+
+Create a subscription to the "ztf-loop" topic:
+
+.. code-block:: python
+
+    subscription = pittgoogle.pubsub.Subscription(
+        "my-ztf-loop-subscription",
+        # topic only required if the subscription does not yet exist in Google Cloud
+        topic=pittgoogle.pubsub.Topic("ztf-loop", pittgoogle.utils.ProjectIds.pittgoogle)
+    )
+    subscription.touch()
+
+Pull a small batch of alerts. Helpful for testing. Not recommended for long-runnining listeners.
+
+.. code-block:: python
+
+    alerts = pittgoogle.pubsub.pull_batch(subscription, max_messages=4)
+
+Open a streaming pull. Recommended for long-runnining listeners. This will pull and process
+messages in the background, indefinitely. User must supply a callback that processes a single message.
+It should accept a :class:`pittgoogle.pubsub.Alert` and return a :class:`pittgoogle.pubsub.Response`.
+Optionally, can provide a callback that processes a batch of messages. Note that messages are
+acknowledged (and thus permanently deleted) _before_ the batch callback runs, so it is recommended
+to do as much processing as possible in the message callback and use a batch callback only when
+necessary.
+
+.. code-block:: python
+
+    def my_msg_callback(alert):
+        # process the message here. we'll just print the ID.
+        print(f"processing message: {alert.metadata['message_id']}")
+
+        # return a Response. include a result if using a batch callback.
+        return pittgoogle.pubsub.Response(ack=True, result=alert.dict)
+
+    def my_batch_callback(results):
+        # process the batch of results (list of results returned by my_msg_callback)
+        # we'll just print the number of results in the batch
+        print(f"batch processing {len(results)} results)
+
+    consumer = pittgoogle.pubsub.Consumer(
+        subscription=subscription, msg_callback=my_msg_callback, batch_callback=my_batch_callback
+    )
+
+    # open the stream in the background and process messages through the callbacks
+    # this blocks indefinitely. use `Ctrl-C` to close the stream and unblock
+    consumer.stream()
+
+Delete the subscription from Google Cloud.
+
+.. code-block:: python
+
+    subscription.delete()
+
+API
+----
+
+"""
 import logging
 import queue
 from concurrent.futures import ThreadPoolExecutor
 from time import sleep
-from typing import Callable, Optional, Union
+from typing import Any, ByteString, Callable, List, Optional, Union
 
-from attrs import define, field
+from attrs import converters, define, field
 from attrs.validators import gt, instance_of, is_callable, optional
 from google.api_core.exceptions import NotFound
 from google.cloud import pubsub_v1
 
 from .auth import Auth
-from .types import Alert, Response
+from .exceptions import OpenAlertError
+from .utils import Cast
 
 LOGGER = logging.getLogger(__name__)
 
 
-def msg_callback_example(alert: Alert) -> Response:
+def msg_callback_example(alert: "Alert") -> "Response":
     print(f"processing message: {alert.metadata['message_id']}")
     return Response(ack=True, result=alert.dict)
 
@@ -158,11 +234,9 @@ class Subscription:
             LOGGER.info(f"deleted subscription: {self.path}")
 
 
-@define(kw_only=True)
+@define()
 class Consumer:
     """Consumer class to pull a Pub/Sub subscription and process messages.
-
-    All parameters are keyword-only.
 
     Parameters
     -----------
@@ -170,7 +244,7 @@ class Consumer:
         Pub/Sub subscription to be pulled (it must already exist in Google Cloud).
     msg_callback : `callable`
         Function that will process a single message. It should accept a
-        :class:`pittgoogle.types.Alert` and return a :class:`pittgoogle.types.Response`.
+        :class:`pittgoogle.pubsub.Alert` and return a :class:`pittgoogle.pubsub.Response`.
     batch_callback : `callable`, optional
         Function that will process a batch of results. It should accept a list of the results
         returned by the `msg_callback`.
@@ -184,11 +258,11 @@ class Consumer:
     max_workers : `int`, optional
         Maximum number of workers for the `executor`. This has no effect if an `executor` is provided.
     executor : `concurrent.futures.ThreadPoolExecutor`, optional
-        Executor that will be used by the Google API to pull and process messages in the background.
+        Executor to be used by the Google API to pull and process messages in the background.
     """
 
     _subscription: Union[str, Subscription] = field(validator=instance_of((str, Subscription)))
-    msg_callback: Callable[[Alert], Response] = field(validator=is_callable())
+    msg_callback: Callable[["Alert"], "Response"] = field(validator=is_callable())
     batch_callback: Optional[Callable[[list], None]] = field(
         default=None, validator=optional(is_callable())
     )
@@ -214,13 +288,23 @@ class Consumer:
 
     @property
     def executor(self) -> ThreadPoolExecutor:
-        """Executor to be used by the Google API to pull and process messages in the background."""
+        """Executor to be used by the Google API for a streaming pull."""
         if self._executor is None:
             self._executor = ThreadPoolExecutor(self.max_workers)
         return self._executor
 
     def stream(self, block: bool = True) -> None:
-        """Open the stream and process messages through the :ref:`callbacks <callbacks>`."""
+        """Open the stream in a background thread and process messages through the callbacks.
+
+        Recommended for long-running listeners.
+
+        Parameters
+        ----------
+        block : `bool`
+            Whether to block the main thread while the stream is open. If `True`, block
+            indefinitely (use `Ctrl-C` to close the stream and unblock). If False, open the stream
+            and then return (use :meth:`~Consumer.stop()` to close the stream).
+        """
         # open a streaming-pull and process messages through the callback, in the background
         self._open_stream()
 
@@ -298,7 +382,7 @@ class Consumer:
                 batch, count = [], 0
 
     def stop(self) -> None:
-        """Attempt to shutdown the streaming pull and exit the background thread gracefully."""
+        """Attempt to shutdown the streaming pull and exit the background threads gracefully."""
         LOGGER.info("closing the stream")
         self.streaming_pull_future.cancel()  # trigger the shutdown
         self.streaming_pull_future.result()  # block until the shutdown is complete
