@@ -95,18 +95,10 @@ class Auth:
     ) -> Union["google.auth.credentials.Credentials", "google.oauth2.credentials.Credentials"]:
         """Credentials, loaded from a service account key file or an OAuth2 session."""
         if self._credentials is None:
-            self._credentials = self.get_credentials()
+            self._credentials = self._get_credentials()
         return self._credentials
 
-    @credentials.setter
-    def credentials(self, value):
-        self._credentials = value
-
-    @credentials.deleter
-    def credentials(self):
-        self._credentials = None
-
-    def get_credentials(
+    def _get_credentials(
         self,
     ) -> Union["google.auth.credentials.Credentials", "google.oauth2.credentials.Credentials"]:
         """Load user credentials from a service account key file or an OAuth2 session.
@@ -155,23 +147,14 @@ class Auth:
 
         return credentials
 
-    # OAuth2Session
     @property
     def oauth2(self) -> "requests_oauthlib.OAuth2Session":
         """`requests_oauthlib.OAuth2Session` connected to the Google Cloud project."""
         if self._oauth2 is None:
-            self._oauth2 = self.authenticate_with_oauth2()
+            self._oauth2 = self._authenticate_with_oauth2()
         return self._oauth2
 
-    @oauth2.setter
-    def oauth2(self, value):
-        self._oauth2 = value
-
-    @oauth2.deleter
-    def oauth2(self):
-        self._oauth2 = None
-
-    def authenticate_with_oauth2(self) -> "requests_oauthlib.OAuth2Session":
+    def _authenticate_with_oauth2(self) -> "requests_oauthlib.OAuth2Session":
         """Guide user through authentication and create `OAuth2Session` for credentials.
 
         The user will need to visit a URL, authenticate themselves, and authorize
