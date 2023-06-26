@@ -19,15 +19,6 @@ If you run into trouble, please
 
 **Data overview**
 
-.. manual list so index.rst renders correctly
-.. toctree::
-    :maxdepth: 1
-    :hidden:
-
-    data-pubsub
-    data-bigquery
-    data-cloud-storage
-
 -   :ref:`data pubsub`
 
 -   :ref:`data bigquery`
