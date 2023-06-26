@@ -1,3 +1,7 @@
+body {
+    font-size: 20px;
+}
+
 /*
 Make list-tables wrap instead of forcing a scrollbar
 https://knowyourtoolset.com/2018/02/controlling-the-width-of-a-table-with-read-the-docs/
