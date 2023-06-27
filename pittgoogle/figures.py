@@ -96,6 +96,7 @@ def plot_stamp(stamp, fig=None, subplot=None, **kwargs):
             # this is fixed by requiring astropy==3.2.1
             # Note: I see this related thing: https://github.com/aplpy/aplpy/issues/420
             # but I am using the latest APLpy version (2.0.3).
+            # update (2023-06-26): this seems to be working now with astropy==5.2.2
             ffig.show_grayscale(stretch="arcsinh")
     return ffig
 
