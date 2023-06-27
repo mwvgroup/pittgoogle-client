@@ -116,7 +116,7 @@ def get_table_info(table: Union[str, list] = "all", dataset: str = "ztf_alerts")
     # get the table names in a list
     if table == "all":
         tables = get_dataset_table_names(dataset=dataset)
-    elif type(table) == str:
+    elif isinstance(table, str):
         tables = [table]
     else:
         tables = table
@@ -297,7 +297,7 @@ def object_history_sql_statement(
         sqlquery = " ".join([sqlquery, wheres])
 
     # GROUP BY statement
-    groupbys = f"GROUP BY objectId"
+    groupbys = "GROUP BY objectId"
     sqlquery = " ".join([sqlquery, groupbys])
 
     # LIMIT statement
@@ -351,7 +351,7 @@ def dry_run(query: str, notify: bool = True):
     if notify:
         nbytes, TiB = query_job.total_bytes_processed, 2**40
         pTiB = nbytes / TiB * 100  # nbytes as a percent of 1 TiB
-        print(f"\nQuery statement:")
+        print("\nQuery statement:")
         print(f'\n"{query}"\n')
         print(f"will process {nbytes} bytes of data.")
         print(f"({pTiB:.3}% of your 1 TiB Free Tier monthly allotment.)")
@@ -514,7 +514,7 @@ def _format_history_query_results_to_df(query_job: bigquery.job.QueryJob):
     """
 
     dflist = []
-    for r, row in enumerate(query_job):
+    for row in query_job:
         # convert to DataFrame
         df = _format_history_row_to_df(row)
         # add the objectId so we can use it to multi-index
