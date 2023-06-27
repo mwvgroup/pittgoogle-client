@@ -1,0 +1,8 @@
+# packages to support building docs
+docutils<0.17  # render lists properly
+myst-parser
+numpydoc
+sphinx
+sphinx-copybutton
+sphinx_autodoc_typehints
+sphinx_rtd_theme
