@@ -335,8 +335,9 @@ class Consumer:
         ----------
         block : `bool`
             Whether to block the main thread while the stream is open. If `True`, block
-            indefinitely (use `Ctrl-C` to close the stream and unblock). If False, open the stream
-            and then return (use :meth:`~Consumer.stop()` to close the stream).
+            indefinitely (use `Ctrl-C` to close the stream and unblock). If `False`, open the
+            stream and then return (use :meth:`~Consumer.stop()` to close the stream).
+            This must be `True` in order to use a `batch_callback`.
         """
         # open a streaming-pull and process messages through the callback, in the background
         self._open_stream()
@@ -423,8 +424,8 @@ class Consumer:
     def pull_batch(self, max_messages: int = 1) -> List["Alert"]:
         """Pull a single batch of messages.
 
-        Recommended for testing. Not recommended for long-running listeners (use the :meth:`~Consumer.stream`
-        method instead).
+        Recommended for testing. Not recommended for long-running listeners (use the
+        :meth:`~Consumer.stream` method instead).
 
         Parameters
         ----------
