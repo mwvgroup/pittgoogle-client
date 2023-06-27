@@ -114,13 +114,13 @@ def pull_batch(
 
     Parameters
     ----------
-    subscription : `str` or :class:pittgoogle.pubsub.Subscription
+    subscription : `str` or :class:`pittgoogle.pubsub.Subscription`
         Subscription to be pulled. If `str`, the name of the subscription.
     max_messages : `int`
         Maximum number of messages to be pulled.
     subscription_kwargs
-        Keyword arguments sent to :class:pittgoogle.pubsub.Subscription.
-        Ignored if `subscription` is a :class:pittgoogle.pubsub.Subscription.
+        Keyword arguments sent to :class:`pittgoogle.pubsub.Subscription`.
+        Ignored if `subscription` is a :class:`pittgoogle.pubsub.Subscription`.
     """
     if isinstance(subscription, str):
         subscription = Subscription(subscription, **subscription_kwargs)
