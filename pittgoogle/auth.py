@@ -19,9 +19,9 @@ The basic call is:
 
 .. code-block:: python
 
-    from pittgoogle import auth
+    import pittgoogle
 
-    myauth = auth.Auth()
+    myauth = pittgoogle.auth.Auth()
 
 This will load authentication settings from your :ref:`environment variables <set env vars>`.
 You can override this behavior with keyword arguments. This does not automatically load the
