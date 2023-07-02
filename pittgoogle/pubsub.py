@@ -1,369 +1,536 @@
-"""The `pubsub` module facilitates access to Pitt-Google Pub/Sub streams."""
+# -*- coding: UTF-8 -*-
+"""Classes to facilitate connections to Pub/Sub streams.
 
-import json
-import os
-from io import BytesIO
-from typing import Callable, List, Optional, Tuple, Union
+.. contents::
+   :local:
+   :depth: 2
 
-import pandas as pd
-from astropy.table import Table
-from fastavro import reader
+.. note::
+
+    This module relies on :mod:`pittgoogle.auth` to authenticate API calls.
+    The examples given below assume the use of a :ref:`service account <service account>` and
+    :ref:`environment variables <set env vars>`. In this case, :mod:`pittgoogle.auth` does not
+    need to be called explicitly.
+
+Usage Examples
+---------------
+
+.. code-block:: python
+
+    import pittgoogle
+
+Create a subscription to the "ztf-loop" topic:
+
+.. code-block:: python
+
+    subscription = pittgoogle.pubsub.Subscription(
+        "my-ztf-loop-subscription",
+        # topic only required if the subscription does not yet exist in Google Cloud
+        topic=pittgoogle.pubsub.Topic("ztf-loop", pittgoogle.utils.ProjectIds.pittgoogle)
+    )
+    subscription.touch()
+
+Pull a small batch of alerts. Helpful for testing. Not recommended for long-runnining listeners.
+
+.. code-block:: python
+
+    alerts = pittgoogle.pubsub.pull_batch(subscription, max_messages=4)
+
+Open a streaming pull. Recommended for long-runnining listeners. This will pull and process
+messages in the background, indefinitely. User must supply a callback that processes a single message.
+It should accept a :class:`pittgoogle.pubsub.Alert` and return a :class:`pittgoogle.pubsub.Response`.
+Optionally, can provide a callback that processes a batch of messages. Note that messages are
+acknowledged (and thus permanently deleted) _before_ the batch callback runs, so it is recommended
+to do as much processing as possible in the message callback and use a batch callback only when
+necessary.
+
+.. code-block:: python
+
+    def my_msg_callback(alert):
+        # process the message here. we'll just print the ID.
+        print(f"processing message: {alert.metadata['message_id']}")
+
+        # return a Response. include a result if using a batch callback.
+        return pittgoogle.pubsub.Response(ack=True, result=alert.dict)
+
+    def my_batch_callback(results):
+        # process the batch of results (list of results returned by my_msg_callback)
+        # we'll just print the number of results in the batch
+        print(f"batch processing {len(results)} results)
+
+    consumer = pittgoogle.pubsub.Consumer(
+        subscription=subscription, msg_callback=my_msg_callback, batch_callback=my_batch_callback
+    )
+
+    # open the stream in the background and process messages through the callbacks
+    # this blocks indefinitely. use `Ctrl-C` to close the stream and unblock
+    consumer.stream()
+
+Delete the subscription from Google Cloud.
+
+.. code-block:: python
+
+    subscription.delete()
+
+API
+----
+
+"""
+import logging
+import queue
+from concurrent.futures import ThreadPoolExecutor
+from time import sleep
+from typing import Any, ByteString, Callable, List, Optional, Union
+
+from attrs import converters, define, field
+from attrs.validators import gt, instance_of, is_callable, optional
+from google.api_core.exceptions import NotFound
 from google.cloud import pubsub_v1
-# note: the 'v1' refers to the underlying API, not the google.cloud.pubsub version
-from google.cloud.pubsub_v1.subscriber.futures import StreamingPullFuture
-from google.cloud.pubsub_v1.types import PubsubMessage, ReceivedMessage, Subscription
 
-from . import utils as pgbu
+from .auth import Auth
+from .exceptions import OpenAlertError
+from .utils import Cast
 
-pgb_project_id = "ardent-cycling-243415"
+LOGGER = logging.getLogger(__name__)
 
 
-# --- Pull messages --- #
-def pull(
-    subscription_name: str,
+def msg_callback_example(alert: "Alert") -> "Response":
+    print(f"processing message: {alert.metadata['message_id']}")
+    return Response(ack=True, result=alert.dict)
+
+
+def batch_callback_example(batch: list) -> None:
+    oids = set(alert.dict["objectId"] for alert in batch)
+    print(f"num oids: {len(oids)}")
+    print(f"batch length: {len(batch)}")
+
+
+def pull_batch(
+    subscription: Union[str, "Subscription"],
     max_messages: int = 1,
-    project_id: Optional[str] = None,
-    msg_only: bool = True,
-) -> Union[List[bytes], List[ReceivedMessage]]:
-    """Pull and acknowledge a fixed number of messages from a Pub/Sub topic.
+    **subscription_kwargs,
+) -> List["Alert"]:
+    """Pull a single batch of messages from the `subscription`.
 
-    Wrapper for the synchronous
-    `google.cloud.pubsub_v1.SubscriberClient().pull()`
-    documented at
-    https://googleapis.dev/python/pubsub/latest/subscriber/api/client.html.
-
-    See also: https://cloud.google.com/pubsub/docs/pull
-
-    Args:
-        subscription_name: Name of the Pub/Sub subcription to pull from.
-
-        max_messages: The maximum number of messages to pull.
-
-        project_id: GCP project ID for the project containing the subscription.
-                    If None, the environment variable GOOGLE_CLOUD_PROJECT will be used.
-
-        msg_only: Whether to return the message contents only or the full packet.
-
-    Returns:
-        A list of messages. If `msg_only` is True, the messages are bytes containing
-        the message data only. Otherwise the messages are the full message packets.
+    Parameters
+    ----------
+    subscription : `str` or :class:`pittgoogle.pubsub.Subscription`
+        Subscription to be pulled. If `str`, the name of the subscription.
+    max_messages : `int`
+        Maximum number of messages to be pulled.
+    subscription_kwargs
+        Keyword arguments sent to :class:`pittgoogle.pubsub.Subscription`.
+        Ignored if `subscription` is a :class:`pittgoogle.pubsub.Subscription`.
     """
+    if isinstance(subscription, str):
+        subscription = Subscription(subscription, **subscription_kwargs)
 
-    if project_id is None:
-        project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
+    response = subscription.client.pull(
+        {"subscription": subscription.path, "max_messages": max_messages}
+    )
 
-    # setup for pull
-    subscriber = pubsub_v1.SubscriberClient()
-    subscription_path = subscriber.subscription_path(project_id, subscription_name)
-    request = {
-        "subscription": subscription_path,
-        "max_messages": max_messages,
-    }
+    message_list = [Alert(msg=msg.message) for msg in response.received_messages]
+    ack_ids = [msg.ack_id for msg in response.received_messages]
 
-    # wrap in 'with' block to automatically call close() when done
-    with subscriber:
-
-        # pull
-        response = subscriber.pull(request=request)
-
-        # unpack the messages
-        message_list, ack_ids = [], []
-        for received_message in response.received_messages:
-            if msg_only:
-                message_list.append(received_message.message.data)  # bytes
-            else:
-                message_list.append(received_message)
-                # https://cloud.google.com/pubsub/docs/reference/rpc/google.pubsub.v1#google.pubsub.v1.ReceivedMessage
-
-            ack_ids.append(received_message.ack_id)
-
-        # acknowledge the messages so they will not be sent again
-        ack_request = {
-            "subscription": subscription_path,
-            "ack_ids": ack_ids,
-        }
-        subscriber.acknowledge(request=ack_request)
+    if len(ack_ids) > 0:
+        subscription.client.acknowledge({"subscription": subscription.path, "ack_ids": ack_ids})
 
     return message_list
 
 
-def streamingPull(
-    subscription_name: str,
-    callback: Callable[[PubsubMessage], None],
-    project_id: str = None,
-    block: bool = True,
-) -> Union[None, StreamingPullFuture]:
-    """Pull and process Pub/Sub messages continuously in streaming mode.
+@define
+class Topic:
+    """Basic attributes of a Pub/Sub topic.
 
-    Wrapper for the asynchronous
-    `google.cloud.pubsub_v1.SubscriberClient().subscribe()`
-    documented at
-    https://googleapis.dev/python/pubsub/latest/subscriber/api/client.html.
-
-    See also: https://cloud.google.com/pubsub/docs/pull
-
-    Args:
-        subscription_name: The Pub/Sub subcription to pull from.
-
-        callback: The callback function containing the message processing and
-                  acknowledgement logic.
-
-        project_id: GCP project ID for the project containing the subscription.
-                    If None, the environment variable GOOGLE_CLOUD_PROJECT will be used.
-
-        block: Whether to block while streaming messages or return the
-               StreamingPullFuture object for the user to manage separately.
-
-    Returns:
-        If `block` is False, immediately returns the `StreamingPullFuture` object that
-        manages the background thread that is pulling and processing messages.
-        Call its `cancel()` method to stop streaming messages.
-
-        If `block` is True, the user's thread is blocked until the streaming encounters
-        an error.
-        Use Control+C to stop streaming.
+    Parameters
+    ------------
+    name : `str`
+        Name of the Pub/Sub topic.
+    projectid : `str`
+        The topic owner's Google Cloud project ID. Note: :attr:`pittgoogle.utils.ProjectIds`
+        is a registry containing Pitt-Google's project IDs.
     """
 
-    if project_id is None:
-        project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
+    name: str = field()
+    projectid: str = field()
 
-    subscriber = pubsub_v1.SubscriberClient()
-    subscription_path = subscriber.subscription_path(project_id, subscription_name)
+    @property
+    def path(self) -> str:
+        """Fully qualified path to the topic."""
+        return f"projects/{self.projectid}/topics/{self.name}"
 
-    # start receiving and processing messages in a background thread
-    streaming_pull_future = subscriber.subscribe(
-        subscription_path, callback, await_callbacks_on_shutdown=True
+    @classmethod
+    def from_path(cls, path) -> "Topic":
+        """Parse the `path` and return a new `Topic`."""
+        _, projectid, _, name = path.split("/")
+        return cls(name, projectid)
+
+
+@define
+class Subscription:
+    """Basic attributes of a Pub/Sub subscription and methods to manage it.
+
+    Parameters
+    -----------
+    name : `str`
+        Name of the Pub/Sub subscription.
+    auth : :class:`pittgoogle.auth.Auth`, optional
+        Credentials for the Google Cloud project that owns this subscription. If not provided,
+        it will be created from environment variables.
+    topic : :class:`pittgoogle.pubsub.Topic`, optional
+        Topic this subscription should be attached to. Required only when the subscription needs
+        to be created.
+    client : `pubsub_v1.SubscriberClient`, optional
+        Pub/Sub client that will be used to access the subscription. This kwarg is useful if you
+        want to reuse a client. If None, a new client will be created.
+    """
+
+    name: str = field()
+    auth: Auth = field(factory=Auth, validator=instance_of(Auth))
+    topic: Optional[Topic] = field(default=None, validator=optional(instance_of(Topic)))
+    _client: Optional[pubsub_v1.SubscriberClient] = field(
+        default=None, validator=optional(instance_of(pubsub_v1.SubscriberClient))
     )
 
-    if block:
-        # block until an error is encountered or the user cancels with Control+C
-        with subscriber:
-            try:
-                streaming_pull_future.result()
-            except KeyboardInterrupt:
-                streaming_pull_future.cancel()  # Trigger the shutdown.
-                streaming_pull_future.result()  # Block until the shutdown is complete.
+    @property
+    def projectid(self) -> str:
+        """Subscription owner's Google Cloud project ID."""
+        return self.auth.GOOGLE_CLOUD_PROJECT
 
-    else:
-        return streaming_pull_future
+    @property
+    def path(self) -> str:
+        """Fully qualified path to the subscription."""
+        return f"projects/{self.projectid}/subscriptions/{self.name}"
 
+    @property
+    def client(self) -> pubsub_v1.SubscriberClient:
+        """Pub/Sub client that will be used to access the subscription. If not provided, a new
+        client will be created using `self.auth.credentials`.
+        """
+        if self._client is None:
+            self._client = pubsub_v1.SubscriberClient(credentials=self.auth.credentials)
+        return self._client
 
-# --- Publish --- #
-def publish(
-    topic_name: str, message: bytes, project_id: Optional[str] = None, attrs: dict = {}
-) -> str:
-    """Publish messages to a Pub/Sub topic.
+    def touch(self) -> None:
+        """Test the connection to the subscription, creating it if necessary.
 
-    Wrapper for `google.cloud.pubsub_v1.PublisherClient().publish()`
-    documented at
-    https://googleapis.dev/python/pubsub/latest/publisher/api/client.html.
+        Note that messages published to the topic before the subscription was created are
+        not available to the subscription.
 
-    See also: https://cloud.google.com/pubsub/docs/publisher
+        Raises
+        ------
+        `TypeError`
+            if the subscription needs to be created but no topic was provided.
 
-    Args:
-        topic_name: The Pub/Sub topic name for publishing alerts.
+        `NotFound`
+            if the subscription needs to be created but the topic does not exist in Google Cloud.
 
-        message: The message to be published.
-
-        project_id: GCP project ID for the project containing the topic.
-                    If None, the environment variable GOOGLE_CLOUD_PROJECT will be used.
-
-        attrs: Message attributes to be published.
-
-    Returns:
-        published message ID
-    """
-
-    if project_id is None:
-        project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
-
-    publisher = pubsub_v1.PublisherClient()
-
-    topic_path = publisher.topic_path(project_id, topic_name)
-
-    future = publisher.publish(topic_path, data=message, **attrs)
-
-    return future.result()
-
-
-# --- Subscribe to a PGB stream from an external account --- #
-def create_subscription(
-    topic_name: str,
-    subscription_name: Optional[str] = None,
-    project_id: Optional[str] = None,
-) -> Subscription:
-    """Create a subscription to a Pitt-Google Pub/Sub topic.
-
-    Wrapper for `google.cloud.pubsub_v1.SubscriberClient().create_subscription()`
-    documented at
-    https://googleapis.dev/python/pubsub/latest/subscriber/api/client.html.
-
-    See also: https://cloud.google.com/pubsub/docs/admin#manage_subs
-
-    Args:
-        topic_name: Name of a Pitt-Google Broker Pub/Sub topic to subscribe to.
-        project_id: User's GCP project ID. If None, the environment variable
-                    GOOGLE_CLOUD_PROJECT will be used. The subscription will be
-                    created in this account.
-        subscription_name: Name for the user's Pub/Sub subscription. If None,
-                           `topic_name` will be used.
-
-    Returns:
-        A Pub/Sub `Subscription` instance
-    """
-
-    if project_id is None:
-        project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
-    if subscription_name is None:
-        subscription_name = topic_name
-
-    subscriber = pubsub_v1.SubscriberClient()
-    publisher = pubsub_v1.PublisherClient()
-
-    sub_path = subscriber.subscription_path(project_id, subscription_name)
-    topic_path = publisher.topic_path(pgb_project_id, topic_name)
-    request = {"name": sub_path, "topic": topic_path}
-
-    with subscriber:
-        subscription = subscriber.create_subscription(request=request)
-
-    print(f"Created subscription {subscription.name}")
-    print(f"attached to topic {subscription.topic}")
-
-    return subscription
-
-
-# --- Delete a subscription --- #
-def delete_subscription(
-    subscription_name: str, project_id: Optional[str] = None
-) -> None:
-    """Delete a Pub/Sub subscription.
-
-    Wrapper for `google.cloud.pubsub_v1.SubscriberClient().delete_subscription()`
-    documented at
-    https://googleapis.dev/python/pubsub/latest/subscriber/api/client.html.
-
-    See also: https://cloud.google.com/pubsub/docs/admin#delete_subscription
-
-    Args:
-        subscription_name: Name for the user's Pub/Sub subscription. If None,
-                           `topic_name` will be used.
-        project_id: User's GCP project ID. If None, the environment variable
-                    GOOGLE_CLOUD_PROJECT will be used. The subscription will be
-                    created in this account.
-    """
-
-    if project_id is None:
-        project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
-
-    subscriber = pubsub_v1.SubscriberClient()
-    subscription_path = subscriber.subscription_path(project_id, subscription_name)
-    request = {"subscription": subscription_path}
-
-    with subscriber:
-        subscriber.delete_subscription(request=request)
-
-    print(f"Subscription deleted: {subscription_path}.")
-
-
-# --- Decode messages --- #
-def decode_message(
-    msg_bytes: bytes,
-    return_alert_as: str = "dict",
-) -> Union[
-    Union[dict, pd.DataFrame, Table],
-    Union[Tuple[dict, dict], Tuple[pd.DataFrame, dict], Tuple[Table, dict]],
-]:
-    """Decode the message and return in requested format.
-
-    Args:
-        msg_bytes: a single alert
-
-        return_alert_as: Format for the returned alert.
-            One of "dict" (dictionary), "df" (Pandas DataFrame) or
-            "table" (Astropy Table).
-            Note that only the "dict" option returns the full packet.
-            Using "df" or "table" drops some metadata and the cutouts (if present).
-
-    Returns:
-        If the message contains an alert packet only, it is returned in the requested
-        format.
-
-        If the message contains an alert packet plus value added products, it is
-        returned as a tuple where the first element is the alert packet in the
-        requested format, and the second element is the value added products as a dict.
-    """
-
-    # decode the message
-    try:
-        # decode message with avro encoding
-        # may come from topic ztf-alerts or ztf-loop
-        alert_dict, va_dict = _decode_avro_alert(msg_bytes)
-    except ValueError:
+        `AssertionError`
+            if the subscription exists but it is not attached to self.topic and self.topic is not None.
+        """
         try:
-            # decode message with json encoding
-            # may come from ztf-alerts_pure, ztf-exgalac_trans, or ztf-salt2
-            alert_dict, va_dict = _decode_json_msg(msg_bytes)
-        except UnicodeDecodeError:
-            _raise_decode_error()
-        except json.JSONDecodeError:
-            _raise_decode_error()
+            subscrip = self.client.get_subscription(subscription=self.path)
+            LOGGER.info(f"subscription exists: {self.path}")
 
-    # cast the alert to the requested type
-    if return_alert_as == "dict":
-        alert = alert_dict
-    elif return_alert_as == "df":
-        alert = pgbu.alert_dict_to_dataframe(alert_dict)
-    elif return_alert_as == "table":
-        alert = pgbu.alert_dict_to_table(alert_dict)
-    else:
-        errmsg = f"Received return_alert_as = {return_alert_as}, which is invalid"
-        raise ValueError(errmsg)
+        except NotFound:
+            subscrip = self._create()
+            LOGGER.info(f"subscription created: {self.path}")
 
-    # package the object(s) to return
-    if va_dict is None:
-        rtn = alert
-    else:
-        rtn = (alert, va_dict)
+        self._validate_topic(subscrip.topic)
 
-    return rtn
+    def _create(self) -> pubsub_v1.types.Subscription:
+        if self.topic is None:
+            raise TypeError("The subscription needs to be created but no topic was provided.")
 
+        try:
+            return self.client.create_subscription(name=self.path, topic=self.topic.path)
 
-def _decode_avro_alert(
-    alert_bytes: bytes,
-) -> Union[Tuple[dict, dict], Tuple[dict, None]]:
-    # extract the alert data
-    with BytesIO(alert_bytes) as fin:
-        alert_dicts = [r for r in reader(fin)]  # list of dicts
-    # ZTF alerts are expected to contain one dict in the list
-    assert len(alert_dicts) == 1
-    alert_dict = alert_dicts[0]
+        # this error message is not very clear. let's help.
+        except NotFound as nfe:
+            raise NotFound(f"The topic does not exist: {self.topic.path}") from nfe
 
-    # these streams do not have value added products
-    va_dict = None
+    def _validate_topic(self, connected_topic_path) -> None:
+        if (self.topic is not None) and (connected_topic_path != self.topic.path):
+            raise AssertionError(
+                f"The subscription is attached to topic {connected_topic_path}. Expected {self.topic.path}"
+            )
+        self.topic = Topic.from_path(connected_topic_path)
+        LOGGER.debug("topic validated")
 
-    return alert_dict, va_dict
+    def delete(self) -> None:
+        """Delete the subscription."""
+        try:
+            self.client.delete_subscription(subscription=self.path)
+        except NotFound:
+            LOGGER.info(f"nothing to delete. subscription not found: {self.path}")
+        else:
+            LOGGER.info(f"deleted subscription: {self.path}")
 
 
-def _decode_json_msg(msg_bytes: bytes) -> Union[Tuple[dict, dict], Tuple[dict, None]]:
-    # decode to a dict
-    dict_str = msg_bytes.decode("UTF-8")
-    dic = json.loads(dict_str)
+@define()
+class Consumer:
+    """Consumer class to pull a Pub/Sub subscription and process messages.
 
-    # separate alert from value added
-    if "alert" in dic.keys():  # value added products are included in the msg
-        alert_dict = dic.pop("alert")
-        va_dict = dic
+    Parameters
+    -----------
+    subscription : `str` or :class:`pittgoogle.pubsub.Subscription`
+        Pub/Sub subscription to be pulled (it must already exist in Google Cloud).
+    msg_callback : `callable`
+        Function that will process a single message. It should accept a
+        :class:`pittgoogle.pubsub.Alert` and return a :class:`pittgoogle.pubsub.Response`.
+    batch_callback : `callable`, optional
+        Function that will process a batch of results. It should accept a list of the results
+        returned by the `msg_callback`.
+    batch_maxn : `int`, optional
+        Maximum number of messages in a batch. This has no effect if `batch_callback` is None.
+    batch_maxwait : `int`, optional
+        Max number of seconds to wait between messages before before processing a batch.
+        This has no effect if `batch_callback` is None.
+    max_backlog : `int`, optional
+        Maximum number of pulled but unprocessed messages before pausing the pull.
+    max_workers : `int`, optional
+        Maximum number of workers for the `executor`. This has no effect if an `executor` is provided.
+    executor : `concurrent.futures.ThreadPoolExecutor`, optional
+        Executor to be used by the Google API to pull and process messages in the background.
+    """
 
-    else:  # msg is just the alert
-        alert_dict = dic
-        va_dict = None
-
-    return alert_dict, va_dict
-
-
-def _raise_decode_error():
-    errmsg = (
-        "Unable to decode the message. " "It does not seem to be of an expected type."
+    _subscription: Union[str, Subscription] = field(validator=instance_of((str, Subscription)))
+    msg_callback: Callable[["Alert"], "Response"] = field(validator=is_callable())
+    batch_callback: Optional[Callable[[list], None]] = field(
+        default=None, validator=optional(is_callable())
     )
-    raise ValueError(errmsg)
+    batch_maxn: int = field(default=100, converter=int)
+    batch_maxwait: int = field(default=30, converter=int)
+    max_backlog: int = field(default=1000, validator=gt(0))
+    max_workers: Optional[int] = field(default=None, validator=optional(instance_of(int)))
+    _executor: ThreadPoolExecutor = field(
+        default=None, validator=optional(instance_of(ThreadPoolExecutor))
+    )
+    _queue: queue.Queue = field(factory=queue.Queue, init=False)
+    streaming_pull_future: pubsub_v1.subscriber.futures.StreamingPullFuture = field(
+        default=None, init=False
+    )
+
+    @property
+    def subscription(self) -> Subscription:
+        """Subscription to be consumed."""
+        if isinstance(self._subscription, str):
+            self._subscription = Subscription(self._subscription)
+            self._subscription.touch()
+        return self._subscription
+
+    @property
+    def executor(self) -> ThreadPoolExecutor:
+        """Executor to be used by the Google API for a streaming pull."""
+        if self._executor is None:
+            self._executor = ThreadPoolExecutor(self.max_workers)
+        return self._executor
+
+    def stream(self, block: bool = True) -> None:
+        """Open the stream in a background thread and process messages through the callbacks.
+
+        Recommended for long-running listeners.
+
+        Parameters
+        ----------
+        block : `bool`
+            Whether to block the main thread while the stream is open. If `True`, block
+            indefinitely (use `Ctrl-C` to close the stream and unblock). If `False`, open the
+            stream and then return (use :meth:`~Consumer.stop()` to close the stream).
+            This must be `True` in order to use a `batch_callback`.
+        """
+        # open a streaming-pull and process messages through the callback, in the background
+        self._open_stream()
+
+        if not block:
+            msg = "The stream is open in the background. Use consumer.stop() to close it."
+            print(msg)
+            LOGGER.info(msg)
+            return
+
+        try:
+            self._process_batches()
+
+        # catch all exceptions and attempt to close the stream before raising
+        except (KeyboardInterrupt, Exception):
+            self.stop()
+            raise
+
+    def _open_stream(self) -> None:
+        """Open a streaming pull and process messages in the background."""
+        LOGGER.info(f"opening a streaming pull on subscription: {self.subscription.path}")
+        self.streaming_pull_future = self.subscription.client.subscribe(
+            self.subscription.path,
+            self._callback,
+            flow_control=pubsub_v1.types.FlowControl(max_messages=self.max_backlog),
+            scheduler=pubsub_v1.subscriber.scheduler.ThreadScheduler(executor=self.executor),
+            await_callbacks_on_shutdown=True,
+        )
+
+    def _callback(self, message: pubsub_v1.types.PubsubMessage) -> None:
+        """Unpack the message, run the :attr:`~Consumer.msg_callback` and handle the response."""
+        # LOGGER.info("callback started")
+        response = self.msg_callback(Alert(msg=message))  # Response
+        # LOGGER.info(f"{response.result}")
+
+        if response.result is not None:
+            self._queue.put(response.result)
+
+        if response.ack:
+            message.ack()
+        else:
+            message.nack()
+
+    def _process_batches(self):
+        """Run the batch callback if provided, otherwise just sleep.
+
+        This never returns -- it runs until it encounters an error.
+        """
+        # if there's no batch_callback there's nothing to do except wait until the process is killed
+        if self.batch_callback is None:
+            while True:
+                sleep(60)
+
+        batch, count = [], 0
+        while True:
+            try:
+                batch.append(self._queue.get(block=True, timeout=self.batch_maxwait))
+
+            except queue.Empty:
+                # hit the max wait. process the batch
+                self.batch_callback(batch)
+                batch, count = [], 0
+
+            # catch anything else and try to process the batch before raising
+            except (KeyboardInterrupt, Exception):
+                self.batch_callback(batch)
+                raise
+
+            else:
+                self._queue.task_done()
+                count += 1
+
+            if count == self.batch_maxn:
+                # hit the max number of results. process the batch
+                self.batch_callback(batch)
+                batch, count = [], 0
+
+    def stop(self) -> None:
+        """Attempt to shutdown the streaming pull and exit the background threads gracefully."""
+        LOGGER.info("closing the stream")
+        self.streaming_pull_future.cancel()  # trigger the shutdown
+        self.streaming_pull_future.result()  # block until the shutdown is complete
+
+    def pull_batch(self, max_messages: int = 1) -> List["Alert"]:
+        """Pull a single batch of messages.
+
+        Recommended for testing. Not recommended for long-running listeners (use the
+        :meth:`~Consumer.stream` method instead).
+
+        Parameters
+        ----------
+        max_messages : `int`
+            Maximum number of messages to be pulled.
+        """
+        return pull_batch(self.subscription, max_messages)
+
+
+@define(kw_only=True)
+class Alert:
+    """Pitt-Google container for a Pub/Sub message.
+
+    Typical usage is to instantiate an `Alert` using only a `msg`, and then the other attributes
+    will be automatically extracted and returned (lazily).
+
+    All parameters are keyword only.
+
+    Parameters
+    ------------
+    bytes : `bytes`, optional
+        The message payload, as returned by Pub/Sub. It may be Avro or JSON serialized depending
+        on the topic.
+    dict : `dict`, optional
+        The message payload as a dictionary.
+    metadata : `dict`, optional
+        The message metadata.
+    msg : `google.cloud.pubsub_v1.types.PubsubMessage`, optional
+        The Pub/Sub message object, documented at
+        `<https://googleapis.dev/python/pubsub/latest/types.html>`__.
+    """
+
+    _bytes: Optional[ByteString] = field(default=None)
+    _dict: Optional[dict] = field(default=None)
+    _metadata: Optional[dict] = field(default=None)
+    msg: Optional["pubsub_v1.types.PubsubMessage"] = field(default=None)
+    """Original Pub/Sub message object."""
+
+    @property
+    def bytes(self) -> bytes:
+        """Message payload in original format (Avro or JSON serialized bytes)."""
+        if self._bytes is None:
+            # add try-except when we know what we're looking for
+            self._bytes = self.msg.data
+            if self._bytes is None:
+                # if we add a "path" attribute for the path to an avro file on disk
+                # we can load it like this:
+                #     with open(self.path, "rb") as f:
+                #         self._bytes = f.read()
+                pass
+        return self._bytes
+
+    @property
+    def dict(self) -> dict:
+        """Message payload as a dictionary.
+
+        Raises
+        ------
+        :class:`pittgoogle.exceptions.OpenAlertError`
+            if unable to deserialize the alert bytes.
+        """
+        if self._dict is None:
+            # this should be rewritten to catch specific errors
+            # for now, just try avro then json, catching basically all errors in the process
+            try:
+                self._dict = Cast.avro_to_dict(self.bytes)
+            except Exception:
+                try:
+                    self._dict = Cast.json_to_dict(self.bytes)
+                except Exception:
+                    raise OpenAlertError("failed to deserialize the alert bytes")
+        return self._dict
+
+    @property
+    def metadata(self) -> dict:
+        """Message metadata as a flat dictionary."""
+        if self._metadata is None:
+            self._metadata = {
+                "message_id": self.msg.message_id,
+                "publish_time": self.msg.publish_time,
+                # ordering must be enabled on the subscription for this to be useful
+                "ordering_key": self.msg.ordering_key,
+                # flatten the dict containing our custom attributes
+                **self.msg.attributes,
+            }
+        return self._metadata
+
+
+@define(kw_only=True, frozen=True)
+class Response:
+    """Container for a response, to be returned by a :meth:`pittgoogle.pubsub.Consumer.msg_callback`.
+
+    Parameters
+    ------------
+    ack : `bool`
+        Whether to acknowledge the message. Use `True` if the message was processed successfully,
+        `False` if an error was encountered and you would like Pub/Sub to redeliver the message at
+        a later time. Note that once a message is acknowledged to Pub/Sub it is permanently deleted
+        (unless the subscription has been explicitly configured to retain acknowledged messages).
+
+    result : `Any`
+        Anything the user wishes to return. If not `None`, the Consumer will collect the results
+        in a list and pass the list to the user's batch callback for further processing.
+        If there is no batch callback the results will be lost.
+    """
+
+    ack: bool = field(default=True, converter=converters.to_bool)
+    result: Any = field(default=None)

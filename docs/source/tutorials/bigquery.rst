@@ -1,37 +1,20 @@
-BigQuery Databases
+BigQuery Tutorial
 ==================
 
--  `Prerequisites`_
--  `Python`_
+.. contents:: Table of Contents
+    :depth: 1
+    :local:
 
-   -  `Setup and basics`_
-   -  `Query lightcurves and other history`_
-
-      -  `Plot a lightcurve`_
-
-   -  `Cone search`_
-   -  `Using google.cloud.bigquery`_
-
--  `Command line`_
-
-This tutorial covers downloading and working with data from our BigQuery
-databases via two methods: the pittgoogle-client Python package, and the bq CLI.
-
-For more information, see: - `Google Cloud BigQuery Python client
-documentation <https://googleapis.dev/python/bigquery/latest/index.html>`__
-(the pittgoogle functions used below are thin wrappers for this API) -
-`bq CLI
-reference <https://cloud.google.com/bigquery/docs/reference/bq-cli-reference>`__
+This tutorial covers access via two methods: pittgoogle-client and the bq CLI.
 
 Prerequisites
 -------------
 
-1. Complete the :doc:`initial-setup`. Be sure to:
+1. Complete the initial setup. In particular, be sure to:
 
-   -  set your environment variables
-   -  enable the BigQuery API
-   -  install the pittgoogle-client package if you want to use Python
-   -  install the CLI if you want to use the command line
+   -  :ref:`install` and/or :ref:`Install the command-line tools <install gcp cli>`.
+   -  :ref:`service account`
+   -  :ref:`Set your environment variables <set env vars>`
 
 Python
 ------

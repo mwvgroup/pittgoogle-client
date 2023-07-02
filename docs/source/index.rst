@@ -3,42 +3,142 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Pitt-Google Broker
+.. toctree::
+    :maxdepth: 3
+    :hidden:
+
+    Install<overview/install>
+    overview/authentication
+    overview/project
+    overview/env-vars
+    overview/cost
+    overview/adv-setup
+
+.. toctree::
+    :caption: Tutorials
+    :maxdepth: 3
+    :hidden:
+
+    tutorials/bigquery
+    tutorials/cloud-storage
+
+.. toctree::
+    :caption: API Reference
+    :maxdepth: 3
+    :hidden:
+
+    api/auth
+    api/bigquery
+    api/figures
+    api/pubsub
+    api/utils
+
+pittgoogle-client
 ==============================================
 
-The Pitt-Google Broker is a cloud-based alert distribution service designed to provide near real-time processing of data from large-scale astronomical surveys like the `Legacy Survey of Space and Time <https://www.lsst.org/>`_ (LSST). LSST will deliver on order a million real-time alerts each night providing information on astronomical targets within 60 seconds of observation. The Pitt-Google Broker is a scalable broker system being designed to maximize the availability and usefulness of the LSST alert data by combining cloud-based analysis opportunities with value-added data products.
+`pittgoogle-client` is a python library that facilitates access to astronomy data that lives in Google Cloud services.
+It is being developed  the `Pitt-Google alert broker <https://github.com/mwvgroup/Pitt-Google-Broker>`__ is curated and maintained  available in Google Cloud.
 
-The Pitt-Google Broker runs on the `Google Cloud Platform <https://cloud.google.com/>`_ (GCP) and is currently focused on processing and serving alerts from the `Zwicky Transient Facility <https://www.ztf.caltech.edu/>`_ (ZTF), and extending broker capabilities using ZTF, the LSST Alert Simulator, and the DECam Alliance for Transients (DECAT) stream.
+**Initial setup** for data access requires 2 steps:
 
-.. .. toctree::
-..    :hidden:
-..
-..    Overview<self>
+#.  :ref:`install`
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Access Data
+#.  :ref:`Authenticate to Google Cloud <authentication>`
 
-   access-data/data-overview
-   access-data/initial-setup
-   access-data/bigquery
-   access-data/cloud-storage
-   access-data/pubsub
+If you run into trouble, please
+`open an Issue <https://github.com/mwvgroup/pittgoogle-client/issues>`__.
 
-.. toctree::
-   :hidden:
-   :maxdepth: 1
-   :caption: API Reference
+**Data overview**
 
-   api/pittgoogle/bigquery
-   api/pittgoogle/figures
-   api/pittgoogle/pubsub
-   api/pittgoogle/utils
+.. _data pubsub:
 
-..
-.. Indices and tables
-.. ==================
-..
-.. * :ref:`genindex`
-.. * :ref:`modindex`
-.. * :ref:`search`
+Pub/Sub Message Streams
+=======================
+
+.. list-table:: Streams
+    :class: tight-table
+    :widths: 25 75
+    :header-rows: 1
+
+    * - Topic
+      - Description
+
+    * - ztf-alerts
+      - Full ZTF alert stream
+
+    * - ztf-lite
+      - Lite version of ztf-alerts (every alert, subset of fields)
+
+    * - ztf-tagged
+      - ztf-lite with basic categorizations such as “is pure” and “is likely extragalactic
+        transient” added to the message metadata.
+
+    * - ztf-SuperNNova
+      - ztf-tagged plus SuperNNova classification results (Ia vs non-Ia).
+
+    * - ztf-alert_avros
+      - Notification stream from the ztf-alert_avros Cloud Storage bucket indicating
+        that a new alert packet is in file storage.
+        These messages contain no data, only attributes.
+        The file name is in the attribute "objectId",
+        and the bucket name is in the attribute "bucketId".
+
+    * - ztf-BigQuery
+      - Notification stream indicating that alert data is available in BigQuery tables.
+
+    * - **ztf-loop**
+      - Use this stream for testing. Recent ZTF alerts are published to this topic
+        at a roughly constant rate of 1 per second.
+
+.. _data bigquery:
+
+BigQuery Catalogs
+==================
+
+.. list-table:: Datasets and Tables
+    :class: tight-table
+    :widths: 15 15 70
+    :header-rows: 1
+
+    * - Dataset
+      - Table
+      - Description
+
+    * - ztf_alerts
+      - alerts
+      - Complete alert packet, excluding image cutouts.
+        Same schema as the original alert, including nested and repeated fields.
+
+    * - ztf_alerts
+      - DIASource
+      - Alert packet data for the triggering source only. Including the object ID and a
+        list of source IDs for the previous sources included in the alert,
+        excluding cutouts and data for previous sources.
+        Flat schema.
+
+    * - ztf_alerts
+      - SuperNNova
+      - Results from a SuperNNova (Möller \& de Boissière, 2019)
+        Type Ia supernova classification (binary).
+
+    * - ztf_alerts
+      - metadata
+      - Information recording Pitt-Google processing (e.g., message publish times,
+        bucket name and filename, etc.).
+
+.. _data cloud storage:
+
+Cloud Storage
+====================
+
+.. list-table:: Buckets
+    :class: tight-table
+    :widths: 40 60
+    :header-rows: 1
+
+    * - Bucket Name
+      - Description
+
+    * - ardent-cycling-243415-ztf-alert_avros
+      - Contains the complete, original alert packets as Avro files.
+        Filename syntax is: `<ztf_topic>/<objectId>/<candid>.avro`

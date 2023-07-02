@@ -1,6 +1,7 @@
+# -*- coding: UTF-8 -*-
 """``figures`` contains functions for plotting alert and history data.
+See the tutorials for usage help.
 """
-
 import gzip
 import io
 from typing import Optional
@@ -95,6 +96,7 @@ def plot_stamp(stamp, fig=None, subplot=None, **kwargs):
             # this is fixed by requiring astropy==3.2.1
             # Note: I see this related thing: https://github.com/aplpy/aplpy/issues/420
             # but I am using the latest APLpy version (2.0.3).
+            # update (2023-06-26): this seems to be working now with astropy==5.2.2
             ffig.show_grayscale(stretch="arcsinh")
     return ffig
 
@@ -119,7 +121,7 @@ def plot_lightcurve_cutouts(alert_dict):
     """
 
     fig = plt.figure(figsize=(16, 4))
-    dflc = pgbu.alert_dict_to_dataframe(alert_dict)
+    dflc = pgbu.Cast.alert_dict_to_dataframe(alert_dict)
     plot_lightcurve(dflc, ax=plt.subplot(1, 4, 1))
     for i, cutout in enumerate(["Science", "Template", "Difference"]):
         stamp = alert_dict["cutout{}".format(cutout)]["stampData"]

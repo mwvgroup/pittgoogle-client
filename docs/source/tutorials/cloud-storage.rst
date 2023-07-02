@@ -1,37 +1,21 @@
-Cloud File Storage
-==================
+Cloud Storage Tutorial
+==============================
 
--  `Prerequisites`_
--  `File names`_
--  `Python`_
--  `Command line`_
+.. contents:: Table of Contents
+    :depth: 1
+    :local:
 
-This tutorial covers downloading and working with files from our Cloud
-Storage buckets via two methods: the pittgoogle-client Python package, and the
-gsutil CLI.
-
-For more information, see:
-
--   `Google Cloud Storage Client Python
-    documentation <https://googleapis.dev/python/storage/latest/client.html>`__
--   `gsutil overview <https://cloud.google.com/storage/docs/gsutil>`__
+This tutorial covers access via two methods: pittgoogle-client (with some direct use
+of the Google Cloud API), and the gsutil CLI.
 
 Prerequisites
 -------------
 
-1. Complete the :doc:`initial-setup`. Be sure to:
+1. Complete the initial setup. In particular, be sure to:
 
-   -  set your environment variables
-   -  enable the Cloud Storage API
-   -  install the google-cloud-bigquery package if you want to use Python
-   -  install the pittgoogle-client package if you want to plot the data using Python
-   -  install the CLI if you want to use the command line
-
-File names
-----------
-
-We store the alert packets as Avro files named as
-"{objectId}.{candid}.{ztf\_topic}.avro"
+   -  :ref:`install` and/or :ref:`Install the command-line tools <install gcp cli>`.
+   -  :ref:`service account`
+   -  :ref:`Set your environment variables <set env vars>`
 
 Python
 ------
@@ -58,7 +42,7 @@ Name some things
     local_dir = ''
 
     my_project_id = os.getenv('GOOGLE_CLOUD_PROJECT')
-    pgb_project_id = 'ardent-cycling-243415'
+    pgb_project_id = pittgoogle.utils.ProjectIds.pittgoogle
 
 Download files
 ~~~~~~~~~~~~~~
@@ -111,7 +95,7 @@ Cast to a dataframe and plot lightcurves
 
 .. code:: python
 
-    lc_df = pittgoogle.utils.alert_dict_to_dataframe(alert_dict)
+    lc_df = pittgoogle.utils.Cast.alert_dict_to_dataframe(alert_dict)
     pittgoogle.figures.plot_lightcurve(lc_df)
     plt.show(block=False)
 

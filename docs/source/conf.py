@@ -4,15 +4,14 @@
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-# -- Path setup --------------------------------------------------------------
-
 import sys
+from pathlib import Path
+
+# -- Path setup --------------------------------------------------------------
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# -- Path setup --------------------------------------------------------------
-from pathlib import Path
 
 pkg_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(pkg_root))
@@ -21,12 +20,14 @@ from pittgoogle import __version__ as version
 
 # -- Project information -----------------------------------------------------
 
-project = "Pitt-Google Broker"
+project = "pittgoogle-client"
 copyright = "2021, The Pitt-Google Broker Team"
-author = "The Pitt-Google Broker Team"
+author = "Troy Raen"
 
 # The full version, including alpha/beta/rc tags
 release = version
+
+# language = "en"
 
 
 # -- General configuration ---------------------------------------------------
@@ -47,9 +48,14 @@ extensions = [
     "sphinx_copybutton",
 ]
 
+set_type_checking_flag = True  # set typing.TYPE_CHECKING = True
+typehints_defaults = "braces"  # adds (default: ...) after the type
+
 # Make sure the target is unique
 autosectionlabel_prefix_document = True
 # now can reference pages with :ref:`{path/to/page}:{title-of-section}`
+# but can't use this with custom labels, so
+# autosectionlabel_prefix_document = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
