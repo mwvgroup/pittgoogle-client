@@ -10,7 +10,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
-## \[0.2.0\] - 2023-06-26
+### Changed
+
+-   update README.md to point to the new docs
+-   remove setup and requirements files that are no longer needed after switching away from Read The Docs
+
+## \[0.2.0\] - 2023-07-02
 
 ### Added
 
