@@ -251,7 +251,10 @@ class Topic:
             LOGGER.info(f"deleted topic: {self.path}")
 
     def publish(self, alert: "Alert", format="json") -> int:
-        """Publish the `alert.dict` in the requested `format`, attaching the `alert.attributes`."""
+        """Publish the `alert.dict` in the requested `format`, attaching the `alert.attributes`.
+
+        `format` can be "json" or a schema name.
+        """
         if format == "json":
             message = json.dumps(alert.dict).encode("utf-8")
 
