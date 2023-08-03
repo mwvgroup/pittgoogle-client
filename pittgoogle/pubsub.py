@@ -367,6 +367,19 @@ class Subscription:
         else:
             LOGGER.info(f"deleted subscription: {self.path}")
 
+    def pull_batch(self, max_messages: int = 1) -> List["Alert"]:
+        """Pull a single batch of messages.
+
+        Recommended for testing. Not recommended for long-running listeners (use the
+        :meth:`~Consumer.stream` method instead).
+
+        Parameters
+        ----------
+        max_messages : `int`
+            Maximum number of messages to be pulled.
+        """
+        return pull_batch(self, max_messages=max_messages, schema_name=self.schema_name)
+
 
 @define()
 class Consumer:
@@ -533,7 +546,7 @@ class Consumer:
         max_messages : `int`
             Maximum number of messages to be pulled.
         """
-        return pull_batch(self.subscription, max_messages)
+        return self.subscription.pull_batch(max_messages=max_messages)
 
 
 @define(kw_only=True)
