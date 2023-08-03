@@ -146,13 +146,15 @@ def pull_batch(
         {"subscription": subscription.path, "max_messages": max_messages}
     )
 
-    message_list = [Alert(msg=msg.message) for msg in response.received_messages]
-    ack_ids = [msg.ack_id for msg in response.received_messages]
+    alerts = [
+        Alert.from_msg(msg.message, schema_name=schema_name) for msg in response.received_messages
+    ]
 
+    ack_ids = [msg.ack_id for msg in response.received_messages]
     if len(ack_ids) > 0:
         subscription.client.acknowledge({"subscription": subscription.path, "ack_ids": ack_ids})
 
-    return message_list
+    return alerts
 
 
 @define
@@ -576,6 +578,23 @@ class Alert:
     _schema_map: Optional[dict] = field(default=None)
     # _metadata: Optional[dict] = field(default=None)
 
+    @classmethod
+    def from_msg(cls, msg, schema_name=str()):  # [TODO] update tom_desc to use this
+        """Create an `Alert` from a `pubsub_v1.types.PubsubMessage`."""
+        return cls(msg=msg, schema_name=schema_name)
+
+    @classmethod
+    def from_cloud_run(cls, envelope, schema_name=str()):
+        return cls(
+            msg=_PubsubMessageLike(
+                data=envelope["message"]["data"],
+                attributes=envelope["message"]["attributes"],
+                message_id=envelope["message"]["message_id"],
+                publish_time=envelope["message"]["publish_time"],
+                ordering_key=envelope["message"]["ordering_key"],
+            ),
+            schema_name=schema_name,
+        )
 
     # @property
     # def bytes(self) -> bytes:
@@ -708,3 +727,22 @@ class Response:
 
     ack: bool = field(default=True, converter=converters.to_bool)
     result: Any = field(default=None)
+
+
+@define(frozen=True)
+class _PubsubMessageLike:
+    """Container for an incoming Pub/Sub message that mimics a `pubsub_v1.types.PubsubMessage`.
+
+    It is convenient for the `Alert` class to work with a message as a
+    `pubsub_v1.types.PubsubMessage`. However, there are many ways to obtain an alert that do
+    not result in a `pubsub_v1.types.PubsubMessage` (e.g., an alert packet loaded from disk or
+    an incoming message to a Cloud Functions or Cloud Run module). In those cases, this class
+    is used to create an object with the same attributes as a `pubsub_v1.types.PubsubMessage`.
+    This object is then assigned to the `msg` attribute of the `Alert`.
+    """
+
+    data: bytes = field()
+    attributes: dict = field(factory=dict)
+    message_id: Optional[str] = field(default=None)
+    publish_time: Optional["google.protobuf.timestamp_pb2.Timestamp"] = field(default=None)
+    ordering_key: Optional[str] = field(default=None)
