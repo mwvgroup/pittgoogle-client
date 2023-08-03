@@ -76,12 +76,17 @@ API
 ----
 
 """
+import importlib.resources
+import io
+import json
 import logging
 import queue
 from concurrent.futures import ThreadPoolExecutor
 from time import sleep
-from typing import Any, ByteString, Callable, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, Union
 
+import fastavro
+import yaml
 from attrs import converters, define, field
 from attrs.validators import gt, instance_of, is_callable, optional
 from google.api_core.exceptions import NotFound
@@ -91,7 +96,14 @@ from .auth import Auth
 from .exceptions import OpenAlertError
 from .utils import Cast
 
+if TYPE_CHECKING:
+    import google.protobuf.timestamp_pb2
+    import google._upb._message
+    import pandas as pd
+
+
 LOGGER = logging.getLogger(__name__)
+PACKAGE_DIR = importlib.resources.files(__package__)
 
 
 def msg_callback_example(alert: "Alert") -> "Response":
