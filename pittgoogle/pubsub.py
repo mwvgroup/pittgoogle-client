@@ -655,6 +655,33 @@ class Alert:
     #             pass
     #     return self._bytes
 
+    def get(self, schema_key: str, return_key_name=False):
+        # fullkey = self.get(key, return_key=True)
+        survey_key = self.schema_map.get(schema_key)
+
+        if return_key_name:
+            if isinstance(survey_key, list):
+                return survey_key[-1]
+            return survey_key
+
+        if schema_key in self.dict:
+            return self.dict.get(schema_key)
+
+        if isinstance(survey_key, str):
+            return self.dict.get(survey_key)
+
+        if not isinstance(survey_key, list):
+            return
+
+        if len(survey_key) == 1:
+            return self.dict.get(survey_key[0])
+
+        if len(survey_key) == 2:
+            return self.dict.get(survey_key[0]).get(survey_key[1])
+
+        if len(survey_key) == 3:
+            return self.dict.get(survey_key[0]).get(survey_key[1]).get(survey_key[2])
+
     @property
     def dict(self) -> dict:
         """Message payload as a dictionary. Created from `self.msg.data` and `self.schema_name`, if needed.
