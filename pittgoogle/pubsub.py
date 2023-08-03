@@ -185,6 +185,14 @@ class Topic:
     )
 
     @classmethod
+    def from_cloud(cls, name, *, projectid, testid=False):
+        """Create a `Topic` with a `client` using implicit credentials (no explicit `auth`)."""
+        # if testid is not False, "False", or None, append the testid to the name
+        if testid and testid != "False":
+            name = f"{name}-{testid}"
+        return cls(name, projectid=projectid, client=pubsub_v1.PublisherClient())
+
+    @classmethod
     def from_path(cls, path) -> "Topic":
         """Parse the `path` and return a new `Topic`."""
         _, projectid, _, name = path.split("/")
