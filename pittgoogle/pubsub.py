@@ -158,24 +158,101 @@ class Topic:
     ------------
     name : `str`
         Name of the Pub/Sub topic.
-    projectid : `str`
-        The topic owner's Google Cloud project ID. Note: :attr:`pittgoogle.utils.ProjectIds`
-        is a registry containing Pitt-Google's project IDs.
+    projectid : `str`, optional
+        The topic owner's Google Cloud project ID. Either this or `auth` is required. Use this
+        if you are connecting to a subscription owned by a different project than this topic. Note:
+        :attr:`pittgoogle.utils.ProjectIds` is a registry containing Pitt-Google's project IDs.
+    auth : :class:`pittgoogle.auth.Auth`, optional
+        Credentials for the Google Cloud project that owns this topic. If not provided,
+        it will be created from environment variables when needed.
+    client : `pubsub_v1.PublisherClient`, optional
+        Pub/Sub client that will be used to access the topic. If not provided, a new client will
+        be created (using `auth`) the first time it is requested.
     """
 
     name: str = field()
-    projectid: str = field()
-
-    @property
-    def path(self) -> str:
-        """Fully qualified path to the topic."""
-        return f"projects/{self.projectid}/topics/{self.name}"
+    projectid: str = field(default=None)
+    _auth: Auth = field(default=None, validator=optional(instance_of(Auth)))
+    _client: Optional[pubsub_v1.PublisherClient] = field(
+        default=None, validator=optional(instance_of(pubsub_v1.PublisherClient))
+    )
 
     @classmethod
     def from_path(cls, path) -> "Topic":
         """Parse the `path` and return a new `Topic`."""
         _, projectid, _, name = path.split("/")
         return cls(name, projectid)
+
+    @property
+    def auth(self) -> Auth:
+        """Credentials for the Google Cloud project that owns this topic.
+
+        This will be created from environment variables if `self._auth` is None.
+        """
+        if self._auth is None:
+            self._auth = Auth()
+
+        if (self.projectid != self._auth.GOOGLE_CLOUD_PROJECT) and (self.projectid is not None):
+            LOGGER.warning(f"setting projectid to match auth: {self._auth.GOOGLE_CLOUD_PROJECT}")
+        self.projectid = self._auth.GOOGLE_CLOUD_PROJECT
+
+        return self._auth
+
+    @property
+    def path(self) -> str:
+        """Fully qualified path to the topic."""
+        # make sure we have a projectid. if it needs to be set, call auth
+        if self.projectid is None:
+            self.auth
+        return f"projects/{self.projectid}/topics/{self.name}"
+
+    @property
+    def client(self) -> pubsub_v1.PublisherClient:
+        """Pub/Sub client for topic access.
+
+        Will be created using `self.auth.credentials` if necessary.
+        """
+        if self._client is None:
+            self._client = pubsub_v1.PublisherClient(credentials=self.auth.credentials)
+        return self._client
+
+    def touch(self) -> None:
+        """Test the connection to the topic, creating it if necessary."""
+        try:
+            self.client.get_topic(topic=self.path)
+            LOGGER.info(f"topic exists: {self.path}")
+
+        except NotFound:
+            self.client.create_topic(name=self.path)
+            LOGGER.info(f"topic created: {self.path}")
+
+    def delete(self) -> None:
+        """Delete the topic."""
+        try:
+            self.client.delete_topic(topic=self.path)
+        except NotFound:
+            LOGGER.info(f"nothing to delete. topic not found: {self.path}")
+        else:
+            LOGGER.info(f"deleted topic: {self.path}")
+
+    def publish(self, alert: "Alert", format="json") -> int:
+        """Publish the `alert.dict` in the requested `format`, attaching the `alert.attributes`."""
+        if format == "json":
+            message = json.dumps(alert.dict).encode("utf-8")
+
+        elif format.startswith("elasticc"):
+            # load the avro schema and use it to serialize alert.dict
+            schema = fastavro.schema.load_schema(PACKAGE_DIR / f"schemas/elasticc/{format}.avsc")
+            fout = io.BytesIO()
+            fastavro.schemaless_writer(fout, schema, alert.dict)
+            fout.seek(0)
+            message = fout.getvalue()
+
+        # attribute keys and values must be strings
+        attributes = {str(key): str(val) for key, val in alert.attributes.items()}
+
+        future = self.client.publish(self.path, data=message, **attributes)
+        return future.result()
 
 
 @define
