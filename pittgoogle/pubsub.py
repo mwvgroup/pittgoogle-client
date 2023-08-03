@@ -120,6 +120,7 @@ def batch_callback_example(batch: list) -> None:
 def pull_batch(
     subscription: Union[str, "Subscription"],
     max_messages: int = 1,
+    schema_name: str = str(),
     **subscription_kwargs,
 ) -> List["Alert"]:
     """Pull a single batch of messages from the `subscription`.
@@ -130,6 +131,10 @@ def pull_batch(
         Subscription to be pulled. If `str`, the name of the subscription.
     max_messages : `int`
         Maximum number of messages to be pulled.
+    schema_name : `str`
+        One of "ztf", "ztf.lite", "elasticc.v0_9_1.alert", "elasticc.v0_9_1.brokerClassification".
+        Schema name of the alerts in the subscription. Passed to :class:`pittgoogle.pubsub.Alert`
+        for unpacking. If not provided, some properties of the `Alert` may not be available.
     subscription_kwargs
         Keyword arguments sent to :class:`pittgoogle.pubsub.Subscription`.
         Ignored if `subscription` is a :class:`pittgoogle.pubsub.Subscription`.
@@ -272,6 +277,10 @@ class Subscription:
     client : `pubsub_v1.SubscriberClient`, optional
         Pub/Sub client that will be used to access the subscription. This kwarg is useful if you
         want to reuse a client. If None, a new client will be created.
+    schema_name : `str`
+        One of "ztf", "ztf.lite", "elasticc.v0_9_1.alert", "elasticc.v0_9_1.brokerClassification".
+        Schema name of the alerts in the subscription. Passed to :class:`pittgoogle.pubsub.Alert`
+        for unpacking. If not provided, some properties of the `Alert` may not be available.
     """
 
     name: str = field()
@@ -280,6 +289,7 @@ class Subscription:
     _client: Optional[pubsub_v1.SubscriberClient] = field(
         default=None, validator=optional(instance_of(pubsub_v1.SubscriberClient))
     )
+    schema_name: str = field(factory=str)
 
     @property
     def projectid(self) -> str:
@@ -544,63 +554,138 @@ class Alert:
         The message metadata.
     msg : `google.cloud.pubsub_v1.types.PubsubMessage`, optional
         The Pub/Sub message object, documented at
-        `<https://googleapis.dev/python/pubsub/latest/types.html>`__.
+        `<https://cloud.google.com/python/docs/reference/pubsub/latest/google.cloud.pubsub_v1.types.PubsubMessage>`__.
+    schema_name : `str`
+        One of "ztf", "ztf.lite", "elasticc.v0_9_1.alert", "elasticc.v0_9_1.brokerClassification".
+        Schema name of the alert. Used for unpacking. If not provided, some properties of the
+        `Alert` may not be available.
     """
 
-    _bytes: Optional[ByteString] = field(default=None)
+    # _bytes: Optional[ByteString] = field(default=None)
     _dict: Optional[dict] = field(default=None)
-    _metadata: Optional[dict] = field(default=None)
-    msg: Optional["pubsub_v1.types.PubsubMessage"] = field(default=None)
-    """Original Pub/Sub message object."""
+    _attributes: Optional[Union[dict, "google._upb._message.ScalarMapContainer"]] = field(
+        default=None
+    )
+    # _metadata: Optional[dict] = field(default=None)
+    msg: Optional[Union["pubsub_v1.types.PubsubMessage", "_PubsubMessageLike"]] = field(
+        default=None
+    )
+    """Incoming Pub/Sub message object."""
+    _dataframe: Optional["pd.DataFrame"] = field(default=None)
+    schema_name: str = field(factory=str)
+    _schema_map: Optional[dict] = field(default=None)
+    # _metadata: Optional[dict] = field(default=None)
 
-    @property
-    def bytes(self) -> bytes:
-        """Message payload in original format (Avro or JSON serialized bytes)."""
-        if self._bytes is None:
-            # add try-except when we know what we're looking for
-            self._bytes = self.msg.data
-            if self._bytes is None:
-                # if we add a "path" attribute for the path to an avro file on disk
-                # we can load it like this:
-                #     with open(self.path, "rb") as f:
-                #         self._bytes = f.read()
-                pass
-        return self._bytes
+
+    # @property
+    # def bytes(self) -> bytes:
+    #     """Message payload in original format (Avro or JSON serialized bytes)."""
+    #     if self._bytes is None:
+    #         # add try-except when we know what we're looking for
+    #         self._bytes = self.msg.data
+    #         if self._bytes is None:
+    #             # if we add a "path" attribute for the path to an avro file on disk
+    #             # we can load it like this:
+    #             #     with open(self.path, "rb") as f:
+    #             #         self._bytes = f.read()
+    #             pass
+    #     return self._bytes
 
     @property
     def dict(self) -> dict:
-        """Message payload as a dictionary.
+        """Message payload as a dictionary. Created from `self.msg.data` and `self.schema_name`, if needed.
 
         Raises
         ------
         :class:`pittgoogle.exceptions.OpenAlertError`
             if unable to deserialize the alert bytes.
         """
-        if self._dict is None:
-            # this should be rewritten to catch specific errors
-            # for now, just try avro then json, catching basically all errors in the process
+        if self._dict is not None:
+            return self._dict
+
+        if self.schema_name.startswith("elasticc"):
+            # self.msg.data is avro and schemaless. load the schema, then convert the bytes to a dict
+            schemapath = PACKAGE_DIR / f"schemas/elasticc/{self.schema_name}.avsc"
+            schema = fastavro.schema.load_schema(schemapath)
+            with io.BytesIO(self.msg.data) as fin:
+                self._dict = fastavro.schemaless_reader(fin, schema)
+            return self._dict
+
+        if self.schema_name == "":
+            LOGGER.warning("no alert schema_name provided. attempting to deserialize without it.")
+
+        # assume this is a ztf or ztf-lite alert
+        # this should be rewritten to catch specific errors
+        # for now, just try avro then json, catching basically all errors in the process
+        try:
+            self._dict = Cast.avro_to_dict(self.msg.data)
+        except Exception:
             try:
-                self._dict = Cast.avro_to_dict(self.bytes)
+                self._dict = Cast.json_to_dict(self.msg.data)
             except Exception:
-                try:
-                    self._dict = Cast.json_to_dict(self.bytes)
-                except Exception:
-                    raise OpenAlertError("failed to deserialize the alert bytes")
+                raise OpenAlertError("failed to deserialize the alert bytes")
         return self._dict
 
     @property
-    def metadata(self) -> dict:
-        """Message metadata as a flat dictionary."""
-        if self._metadata is None:
-            self._metadata = {
-                "message_id": self.msg.message_id,
-                "publish_time": self.msg.publish_time,
-                # ordering must be enabled on the subscription for this to be useful
-                "ordering_key": self.msg.ordering_key,
-                # flatten the dict containing our custom attributes
-                **self.msg.attributes,
-            }
-        return self._metadata
+    def attributes(self) -> Union[dict, "google._upb._message.ScalarMapContainer"]:
+        """Custom metadata for the message. Pub/Sub handles this as a dict-like called "attributes".
+
+        If None, this will be set to `self.msg.attributes`.
+        Update as desired.
+        When publishing, this will be sent as the message attributes.
+        """
+        if self._attributes is None:
+            self._attributes = self.msg.attributes
+        return self._attributes
+
+    @property
+    def dataframe(self) -> "pd.DataFrame":
+        if self._dataframe is None:
+            import pandas as pd  # lazy-load pandas. it hogs memory on cloud functions and run
+
+            if self.schema_name.endswith(".lite"):
+                src_df = pd.DataFrame(self.dict["source"], index=[0])
+                prvs_df = pd.DataFrame(self.dict["prvSources"])
+            else:
+                src_df = pd.DataFrame(self.dict[self.schema_map["source"]], index=[0])
+                prvs_df = pd.DataFrame(self.dict[self.schema_map["prvSources"]])
+            self._dataframe = pd.concat([src_df, prvs_df], ignore_index=True)
+
+        return self._dataframe
+
+    @property
+    def schema_map(self) -> dict:
+        if self._schema_map is None:
+            if self.schema_name == str():
+                raise TypeError("no alert schema_name provided. unable to load schema map.")
+            survey = self.schema_name.split(".")[0]
+            path = PACKAGE_DIR / f"schema_maps/{survey}.yml"
+            self._schema_map = yaml.safe_load(path.read_text())
+        return self._schema_map
+
+    # @property
+    # def metadata(self) -> dict:
+    #     """Pub/Sub message metadata.
+
+    #     Includes
+
+    #         - message_id, publish_time, and ordering_key* of the incoming Pub/Sub message
+    #         - attributes, which is a dict that typically includes the attributes of the
+    #           incoming message and possibly additional entries added by the user in the meantime.
+
+    #     *To be useful, ordering_key requires that ordering is enabled on the subscription.
+    #     """
+    #     if self._metadata is None:
+    #         self._metadata = {
+    #             "message_id": self.msg.message_id,
+    #             "publish_time": self.msg.publish_time,
+    #             # ordering must be enabled on the subscription for this to be useful
+    #             "ordering_key": self.msg.ordering_key,
+    #             # [TODO] breaking change. attributes is now a dict. open a pr on tom_desc
+    #             # typically includes self.msg.attributes plus additional items added by the user
+    #             "attributes": self.attributes,
+    #         }
+    #     return self._metadata
 
 
 @define(kw_only=True, frozen=True)
