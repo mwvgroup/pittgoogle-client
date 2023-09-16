@@ -3,16 +3,20 @@ SURVEY_SCHEMA: https://github.com/LSSTDESC/elasticc/tree/main/alert_schema
 SCHEMA_VERSION: v0_9_1
 TOPIC_SYNTAX:
 FILTER_MAP:
-objectId: [diaObject, diaObjectId]
-prvSources: prvDiaSources
+alertid: alertId
+objectid: [diaObject, diaObjectId]
 source: diaSource
-sourceId: [diaSource, diaSourceId]
-cutoutScience: none
+sourceid: [diaSource, diaSourceId]
+prv_sources: prvDiaSources
+mjd: midPointTai
 filter: filterName
 mag: magpsf
 magerr: sigmapsf
 magzp: magzpsci
-psFlux: psFlux
-psFluxErr: psFluxErr
-dec: decl
+flux: psFlux
+fluxerr: psFluxErr
 ra: ra
+dec: decl
+cutout_science:
+cutout_template:
+cutout_difference:
