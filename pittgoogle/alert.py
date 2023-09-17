@@ -122,16 +122,17 @@ class Alert:
         `Alert` may not be available.
     """
 
-    _dict: Optional[dict] = field(default=None)
+    msg: Optional[Union["pubsub_v1.types.PubsubMessage", _PubsubMessageLike]] = field(default=None)
+    """Incoming Pub/Sub message object."""
     _attributes: Optional[Union[dict, "google._upb._message.ScalarMapContainer"]] = field(
         default=None
     )
-    msg: Optional[Union["pubsub_v1.types.PubsubMessage", _PubsubMessageLike]] = field(default=None)
-    """Incoming Pub/Sub message object."""
+    _dict: Optional[dict] = field(default=None)
     _dataframe: Optional["pd.DataFrame"] = field(default=None)
     schema_name: str = field(factory=str, converter=str.lower)
     _schema_map: Optional[dict] = field(default=None)
 
+    # ---- class methods ---- #
     @classmethod
     def from_msg(cls, msg, schema_name=str()) -> "Alert":  # [TODO] update tom_desc to use this
         """Create an `Alert` from a `pubsub_v1.types.PubsubMessage`."""
@@ -163,10 +164,78 @@ class Alert:
             bytes = f.read()
         return cls(msg=_PubsubMessageLike(data=bytes), schema_name=schema_name)
 
+    # ---- properties ---- #
+    @property
+    def attributes(self) -> Union[dict, "google._upb._message.ScalarMapContainer"]:
+        """Custom metadata for the message. Pub/Sub handles this as a dict-like called "attributes".
+
+        If None, this will be set to `self.msg.attributes`.
+        Update as desired.
+        When publishing, this will be sent as the message attributes.
+        """
+        if self._attributes is None:
+            self._attributes = self.msg.attributes
+        return self._attributes
+
+    @property
+    def dict(self) -> dict:
+        """Message payload as a dictionary. Created from `self.msg.data` and `self.schema_name`, if needed.
+
+        Raises
+        ------
+        :class:`pittgoogle.exceptions.OpenAlertError`
+            if unable to deserialize the alert bytes.
+        """
+        if self._dict is not None:
+            return self._dict
+
+        if self.schema_name.startswith("elasticc"):
+            # self.msg.data is avro and schemaless. load the schema, then convert the bytes to a dict
+            schemapath = PACKAGE_DIR / f"schemas/elasticc/{self.schema_name}.avsc"
+            schema = fastavro.schema.load_schema(schemapath)
+            with io.BytesIO(self.msg.data) as fin:
+                self._dict = fastavro.schemaless_reader(fin, schema)
+            return self._dict
+
+        if self.schema_name == "":
+            LOGGER.warning("no alert schema_name provided. attempting to deserialize without it.")
+
+        # assume this is a ztf or ztf-lite alert
+        # this should be rewritten to catch specific errors
+        # for now, just try avro then json, catching basically all errors in the process
+        try:
+            self._dict = Cast.avro_to_dict(self.msg.data)
+        except Exception:
+            try:
+                self._dict = Cast.json_to_dict(self.msg.data)
+            except Exception:
+                raise OpenAlertError("failed to deserialize the alert bytes")
+        return self._dict
+
+    @property
+    def dataframe(self) -> "pd.DataFrame":
+        if self._dataframe is None:
+            import pandas as pd  # lazy-load pandas. it hogs memory on cloud functions and run
+
+            if self.schema_name.endswith(".lite"):
+                src_df = pd.DataFrame(self.dict["source"], index=[0])
+                prvs_df = pd.DataFrame(self.dict["prv_sources"])
+            else:
+                src_df = pd.DataFrame(self.dict[self.schema_map["source"]], index=[0])
+                prvs_df = pd.DataFrame(self.dict[self.schema_map["prv_sources"]])
+            self._dataframe = pd.concat([src_df, prvs_df], ignore_index=True)
+
+        return self._dataframe
+
     @property
     def alertid(self) -> Union[str, int]:
         """Convenience property for the alert ID. If the survey does not define an alert ID, this is the `sourceid`."""
         return self.get("alertid", self.sourceid)
+
+    @property
+    def objectid(self) -> Union[str, int]:
+        """Convenience property for the object ID. The "object" represents a collection of sources, as determined by the survey."""
+        return self.get("objectid")
 
     @property
     def sourceid(self) -> Union[str, int]:
@@ -174,10 +243,16 @@ class Alert:
         return self.get("sourceid")
 
     @property
-    def objectid(self) -> Union[str, int]:
-        """Convenience property for the object ID. The "object" represents a collection of sources, as determined by the survey."""
-        return self.get("objectid")
+    def schema_map(self) -> dict:
+        if self._schema_map is None:
+            if self.schema_name == str():
+                raise TypeError("no alert schema_name provided. unable to load schema map.")
+            survey = self.schema_name.split(".")[0]
+            path = PACKAGE_DIR / f"schemas/maps/{survey}.yml"
+            self._schema_map = yaml.safe_load(path.read_text())
+        return self._schema_map
 
+    # ---- methods ---- #
     def get(self, key: str, default: Optional[str] = None):
         # if key is found in self.dict, just return the corresponding value
         if key in self.dict:
@@ -217,75 +292,3 @@ class Alert:
             return survey_key[-1]
 
         return survey_key
-
-    @property
-    def dict(self) -> dict:
-        """Message payload as a dictionary. Created from `self.msg.data` and `self.schema_name`, if needed.
-
-        Raises
-        ------
-        :class:`pittgoogle.exceptions.OpenAlertError`
-            if unable to deserialize the alert bytes.
-        """
-        if self._dict is not None:
-            return self._dict
-
-        if self.schema_name.startswith("elasticc"):
-            # self.msg.data is avro and schemaless. load the schema, then convert the bytes to a dict
-            schemapath = PACKAGE_DIR / f"schemas/elasticc/{self.schema_name}.avsc"
-            schema = fastavro.schema.load_schema(schemapath)
-            with io.BytesIO(self.msg.data) as fin:
-                self._dict = fastavro.schemaless_reader(fin, schema)
-            return self._dict
-
-        if self.schema_name == "":
-            LOGGER.warning("no alert schema_name provided. attempting to deserialize without it.")
-
-        # assume this is a ztf or ztf-lite alert
-        # this should be rewritten to catch specific errors
-        # for now, just try avro then json, catching basically all errors in the process
-        try:
-            self._dict = Cast.avro_to_dict(self.msg.data)
-        except Exception:
-            try:
-                self._dict = Cast.json_to_dict(self.msg.data)
-            except Exception:
-                raise OpenAlertError("failed to deserialize the alert bytes")
-        return self._dict
-
-    @property
-    def attributes(self) -> Union[dict, "google._upb._message.ScalarMapContainer"]:
-        """Custom metadata for the message. Pub/Sub handles this as a dict-like called "attributes".
-
-        If None, this will be set to `self.msg.attributes`.
-        Update as desired.
-        When publishing, this will be sent as the message attributes.
-        """
-        if self._attributes is None:
-            self._attributes = self.msg.attributes
-        return self._attributes
-
-    @property
-    def dataframe(self) -> "pd.DataFrame":
-        if self._dataframe is None:
-            import pandas as pd  # lazy-load pandas. it hogs memory on cloud functions and run
-
-            if self.schema_name.endswith(".lite"):
-                src_df = pd.DataFrame(self.dict["source"], index=[0])
-                prvs_df = pd.DataFrame(self.dict["prv_sources"])
-            else:
-                src_df = pd.DataFrame(self.dict[self.schema_map["source"]], index=[0])
-                prvs_df = pd.DataFrame(self.dict[self.schema_map["prv_sources"]])
-            self._dataframe = pd.concat([src_df, prvs_df], ignore_index=True)
-
-        return self._dataframe
-
-    @property
-    def schema_map(self) -> dict:
-        if self._schema_map is None:
-            if self.schema_name == str():
-                raise TypeError("no alert schema_name provided. unable to load schema map.")
-            survey = self.schema_name.split(".")[0]
-            path = PACKAGE_DIR / f"schemas/maps/{survey}.yml"
-            self._schema_map = yaml.safe_load(path.read_text())
-        return self._schema_map
