@@ -159,23 +159,19 @@ class Alert:
     #             pass
     #     return self._bytes
 
-    def get(self, schema_key: str, return_key_name=False):
-        # fullkey = self.get(key, return_key=True)
-        survey_key = self.schema_map.get(schema_key)
+    def get(self, key: str, default: Optional[str] = None):
+        # if key is found in self.dict, just return the corresponding value
+        if key in self.dict:
+            return self.dict.get(key)
 
-        if return_key_name:
-            if isinstance(survey_key, list):
-                return survey_key[-1]
-            return survey_key
-
-        if schema_key in self.dict:
-            return self.dict.get(schema_key)
+        # lookup the key in the schema map
+        survey_key = self.schema_map.get(key)  # str or list[str]
 
         if isinstance(survey_key, str):
             return self.dict.get(survey_key)
 
         if not isinstance(survey_key, list):
-            return
+            return default
 
         if len(survey_key) == 1:
             return self.dict.get(survey_key[0])
@@ -185,6 +181,23 @@ class Alert:
 
         if len(survey_key) == 3:
             return self.dict.get(survey_key[0]).get(survey_key[1]).get(survey_key[2])
+
+    def get_key(self, key, name_only: bool = True):
+        if key in self.dict:
+            return key
+
+        survey_key = self.schema_map.get(key)  # str or list[str]
+
+        if isinstance(survey_key, str):
+            return survey_key
+
+        if not isinstance(survey_key, list):
+            return
+
+        if name_only:
+            return survey_key[-1]
+
+        return survey_key
 
     @property
     def dict(self) -> dict:
