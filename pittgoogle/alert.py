@@ -57,14 +57,14 @@ from typing import TYPE_CHECKING, Optional, Union
 import fastavro
 import yaml
 from attrs import define, field
-from google.cloud import pubsub_v1
 
 from .exceptions import BadRequest, OpenAlertError
 from .utils import Cast
 
 if TYPE_CHECKING:
-    import google.protobuf.timestamp_pb2
     import google._upb._message
+    import google.cloud.pubsub_v1
+    import google.protobuf.timestamp_pb2
     import pandas as pd  # always lazy-load pandas. it hogs memory on cloud functions and run
 
 
@@ -122,7 +122,9 @@ class Alert:
         `Alert` may not be available.
     """
 
-    msg: Optional[Union["pubsub_v1.types.PubsubMessage", _PubsubMessageLike]] = field(default=None)
+    msg: Optional[Union["google.cloud.pubsub_v1.types.PubsubMessage", _PubsubMessageLike]] = field(
+        default=None
+    )
     """Incoming Pub/Sub message object."""
     _attributes: Optional[Union[dict, "google._upb._message.ScalarMapContainer"]] = field(
         default=None
