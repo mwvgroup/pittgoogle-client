@@ -8,15 +8,14 @@
 Usage Examples
 ---------------
 
-.. code-block:: python
-
-    import pittgoogle
-
 Load an alert from disk:
 
 .. code-block:: python
 
-    [TODO]
+    import pittgoogle
+
+    path = "path/to/ztf_alert.avro"  # point this to a file containing an alert
+    alert = pittgoogle.Alert.from_path(path, schema_name="ztf")
 
 Load a ZTF alert from a Pub/Sub message that has triggered a Cloud Run module:
 
@@ -163,6 +162,12 @@ class Alert:
             ),
             schema_name=schema_name,
         )
+
+    @classmethod
+    def from_path(cls, path, schema_name=str()) -> "Alert":
+        with open(path, "rb") as f:
+            bytes = f.read()
+        return cls(msg=_PubsubMessageLike(data=bytes), schema_name=schema_name)
 
     # @property
     # def bytes(self) -> bytes:
