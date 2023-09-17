@@ -159,6 +159,21 @@ class Alert:
     #             pass
     #     return self._bytes
 
+    @property
+    def alertid(self) -> Union[str, int]:
+        """Convenience property for the alert ID. If the survey does not define an alert ID, this is the `sourceid`."""
+        return self.get("alertid", self.sourceid)
+
+    @property
+    def sourceid(self) -> Union[str, int]:
+        """Convenience property for the source ID. The "source" is the detection that triggered the alert."""
+        return self.get("sourceid")
+
+    @property
+    def objectid(self) -> Union[str, int]:
+        """Convenience property for the object ID. The "object" represents a collection of sources, as determined by the survey."""
+        return self.get("objectid")
+
     def get(self, key: str, default: Optional[str] = None):
         # if key is found in self.dict, just return the corresponding value
         if key in self.dict:
