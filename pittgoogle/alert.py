@@ -253,10 +253,10 @@ class Alert:
 
             if self.schema_name.endswith(".lite"):
                 src_df = pd.DataFrame(self.dict["source"], index=[0])
-                prvs_df = pd.DataFrame(self.dict["prvSources"])
+                prvs_df = pd.DataFrame(self.dict["prv_sources"])
             else:
                 src_df = pd.DataFrame(self.dict[self.schema_map["source"]], index=[0])
-                prvs_df = pd.DataFrame(self.dict[self.schema_map["prvSources"]])
+                prvs_df = pd.DataFrame(self.dict[self.schema_map["prv_sources"]])
             self._dataframe = pd.concat([src_df, prvs_df], ignore_index=True)
 
         return self._dataframe
