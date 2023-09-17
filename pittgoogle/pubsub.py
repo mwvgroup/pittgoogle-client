@@ -83,23 +83,15 @@ import logging
 import queue
 from concurrent.futures import ThreadPoolExecutor
 from time import sleep
-from typing import TYPE_CHECKING, Any, Callable, List, Optional, Union
+from typing import Any, Callable, List, Optional, Union
 
 import fastavro
-import yaml
-from attrs import converters, define, field
+import google.cloud.pubsub_v1 as pubsub_v1
+from attrs import define, field
 from attrs.validators import gt, instance_of, is_callable, optional
 from google.api_core.exceptions import NotFound
-from google.cloud import pubsub_v1
 
-from . import Auth, Alert
-from .exceptions import OpenAlertError
-from .utils import Cast
-
-if TYPE_CHECKING:
-    import google.protobuf.timestamp_pb2
-    import google._upb._message
-    import pandas as pd
+from . import Alert, Auth
 
 
 LOGGER = logging.getLogger(__name__)
@@ -578,5 +570,5 @@ class Response:
         If there is no batch callback the results will be lost.
     """
 
-    ack: bool = field(default=True, converter=converters.to_bool)
+    ack: bool = field(default=True, converter=bool)
     result: Any = field(default=None)
