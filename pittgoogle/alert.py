@@ -42,7 +42,7 @@ import yaml
 from attrs import define, field
 from google.cloud import pubsub_v1
 
-from .exceptions import OpenAlertError
+from .exceptions import BadRequest, OpenAlertError
 from .utils import Cast
 
 if TYPE_CHECKING:
@@ -117,7 +117,7 @@ class Alert:
     schema_name: str = field(factory=str, converter=str.lower)
     _schema_map: Optional[dict] = field(default=None)
     # _metadata: Optional[dict] = field(default=None)
-    bad_request: Union[bool, tuple[str, int]] = field(default=False)
+    # bad_request: Union[bool, tuple[str, int]] = field(default=False)
 
     @classmethod
     def from_msg(cls, msg, schema_name=str()):  # [TODO] update tom_desc to use this
@@ -125,12 +125,14 @@ class Alert:
         return cls(msg=msg, schema_name=schema_name)
 
     @classmethod
-    def from_cloud_run(cls, envelope: dict, schema_name: str = str()):
-        # check whether received message is valid
+    def from_cloud_run(cls, envelope: dict, schema_name: str = str()) -> "Alert":
+        # check whether received message is valid, as suggested by Cloud Run docs
         if not envelope:
-            return cls(bad_request=("Bad Request: no Pub/Sub message received", 400))
+            # return cls(bad_request=("Bad Request: no Pub/Sub message received", 400))
+            raise BadRequest("Bad Request: no Pub/Sub message received")
         if not isinstance(envelope, dict) or "message" not in envelope:
-            return cls(bad_request=("Bad Request: invalid Pub/Sub message format", 400))
+            # return cls(bad_request=("Bad Request: invalid Pub/Sub message format", 400))
+            raise BadRequest("Bad Request: invalid Pub/Sub message format")
 
         return cls(
             msg=_PubsubMessageLike(
