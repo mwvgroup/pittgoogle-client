@@ -22,11 +22,29 @@ Load a ZTF alert from a Pub/Sub message that has triggered a Cloud Run module:
 
 .. code-block:: python
 
+    import pittgoogle
     # flask is used to work with HTTP requests, which trigger Cloud Run modules
     # the request contains the Pub/Sub message, which contains the alert packet
-    from flask import request
+    from flask import Flask, request
 
-    alert = pittgoogle.Alert.from_cloud_run(envelope=request.get_json(), schema_name="ztf")
+    app = Flask(__name__)
+
+    # function that receives the request
+    @app.route("/", methods=["POST"])
+    def index():
+
+        try:
+            # unpack the alert
+            # if the request does not contain a valid message, this raises a `BadRequest`
+            alert = pittgoogle.Alert.from_cloud_run(envelope=request.get_json(), schema_name="ztf")
+
+        except pg.exceptions.BadRequest as err:
+            # return the error text and an HTTP 400 Bad Request code
+            return err.text, 400
+
+        # continue processing the alert
+        # when finished, return an empty string and an HTTP success code
+        return "", 204
 
 API
 ----
@@ -136,11 +154,12 @@ class Alert:
 
         return cls(
             msg=_PubsubMessageLike(
+                # data is required. the rest should be present in the message, but let's be lenient
                 data=envelope["message"]["data"],
-                attributes=envelope["message"]["attributes"],
-                message_id=envelope["message"]["message_id"],
-                publish_time=envelope["message"]["publish_time"],
-                ordering_key=envelope["message"]["ordering_key"],
+                attributes=envelope["message"].get("attributes"),
+                message_id=envelope["message"].get("message_id"),
+                publish_time=envelope["message"].get("publish_time"),
+                ordering_key=envelope["message"].get("ordering_key"),
             ),
             schema_name=schema_name,
         )
