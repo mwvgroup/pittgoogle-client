@@ -65,7 +65,7 @@ from .utils import Cast
 if TYPE_CHECKING:
     import google.protobuf.timestamp_pb2
     import google._upb._message
-    import pandas as pd
+    import pandas as pd  # always lazy-load pandas. it hogs memory on cloud functions and run
 
 
 LOGGER = logging.getLogger(__name__)
@@ -122,22 +122,18 @@ class Alert:
         `Alert` may not be available.
     """
 
-    # _bytes: Optional[ByteString] = field(default=None)
     _dict: Optional[dict] = field(default=None)
     _attributes: Optional[Union[dict, "google._upb._message.ScalarMapContainer"]] = field(
         default=None
     )
-    # _metadata: Optional[dict] = field(default=None)
     msg: Optional[Union["pubsub_v1.types.PubsubMessage", _PubsubMessageLike]] = field(default=None)
     """Incoming Pub/Sub message object."""
     _dataframe: Optional["pd.DataFrame"] = field(default=None)
     schema_name: str = field(factory=str, converter=str.lower)
     _schema_map: Optional[dict] = field(default=None)
-    # _metadata: Optional[dict] = field(default=None)
-    # bad_request: Union[bool, tuple[str, int]] = field(default=False)
 
     @classmethod
-    def from_msg(cls, msg, schema_name=str()):  # [TODO] update tom_desc to use this
+    def from_msg(cls, msg, schema_name=str()) -> "Alert":  # [TODO] update tom_desc to use this
         """Create an `Alert` from a `pubsub_v1.types.PubsubMessage`."""
         return cls(msg=msg, schema_name=schema_name)
 
@@ -145,15 +141,13 @@ class Alert:
     def from_cloud_run(cls, envelope: dict, schema_name: str = str()) -> "Alert":
         # check whether received message is valid, as suggested by Cloud Run docs
         if not envelope:
-            # return cls(bad_request=("Bad Request: no Pub/Sub message received", 400))
             raise BadRequest("Bad Request: no Pub/Sub message received")
         if not isinstance(envelope, dict) or "message" not in envelope:
-            # return cls(bad_request=("Bad Request: invalid Pub/Sub message format", 400))
             raise BadRequest("Bad Request: invalid Pub/Sub message format")
 
         return cls(
             msg=_PubsubMessageLike(
-                # data is required. the rest should be present in the message, but let's be lenient
+                # this class requires data. the rest should be present in the message, but let's be lenient
                 data=envelope["message"]["data"],
                 attributes=envelope["message"].get("attributes"),
                 message_id=envelope["message"].get("message_id"),
@@ -168,20 +162,6 @@ class Alert:
         with open(path, "rb") as f:
             bytes = f.read()
         return cls(msg=_PubsubMessageLike(data=bytes), schema_name=schema_name)
-
-    # @property
-    # def bytes(self) -> bytes:
-    #     """Message payload in original format (Avro or JSON serialized bytes)."""
-    #     if self._bytes is None:
-    #         # add try-except when we know what we're looking for
-    #         self._bytes = self.msg.data
-    #         if self._bytes is None:
-    #             # if we add a "path" attribute for the path to an avro file on disk
-    #             # we can load it like this:
-    #             #     with open(self.path, "rb") as f:
-    #             #         self._bytes = f.read()
-    #             pass
-    #     return self._bytes
 
     @property
     def alertid(self) -> Union[str, int]:
@@ -309,27 +289,3 @@ class Alert:
             path = PACKAGE_DIR / f"schemas/maps/{survey}.yml"
             self._schema_map = yaml.safe_load(path.read_text())
         return self._schema_map
-
-    # @property
-    # def metadata(self) -> dict:
-    #     """Pub/Sub message metadata.
-
-    #     Includes
-
-    #         - message_id, publish_time, and ordering_key* of the incoming Pub/Sub message
-    #         - attributes, which is a dict that typically includes the attributes of the
-    #           incoming message and possibly additional entries added by the user in the meantime.
-
-    #     *To be useful, ordering_key requires that ordering is enabled on the subscription.
-    #     """
-    #     if self._metadata is None:
-    #         self._metadata = {
-    #             "message_id": self.msg.message_id,
-    #             "publish_time": self.msg.publish_time,
-    #             # ordering must be enabled on the subscription for this to be useful
-    #             "ordering_key": self.msg.ordering_key,
-    #             # [TODO] breaking change. attributes is now a dict. open a pr on tom_desc
-    #             # typically includes self.msg.attributes plus additional items added by the user
-    #             "attributes": self.attributes,
-    #         }
-    #     return self._metadata
