@@ -306,7 +306,7 @@ class Alert:
             if self.schema_name == str():
                 raise TypeError("no alert schema_name provided. unable to load schema map.")
             survey = self.schema_name.split(".")[0]
-            path = PACKAGE_DIR / f"schema_maps/{survey}.yml"
+            path = PACKAGE_DIR / f"schemas/maps/{survey}.yml"
             self._schema_map = yaml.safe_load(path.read_text())
         return self._schema_map
 
