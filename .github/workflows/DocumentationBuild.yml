@@ -31,6 +31,6 @@ jobs:
         run: make html SPHINXOPTS="-W"
 
       - name: Upload docs to artifact storage
-        uses: actions/upload-pages-artifact@v1
+        uses: actions/upload-pages-artifact@v2
         with:
           path: docs/build/html
