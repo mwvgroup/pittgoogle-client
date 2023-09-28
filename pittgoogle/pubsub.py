@@ -177,9 +177,38 @@ class Topic:
     )
 
     @classmethod
-    def from_cloud(cls, name, *, projectid, testid=False):
-        """Create a `Topic` with a `client` using implicit credentials (no explicit `auth`)."""
-        # if testid is not False, "False", or None, append the testid to the name
+    def from_cloud(
+        cls,
+        name: str,
+        *,
+        projectid: str,
+        survey: Optional[str] = None,
+        testid: Optional[str] = None,
+    ):
+        """Create a `Topic` with a `client` using implicit credentials (no explicit `auth`).
+
+        Parameters
+        ----------
+        name : `str`
+            Name of the topic. If `survey` and/or `testid` are provided, they will be added to this
+            name following the Pitt-Google naming syntax.
+        projectid : `str`
+            Project ID of the Goodle Cloud project that owns this resource. Project IDs used by
+            Pitt-Google are listed in the registry for convenience (:class:`pittgoogle.registry.ProjectIds`).
+            Required because it cannot be retrieved from the `client` and there is no explicit `auth`.
+        survey : `str`, optional
+            Name of the survey. If provided, it will be prepended to `name` following the
+            Pitt-Google naming syntax.
+        testid : `str`, optional
+            Pipeline identifier. If this is not `None`, `False`, or `"False"` it will be appended to
+            the `name` following the Pitt-Google naming syntax. This used to allow pipeline modules
+            to find the correct resources without interfering with other pipelines that may have
+            deployed resources with the same base names (e.g., for development and testing purposes).
+        """
+        # if survey and/or testid passed in, use them to construct full name using the pitt-google naming syntax
+        if survey is not None:
+            name = f"{survey}-{name}"
+        # must accommodate False and "False" for consistency with the broker pipeline
         if testid and testid != "False":
             name = f"{name}-{testid}"
         return cls(name, projectid=projectid, client=pubsub_v1.PublisherClient())
@@ -287,8 +316,8 @@ class Topic:
             fout.seek(0)
             message = fout.getvalue()
 
-        # attribute keys and values must be strings
-        attributes = {str(key): str(val) for key, val in alert.attributes.items()}
+        # attribute keys and values must be strings. let's sort the keys while we're at it
+        attributes = {str(key): str(alert.attributes[key]) for key in sorted(alert.attributes)}
 
         future = self.client.publish(self.path, data=message, **attributes)
         return future.result()
