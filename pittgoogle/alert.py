@@ -72,25 +72,6 @@ LOGGER = logging.getLogger(__name__)
 PACKAGE_DIR = importlib.resources.files(__package__)
 
 
-@define(frozen=True)
-class _PubsubMessageLike:
-    """Container for an incoming Pub/Sub message that mimics a `pubsub_v1.types.PubsubMessage`.
-
-    It is convenient for the `Alert` class to work with a message as a
-    `pubsub_v1.types.PubsubMessage`. However, there are many ways to obtain an alert that do
-    not result in a `pubsub_v1.types.PubsubMessage` (e.g., an alert packet loaded from disk or
-    an incoming message to a Cloud Functions or Cloud Run module). In those cases, this class
-    is used to create an object with the same attributes as a `pubsub_v1.types.PubsubMessage`.
-    This object is then assigned to the `msg` attribute of the `Alert`.
-    """
-
-    data: bytes = field()
-    attributes: dict = field(factory=dict)
-    message_id: Optional[str] = field(default=None)
-    publish_time: Optional["google.protobuf.timestamp_pb2.Timestamp"] = field(default=None)
-    ordering_key: Optional[str] = field(default=None)
-
-
 @define(kw_only=True)
 class Alert:
     """Pitt-Google container for an astronomical alert.
@@ -122,9 +103,9 @@ class Alert:
         `Alert` may not be available.
     """
 
-    msg: Optional[Union["google.cloud.pubsub_v1.types.PubsubMessage", _PubsubMessageLike]] = field(
-        default=None
-    )
+    msg: Optional[
+        Union["google.cloud.pubsub_v1.types.PubsubMessage", types_.PubsubMessageLike]
+    ] = field(default=None)
     """Incoming Pub/Sub message object."""
     _attributes: Optional[Union[dict, "google._upb._message.ScalarMapContainer"]] = field(
         default=None
@@ -149,7 +130,7 @@ class Alert:
             raise BadRequest("Bad Request: invalid Pub/Sub message format")
 
         return cls(
-            msg=_PubsubMessageLike(
+            msg=types_.PubsubMessageLike(
                 # this class requires data. the rest should be present in the message, but let's be lenient
                 data=envelope["message"]["data"],
                 attributes=envelope["message"].get("attributes"),
@@ -163,8 +144,10 @@ class Alert:
     @classmethod
     def from_path(cls, path, schema_name=str()) -> "Alert":
         with open(path, "rb") as f:
-            bytes = f.read()
-        return cls(msg=_PubsubMessageLike(data=bytes), schema_name=schema_name)
+            bytes_ = f.read()
+        return cls(
+            msg=types_.PubsubMessageLike(data=bytes_), schema_name=schema_name, path=Path(path)
+        )
 
     # ---- properties ---- #
     @property
