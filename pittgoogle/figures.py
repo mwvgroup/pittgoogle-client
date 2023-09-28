@@ -4,22 +4,24 @@ See the tutorials for usage help.
 """
 import gzip
 import io
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import aplpy
 import matplotlib as mpl
 import numpy as np
-import pandas as pd
 from astropy.io import fits
 from astropy.time import Time
 from matplotlib import pyplot as plt
 
 from . import utils as pgbu
 
+if TYPE_CHECKING:
+    import pandas as pd  # always lazy-load pandas. it hogs memory on cloud functions and run
+
 
 # --- Plot object history
 def plot_lightcurve(
-    dflc: pd.DataFrame,
+    dflc: "pd.DataFrame",
     objectId: Optional[str] = None,
     ax: Optional[mpl.axes.Axes] = None,
     days_ago: bool = True,
