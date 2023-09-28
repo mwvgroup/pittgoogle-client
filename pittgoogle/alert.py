@@ -195,15 +195,17 @@ class Alert:
 
     # ---- properties ---- #
     @property
-    def attributes(self) -> Union[dict, "google._upb._message.ScalarMapContainer"]:
+    def attributes(self) -> dict:
         """Custom metadata for the message. Pub/Sub handles this as a dict-like called "attributes".
 
-        If None, this will be set to `self.msg.attributes`.
-        Update as desired.
-        When publishing, this will be sent as the message attributes.
+        If this was not set when the `Alert` was instantiated, a new dictionary will be created using
+        the `attributes` field in :attr:`pittgoogle.Alert.msg` the first time it is requested.
+        Update this dictionary as desired (it will not affect the original `msg`).
+        When publishing the alert using :attr:`pittgoogle.Topic.publish`, this dictionary will be
+        sent as the Pub/Sub message attributes.
         """
         if self._attributes is None:
-            self._attributes = self.msg.attributes
+            self._attributes = dict(self.msg.attributes)
         return self._attributes
 
     @property
