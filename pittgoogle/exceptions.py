@@ -5,3 +5,7 @@ class BadRequest(Exception):
 
 class OpenAlertError(Exception):
     """Raised when unable to deserialize a Pub/Sub message payload."""
+
+
+class SchemaNotFoundError(Exception):
+    """Raised when a schema with a given name is not found in the registry."""
