@@ -262,6 +262,22 @@ class Alert:
         return self._schema
 
     # ---- methods ---- #
+    def add_id_attributes(self) -> None:
+        """Add the IDs to the attributes."""
+        ids = ["alertid", "objectid", "sourceid"]
+        values = [self.get(id) for id in ids]
+
+        # get the survey-specific field names
+        survey_names = [self.get_key(id) for id in ids]
+        # if the field is nested, the key will be a list
+        # but pubsub message attributes must be strings. join to avoid a future error on publish
+        names = [".".join(id) if isinstance(id, list) else id for id in survey_names]
+
+        # only add to attributes if the survey has defined this field
+        for idname, idvalue in zip(names, values):
+            if idname is not None:
+                self.attributes[idname] = idvalue
+
     def get(self, field: str, default: Any = None) -> Any:
         """Return the value of `field` in this alert.
 
