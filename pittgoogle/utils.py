@@ -107,24 +107,6 @@ class Cast:
 
     # --- Work with alert dictionaries
     @staticmethod
-    def alert_dict_to_dataframe(alert_dict: dict) -> pd.DataFrame:
-        """Package a ZTF alert dictionary into a dataframe.
-
-        Adapted from:
-        https://github.com/ZwickyTransientFacility/ztf-avro-alert/blob/master/notebooks/Filtering_alerts.ipynb
-        """
-        dfc = pd.DataFrame(alert_dict["candidate"], index=[0])
-        df_prv = pd.DataFrame(alert_dict["prv_candidates"])
-        df = pd.concat([dfc, df_prv], ignore_index=True, sort=True)
-        df = df[dfc.columns]  # return to original column ordering
-
-        # we'll attach some metadata
-        # note this may not be preserved after all operations
-        # https://stackoverflow.com/questions/14688306/adding-meta-information-metadata-to-pandas-dataframe
-        df.objectId = alert_dict["objectId"]
-        return df
-
-    @staticmethod
     def alert_dict_to_table(alert_dict: dict) -> Table:
         """Package a ZTF alert dictionary into an Astopy Table."""
         # collect rows for the table
