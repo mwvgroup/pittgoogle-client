@@ -114,15 +114,41 @@ class Alert:
     _dataframe: Optional["pd.DataFrame"] = field(default=None)
     schema_name: Optional[str] = field(default=None)
     _schema: Optional[types_.Schema] = field(default=None, init=False)
+    path: Optional[Path] = field(default=None)
 
     # ---- class methods ---- #
     @classmethod
-    def from_msg(cls, msg, schema_name=str()) -> "Alert":  # [TODO] update tom_desc to use this
-        """Create an `Alert` from a `pubsub_v1.types.PubsubMessage`."""
-        return cls(msg=msg, schema_name=schema_name)
+    def from_cloud_run(cls, envelope: dict, schema_name: Optional[str] = None) -> "Alert":
+        """Create an `Alert` from an HTTP request envelope containing a Pub/Sub message, as received by a Cloud Run module.
 
-    @classmethod
-    def from_cloud_run(cls, envelope: dict, schema_name: str = str()) -> "Alert":
+        Example code for a Cloud Run module that uses this method to open a ZTF alert:
+
+        .. code-block:: python
+
+            import pittgoogle
+            # flask is used to work with HTTP requests, which trigger Cloud Run modules
+            # the request contains the Pub/Sub message, which contains the alert packet
+            import flask
+
+            app = flask.Flask(__name__)
+
+            # function that receives the request
+            @app.route("/", methods=["POST"])
+            def index():
+
+                try:
+                    # unpack the alert
+                    # if the request does not contain a valid message, this raises a `BadRequest`
+                    alert = pittgoogle.Alert.from_cloud_run(envelope=flask.request.get_json(), schema_name="ztf")
+
+                except pg.exceptions.BadRequest as exc:
+                    # return the error text and an HTTP 400 Bad Request code
+                    return str(exc), 400
+
+                # continue processing the alert
+                # when finished, return an empty string and an HTTP success code
+                return "", 204
+        """
         # check whether received message is valid, as suggested by Cloud Run docs
         if not envelope:
             raise BadRequest("Bad Request: no Pub/Sub message received")
@@ -142,7 +168,25 @@ class Alert:
         )
 
     @classmethod
-    def from_path(cls, path, schema_name=str()) -> "Alert":
+    def from_dict(
+        cls,
+        payload: dict,
+        attributes: Optional[Union[dict, "google._upb._message.ScalarMapContainer"]] = None,
+        schema_name: Optional[str] = None,
+    ) -> "Alert":  # [TODO] update tom_desc to use this
+        """Create an `Alert` from a dictionary (`payload`)."""
+        return cls(dict=payload, attributes=attributes, schema_name=schema_name)
+
+    @classmethod
+    def from_msg(
+        cls, msg: "google.cloud.pubsub_v1.types.PubsubMessage", schema_name: Optional[str] = None
+    ) -> "Alert":  # [TODO] update tom_desc to use this
+        """Create an `Alert` from a `google.cloud.pubsub_v1.types.PubsubMessage`."""
+        return cls(msg=msg, schema_name=schema_name)
+
+    @classmethod
+    def from_path(cls, path: Union[str, Path], schema_name: Optional[str] = None) -> "Alert":
+        """Create an `Alert` from the file at `path`."""
         with open(path, "rb") as f:
             bytes_ = f.read()
         return cls(
