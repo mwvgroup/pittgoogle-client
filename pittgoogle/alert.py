@@ -112,8 +112,8 @@ class Alert:
     )
     _dict: Optional[dict] = field(default=None)
     _dataframe: Optional["pd.DataFrame"] = field(default=None)
-    schema_name: str = field(factory=str, converter=str.lower)
-    _schema_map: Optional[dict] = field(default=None)
+    schema_name: Optional[str] = field(default=None)
+    _schema: Optional[types_.Schema] = field(default=None, init=False)
 
     # ---- class methods ---- #
     @classmethod
@@ -174,19 +174,33 @@ class Alert:
         if self._dict is not None:
             return self._dict
 
-        if self.schema_name.startswith("elasticc"):
-            # self.msg.data is avro and schemaless. load the schema, then convert the bytes to a dict
-            schemapath = PACKAGE_DIR / f"schemas/elasticc/{self.schema_name}.avsc"
-            schema = fastavro.schema.load_schema(schemapath)
+        # deserialize self.msg.data (avro or json bytestring) into a dict.
+        # if self.msg.data is either (1) json; or (2) avro that contains the schema in the header,
+        # self.schema is not required for deserialization, so we want to be lenient.
+        # if self.msg.data is schemaless avro, deserialization requires self.schema.avsc to exist.
+        # currently, there is a clean separation between surveys:
+        #     elasticc always requires self.schema.avsc; ztf never does.
+        # we'll check the survey name from self.schema.survey; but first we need to check whether
+        # the schema exists so we can try to continue without one instead of raising an error.
+        # we may want or need to handle this differently in the future.
+        try:
+            self.schema
+        except SchemaNotFoundError as exc:
+            LOGGER.warning(f"schema not found. attempting to deserialize without it. {exc}")
+            avro_schema = None
+        else:
+            if self.schema.survey in ["elasticc"]:
+                avro_schema = self.schema.avsc
+            else:
+                avro_schema = None
+
+        # if we have an avro schema, use it to deserialize and return
+        if avro_schema:
             with io.BytesIO(self.msg.data) as fin:
-                self._dict = fastavro.schemaless_reader(fin, schema)
+                self._dict = fastavro.schemaless_reader(fin, avro_schema)
             return self._dict
 
-        if self.schema_name == "":
-            LOGGER.warning("no alert schema_name provided. attempting to deserialize without it.")
-
-        # assume this is a ztf or ztf-lite alert
-        # this should be rewritten to catch specific errors
+        # [TODO] this should be rewritten to catch specific errors
         # for now, just try avro then json, catching basically all errors in the process
         try:
             self._dict = Cast.avro_to_dict(self.msg.data)
@@ -228,14 +242,24 @@ class Alert:
         return self.get("sourceid")
 
     @property
-    def schema_map(self) -> dict:
-        if self._schema_map is None:
-            if self.schema_name == str():
-                raise TypeError("no alert schema_name provided. unable to load schema map.")
-            survey = self.schema_name.split(".")[0]
-            path = PACKAGE_DIR / f"schemas/maps/{survey}.yml"
-            self._schema_map = yaml.safe_load(path.read_text())
-        return self._schema_map
+    def schema(self) -> types_.Schema:
+        """Loads the schema from the registry :class:`pittgoogle.registry.Schemas`.
+
+        Raises
+        ------
+        :class:`pittgoogle.exceptions.SchemaNotFoundError`
+            if the `schema_name` is not supplied or a schema with this name is not found
+        """
+        if self._schema is not None:
+            return self._schema
+
+        # need to load the schema. raise an error if no schema_name given
+        if self.schema_name is None:
+            raise SchemaNotFoundError("a schema_name is required")
+
+        # this also may raise SchemaNotFoundError
+        self._schema = registry.Schemas.get(self.schema_name)
+        return self._schema
 
     # ---- methods ---- #
     def get(self, key: str, default: Optional[str] = None):
