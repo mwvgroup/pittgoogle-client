@@ -5,7 +5,6 @@ import logging
 from base64 import b64decode, b64encode
 from collections import OrderedDict
 from io import BytesIO
-from typing import ClassVar
 
 import fastavro
 import pandas as pd
@@ -14,23 +13,6 @@ from astropy.time import Time
 from attrs import define
 
 LOGGER = logging.getLogger(__name__)
-
-
-@define
-class ProjectIds:
-    """Registry of Google Cloud Project IDs."""
-
-    pittgoogle: ClassVar[str] = "ardent-cycling-243415"
-    """Pitt-Google's production project."""
-
-    pittgoogle_dev: ClassVar[str] = "avid-heading-329016"
-    """Pitt-Google's development project."""
-
-    # pittgoogle_billing: ClassVar[str] = "light-cycle-328823"
-    # """Pitt-Google's billing project."""
-
-    elasticc: ClassVar[str] = "elasticc-challenge"
-    """Project running a classifier for ELAsTiCC alerts and reporting to DESC."""
 
 
 @define
