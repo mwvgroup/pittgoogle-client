@@ -2,7 +2,7 @@
 """Pitt-Google registries."""
 import importlib.resources
 import logging
-from typing import ClassVar
+from typing import Final
 
 from attrs import define
 
@@ -18,16 +18,16 @@ PACKAGE_DIR = importlib.resources.files(__package__)
 class ProjectIds:
     """Registry of Google Cloud Project IDs."""
 
-    pittgoogle: ClassVar[str] = "ardent-cycling-243415"
+    pittgoogle: Final[str] = "ardent-cycling-243415"
     """Pitt-Google's production project."""
 
-    pittgoogle_dev: ClassVar[str] = "avid-heading-329016"
+    pittgoogle_dev: Final[str] = "avid-heading-329016"
     """Pitt-Google's development project."""
 
-    # pittgoogle_billing: ClassVar[str] = "light-cycle-328823"
+    # pittgoogle_billing: Final[str] = "light-cycle-328823"
     # """Pitt-Google's billing project."""
 
-    elasticc: ClassVar[str] = "elasticc-challenge"
+    elasticc: Final[str] = "elasticc-challenge"
     """Project running a classifier for ELAsTiCC alerts and reporting to DESC."""
 
 
@@ -43,7 +43,7 @@ class Schemas:
     # - if an avro schema file is being registered with the schema (using the `path` arg), it is
     #   recommended that the file have the same name (path stem) as the schema. the file name
     #   must end with ".avsc".
-    dict: ClassVar[dict] = {
+    dict: Final[dict] = {
         "elasticc.v0_9_1.alert": types_.Schema(
             name="elasticc.v0_9_1.alert",
             description="Avro schema of alerts published by ELAsTiCC.",
