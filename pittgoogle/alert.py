@@ -259,17 +259,14 @@ class Alert:
 
     @property
     def dataframe(self) -> "pd.DataFrame":
-        if self._dataframe is None:
-            import pandas as pd  # lazy-load pandas. it hogs memory on cloud functions and run
+        if self._dataframe is not None:
+            return self._dataframe
 
-            if self.schema_name.endswith(".lite"):
-                src_df = pd.DataFrame(self.dict["source"], index=[0])
-                prvs_df = pd.DataFrame(self.dict["prv_sources"])
-            else:
-                src_df = pd.DataFrame(self.dict[self.schema_map["source"]], index=[0])
-                prvs_df = pd.DataFrame(self.dict[self.schema_map["prv_sources"]])
-            self._dataframe = pd.concat([src_df, prvs_df], ignore_index=True)
+        import pandas as pd  # always lazy-load pandas. it hogs memory on cloud functions and run
 
+        src_df = pd.DataFrame(self.get("source"), index=[0])
+        prvs_df = pd.DataFrame(self.get("prv_sources"))
+        self._dataframe = pd.concat([src_df, prvs_df], ignore_index=True)
         return self._dataframe
 
     @property
