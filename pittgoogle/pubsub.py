@@ -23,11 +23,14 @@ Create a subscription to the "ztf-loop" topic:
 
 .. code-block:: python
 
-    subscription = pittgoogle.pubsub.Subscription(
-        "my-ztf-loop-subscription",
-        # topic only required if the subscription does not yet exist in Google Cloud
-        topic=pittgoogle.pubsub.Topic("ztf-loop", pittgoogle.utils.ProjectIds.pittgoogle)
-    )
+    # topic the subscription will be connected to
+    # only required if the subscription does not yet exist in Google Cloud
+    topic = pittgoogle.Topic(name="ztf-loop", projectid=pittgoogle.ProjectIds.pittgoogle)
+
+    # choose your own name for the subscription
+    subscription = pittgoogle.Subscription(name="my-ztf-loop-subscription", topic=topic, schema_name="ztf")
+
+    # make sure the subscription exists and we can connect to it. create it if necessary
     subscription.touch()
 
 Pull a small batch of alerts. Helpful for testing. Not recommended for long-runnining listeners.
@@ -92,6 +95,7 @@ from attrs.validators import gt, instance_of, is_callable, optional
 from google.api_core.exceptions import NotFound
 
 from . import Alert, Auth
+from .exceptions import SchemaNotFoundError
 
 
 LOGGER = logging.getLogger(__name__)

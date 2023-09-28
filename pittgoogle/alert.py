@@ -17,34 +17,6 @@ Load an alert from disk:
     path = "path/to/ztf_alert.avro"  # point this to a file containing an alert
     alert = pittgoogle.Alert.from_path(path, schema_name="ztf")
 
-Load a ZTF alert from a Pub/Sub message that has triggered a Cloud Run module:
-
-.. code-block:: python
-
-    import pittgoogle
-    # flask is used to work with HTTP requests, which trigger Cloud Run modules
-    # the request contains the Pub/Sub message, which contains the alert packet
-    from flask import Flask, request
-
-    app = Flask(__name__)
-
-    # function that receives the request
-    @app.route("/", methods=["POST"])
-    def index():
-
-        try:
-            # unpack the alert
-            # if the request does not contain a valid message, this raises a `BadRequest`
-            alert = pittgoogle.Alert.from_cloud_run(envelope=request.get_json(), schema_name="ztf")
-
-        except pg.exceptions.BadRequest as err:
-            # return the error text and an HTTP 400 Bad Request code
-            return err.text, 400
-
-        # continue processing the alert
-        # when finished, return an empty string and an HTTP success code
-        return "", 204
-
 API
 ----
 
@@ -52,19 +24,19 @@ API
 import importlib.resources
 import io
 import logging
-from typing import TYPE_CHECKING, Optional, Union
+from pathlib import Path
+from typing import Any, TYPE_CHECKING, Optional, Union
 
 import fastavro
-import yaml
 from attrs import define, field
 
-from .exceptions import BadRequest, OpenAlertError
+from . import registry, types_
+from .exceptions import BadRequest, OpenAlertError, SchemaNotFoundError
 from .utils import Cast
 
 if TYPE_CHECKING:
     import google._upb._message
     import google.cloud.pubsub_v1
-    import google.protobuf.timestamp_pb2
     import pandas as pd  # always lazy-load pandas. it hogs memory on cloud functions and run
 
 
@@ -76,8 +48,7 @@ PACKAGE_DIR = importlib.resources.files(__package__)
 class Alert:
     """Pitt-Google container for an astronomical alert.
 
-    Alerts are typically loaded from a Pub/Sub message but may also be loaded from a file.
-    It is recommended to instantiate an `Alert` using one of the `from_*` methods.
+    Recommended to instantiate using one of the `from_*` methods.
 
     All parameters are keyword only.
 
@@ -210,7 +181,7 @@ class Alert:
 
     @property
     def dict(self) -> dict:
-        """Message payload as a dictionary. Created from `self.msg.data` and `self.schema_name`, if needed.
+        """Alert data as a dictionary. Created from `self.msg.data`, if needed.
 
         Raises
         ------
@@ -271,17 +242,26 @@ class Alert:
 
     @property
     def alertid(self) -> Union[str, int]:
-        """Convenience property for the alert ID. If the survey does not define an alert ID, this is the `sourceid`."""
+        """Convenience property to get the alert ID.
+
+        If the survey does not define an alert ID, this returns the `sourceid`.
+        """
         return self.get("alertid", self.sourceid)
 
     @property
     def objectid(self) -> Union[str, int]:
-        """Convenience property for the object ID. The "object" represents a collection of sources, as determined by the survey."""
+        """Convenience property to get the object ID.
+
+        The "object" represents a collection of sources, as determined by the survey.
+        """
         return self.get("objectid")
 
     @property
     def sourceid(self) -> Union[str, int]:
-        """Convenience property for the source ID. The "source" is the detection that triggered the alert."""
+        """Convenience property to get the source ID.
+
+        The "source" is the detection that triggered the alert.
+        """
         return self.get("sourceid")
 
     @property
