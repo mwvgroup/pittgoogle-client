@@ -262,42 +262,87 @@ class Alert:
         return self._schema
 
     # ---- methods ---- #
-    def get(self, key: str, default: Optional[str] = None):
-        # if key is found in self.dict, just return the corresponding value
-        if key in self.dict:
-            return self.dict.get(key)
+    def get(self, field: str, default: Any = None) -> Any:
+        """Return the value of `field` in this alert.
 
-        # lookup the key in the schema map
-        survey_key = self.schema_map.get(key)  # str or list[str]
+        The keys in the alert dictionary :attr:`pittgoogle.alert.Alert.dict` are survey-specific field names.
+        This method allows you to `get` values from the dict using generic names that will work across
+        surveys. `self.schema.map` is the mapping of generic -> survey-specific names.
+        To access a field using a survey-specific name, get it directly from the alert `dict`.
 
-        if isinstance(survey_key, str):
-            return self.dict.get(survey_key)
+        Parameters
+        ----------
+        field : str
+            Name of a field in the alert's schema. This must be one of the keys in the dict `self.schema.map`.
+        default : str or None
+            Default value to be returned if the field is not found.
 
-        if not isinstance(survey_key, list):
+        Returns
+        -------
+        value : any
+            Value in the :attr:`pittgoogle.alert.Alert.dict` corresponding to this field.
+        """
+        survey_field = self.schema.map.get(field)  # str, list[str], or None
+
+        if survey_field is None:
             return default
 
-        if len(survey_key) == 1:
-            return self.dict.get(survey_key[0])
+        if isinstance(survey_field, str):
+            return self.dict.get(survey_field, default)
 
-        if len(survey_key) == 2:
-            return self.dict.get(survey_key[0]).get(survey_key[1])
+        # if survey_field is not one of the expected types, the schema map is malformed
+        # maybe this was intentional, but we don't know how to handle it here
+        if not isinstance(survey_field, list):
+            raise TypeError(
+                f"field lookup not implemented for a schema-map value of type {type(survey_field)}"
+            )
 
-        if len(survey_key) == 3:
-            return self.dict.get(survey_key[0]).get(survey_key[1]).get(survey_key[2])
+        # the list must have more than 1 item, else it would be a single str
+        if len(survey_field) == 2:
+            try:
+                return self.dict[survey_field[0]][survey_field[1]]
+            except KeyError:
+                return default
 
-    def get_key(self, key, name_only: bool = True):
-        if key in self.dict:
-            return key
+        if len(survey_field) == 3:
+            try:
+                return self.dict[survey_field[0]][survey_field[1]][survey_field[2]]
+            except KeyError:
+                return default
 
-        survey_key = self.schema_map.get(key)  # str or list[str]
+        raise NotImplementedError(
+            f"field lookup not implemented for depth {len(survey_field)} (key = {survey_field})"
+        )
 
-        if isinstance(survey_key, str):
-            return survey_key
+    def get_key(
+        self, field: str, name_only: bool = False, default: Optional[str] = None
+    ) -> Optional[Union[str, list[str]]]:
+        """Return the survey-specific field name.
 
-        if not isinstance(survey_key, list):
-            return
+        Parameters
+        ----------
+        field : str
+            Generic field name whose survey-specific name is to be returned. This must be one of the
+            keys in the dict `self.schema.map`.
+        name_only : bool
+            In case the survey-specific field name is nested below the top level, whether to return
+            just the single final name as a str (True) or the full path as a list[str] (False).
+        default : str or None
+            Default value to be returned if the field is not found.
 
-        if name_only:
-            return survey_key[-1]
+        Returns
+        -------
+        survey_field : str or list[str]
+            Survey-specific name for the `field`, or `default` if the field is not found.
+            list[str] if this is a nested field and `name_only` is False, else str with the
+            final field name only.
+        """
+        survey_field = self.schema.map.get(field)  # str, list[str], or None
 
-        return survey_key
+        if survey_field is None:
+            return default
+
+        if name_only and isinstance(survey_field, list):
+            return survey_field[-1]
+
+        return survey_field
