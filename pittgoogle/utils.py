@@ -7,7 +7,6 @@ from collections import OrderedDict
 from io import BytesIO
 
 import fastavro
-import pandas as pd
 from astropy.table import Table
 from astropy.time import Time
 from attrs import define

@@ -1,18 +1,11 @@
 # -*- coding: UTF-8 -*-
 """Functions to support working with alerts and related data."""
 import importlib.resources
-import json
 import logging
-from base64 import b64decode, b64encode
-from collections import OrderedDict
-from io import BytesIO
 from typing import TYPE_CHECKING, Optional
 
 import fastavro
-import pandas as pd
 import yaml
-from astropy.table import Table
-from astropy.time import Time
 from attrs import define, field
 
 if TYPE_CHECKING:
