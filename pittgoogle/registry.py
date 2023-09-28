@@ -35,41 +35,42 @@ class ProjectIds:
 class Schemas:
     """Registry of schemas used by Pitt-Google."""
 
-    # dict defining the schemas in the registry
-    # naming conventions:
-    # - schema names are expected to start with the name of the survey
-    # - if the survey has more than one schema, the survey name should be followed by a ".",
-    #   followed by schema-specific specifier(s)
-    # - if an avro schema file is being registered with the schema (using the `path` arg), it is
-    #   recommended that the file have the same name (path stem) as the schema. the file name
-    #   must end with ".avsc".
-    dict: Final[dict] = {
-        "elasticc.v0_9_1.alert": types_.Schema(
-            name="elasticc.v0_9_1.alert",
-            description="Avro schema of alerts published by ELAsTiCC.",
-            path=PACKAGE_DIR / f"schemas/elasticc/elasticc.v0_9_1.alert.avsc",
-        ),
-        "elasticc.v0_9_1.brokerClassification": types_.Schema(
-            name="elasticc.v0_9_1.brokerClassification",
-            description="Avro schema of alerts to be sent to DESC containing classifications of ELAsTiCC alerts.",
-            path=PACKAGE_DIR / f"schemas/elasticc/elasticc.v0_9_1.brokerClassification.avsc",
-        ),
-        "ztf": types_.Schema(
-            name="ztf",
-            description=(
-                "ZTF schema. The ZTF survey publishes alerts in Avro format with the schema attached "
-                "in the header. Pitt-Google publishes ZTF alerts in json format. This schema covers "
-                "both cases."  # [TODO]
+    @classmethod
+    def manifest(cls) -> dict:
+        """Return the dictionary defining the schemas in the registry."""
+        # naming conventions:
+        # - schema names are expected to start with the name of the survey
+        # - if the survey has more than one schema, the survey name should be followed by a ".",
+        #   followed by schema-specific specifier(s)
+        # - if an avro schema file is being registered with the schema (using the `path` arg), it is
+        #   recommended that the file have the same name (path stem) as the schema. the file name
+        #   must end with ".avsc".
+        return {
+            "elasticc.v0_9_1.alert": types_.Schema(
+                name="elasticc.v0_9_1.alert",
+                description="Avro schema of alerts published by ELAsTiCC.",
+                path=PACKAGE_DIR / f"schemas/elasticc/elasticc.v0_9_1.alert.avsc",
             ),
-            path=None,
-        ),
-    }
-    """Dict defining the schemas in the registry."""
+            "elasticc.v0_9_1.brokerClassification": types_.Schema(
+                name="elasticc.v0_9_1.brokerClassification",
+                description="Avro schema of alerts to be sent to DESC containing classifications of ELAsTiCC alerts.",
+                path=PACKAGE_DIR / f"schemas/elasticc/elasticc.v0_9_1.brokerClassification.avsc",
+            ),
+            "ztf": types_.Schema(
+                name="ztf",
+                description=(
+                    "ZTF schema. The ZTF survey publishes alerts in Avro format with the schema attached "
+                    "in the header. Pitt-Google publishes ZTF alerts in json format. This schema covers "
+                    "both cases."  # [TODO]
+                ),
+                path=None,
+            ),
+        }
 
     @classmethod
     def names(cls) -> list[str]:
         """Return the names of all registered schemas."""
-        return list(cls.dict.keys())
+        return list(cls.manifest().keys())
 
     @classmethod
     def get(cls, schema_name: str) -> types_.Schema:
@@ -81,7 +82,7 @@ class Schemas:
             if a schema called `schema_name` is not found
         """
         # if there is no registered schema with this name, raise an error
-        schema = cls.dict.get(schema_name)
+        schema = cls.manifest().get(schema_name)
         if schema is None:
             raise SchemaNotFoundError(
                 f"{schema_name} not found. for a list of valid names, use `pittgoogle.Schemas.names()`."
