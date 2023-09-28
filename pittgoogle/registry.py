@@ -22,13 +22,13 @@ class ProjectIds:
     """Pitt-Google's production project."""
 
     pittgoogle_dev: Final[str] = "avid-heading-329016"
-    """Pitt-Google's development project."""
+    """Pitt-Google's testing and development project."""
 
     # pittgoogle_billing: Final[str] = "light-cycle-328823"
     # """Pitt-Google's billing project."""
 
     elasticc: Final[str] = "elasticc-challenge"
-    """Project running a classifier for ELAsTiCC alerts and reporting to DESC."""
+    """Project running classifiers for ELAsTiCC alerts and reporting to DESC."""
 
 
 @define(frozen=True)
