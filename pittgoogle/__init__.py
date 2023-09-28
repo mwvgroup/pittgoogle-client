@@ -11,8 +11,10 @@ except ImportError:  # for Python<3.8
 
 from .auth import Auth
 from .alert import Alert
+from .bigquery import Table
 from .pubsub import Topic, Subscription, Consumer
-from . import auth, alert, bigquery, exceptions, pubsub, utils
+from .registry import ProjectIds, Schemas
+from . import exceptions, types_, registry, utils, auth, alert, bigquery, pubsub
 
 
 __version__ = metadata.version("pittgoogle-client")
