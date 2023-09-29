@@ -26,16 +26,13 @@ API
 
 """
 import logging
-from typing import TYPE_CHECKING, Optional, Union
+from typing import Optional, Union
 
 import google.cloud.bigquery as bigquery
 from attrs import define, field
 from attrs.validators import instance_of, optional
 
-from .auth import Auth
-
-if TYPE_CHECKING:
-    from . import Alert
+from . import Alert, Auth
 
 
 LOGGER = logging.getLogger(__name__)
@@ -156,9 +153,10 @@ class Table:
             self._client = bigquery.Client(credentials=self.auth.credentials)
         return self._client
 
-    def insert_rows(self, alerts: Union["Alert", list["Alert"]]) -> list[dict]:
-        rows = [alert.dict for alert in list(alerts)]
-        errors = self.client.insert_rows(self.table, rows)
+    def insert_rows(self, rows: Union[list[dict], list[Alert]]) -> list[dict]:
+        # if elements of rows are Alerts, need to extract the dicts
+        myrows = [row.dict if isinstance(row, Alert) else row for row in rows]
+        errors = self.client.insert_rows(self.table, myrows)
         if len(errors) > 0:
             LOGGER.warning(f"BigQuery insert error: {errors}")
         return errors
