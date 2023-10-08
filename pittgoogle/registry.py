@@ -49,19 +49,19 @@ class Schemas:
             "elasticc.v0_9_1.alert": types_.Schema(
                 name="elasticc.v0_9_1.alert",
                 description="Avro schema of alerts published by ELAsTiCC.",
-                path=PACKAGE_DIR / f"schemas/elasticc/elasticc.v0_9_1.alert.avsc",
+                path=PACKAGE_DIR / "schemas/elasticc/elasticc.v0_9_1.alert.avsc",
             ),
             "elasticc.v0_9_1.brokerClassification": types_.Schema(
                 name="elasticc.v0_9_1.brokerClassification",
                 description="Avro schema of alerts to be sent to DESC containing classifications of ELAsTiCC alerts.",
-                path=PACKAGE_DIR / f"schemas/elasticc/elasticc.v0_9_1.brokerClassification.avsc",
+                path=PACKAGE_DIR / "schemas/elasticc/elasticc.v0_9_1.brokerClassification.avsc",
             ),
             "ztf": types_.Schema(
                 name="ztf",
                 description=(
                     "ZTF schema. The ZTF survey publishes alerts in Avro format with the schema attached "
                     "in the header. Pitt-Google publishes ZTF alerts in json format. This schema covers "
-                    "both cases."  # [TODO]
+                    "both cases."
                 ),
                 path=None,
             ),
