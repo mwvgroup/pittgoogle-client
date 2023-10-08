@@ -1,0 +1,16 @@
+# Guidelines:
+# - Schema names must start with the name of the survey. If the survey has more than one schema
+#   the survey name should be followed by a "." and then a schema-specific specifier(s).
+# - If a schema file is also being registered (path key), it is recommended that the file have the
+#   same name (path stem) as the schema. Avro is the only file type currently implemented, and the file name
+#   must end with ".avsc".
+# - The path must be relative to the package directory or null if no schema file is being registered.
+- name: "elasticc.v0_9_1.alert"
+  description: "Avro schema of alerts published by ELAsTiCC."
+  path: PACKAGE_DIR / "schemas/elasticc/elasticc.v0_9_1.alert.avsc"
+- name: "elasticc.v0_9_1.brokerClassification"
+  description: "Avro schema of alerts to be sent to DESC containing classifications of ELAsTiCC alerts."
+  path: PACKAGE_DIR / "schemas/elasticc/elasticc.v0_9_1.brokerClassification.avsc"
+- name: "ztf"
+  description: "ZTF schema. The ZTF survey publishes alerts in Avro format with the schema attached in the header. Pitt-Google publishes ZTF alerts in json format. This schema covers both cases."
+  path: null
