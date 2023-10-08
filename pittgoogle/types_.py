@@ -9,7 +9,7 @@ import yaml
 from attrs import define, field
 
 if TYPE_CHECKING:
-    import google.protobuf.timestamp_pb2
+    import datetime
     from pathlib import Path
 
 
@@ -83,5 +83,5 @@ class PubsubMessageLike:
     data: bytes = field()
     attributes: dict = field(factory=dict)
     message_id: Optional[str] = field(default=None)
-    publish_time: Optional["google.protobuf.timestamp_pb2.Timestamp"] = field(default=None)
+    publish_time: Optional["datetime.datetime"] = field(default=None)
     ordering_key: Optional[str] = field(default=None)
