@@ -12,7 +12,6 @@ if TYPE_CHECKING:
     import datetime
     from pathlib import Path
 
-
 LOGGER = logging.getLogger(__name__)
 PACKAGE_DIR = importlib.resources.files(__package__)
 

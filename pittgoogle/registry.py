@@ -10,7 +10,6 @@ from attrs import define
 from . import types_
 from .exceptions import SchemaNotFoundError
 
-
 LOGGER = logging.getLogger(__name__)
 PACKAGE_DIR = importlib.resources.files(__package__)
 SCHEMA_MANIFEST = yaml.safe_load((PACKAGE_DIR / "registry_manifests/schemas.yml").read_text())
