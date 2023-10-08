@@ -24,6 +24,7 @@ API
 import importlib.resources
 import io
 import logging
+from datetime import datetime
 from pathlib import Path
 from typing import Any, TYPE_CHECKING, Optional, Union
 
@@ -126,13 +127,21 @@ class Alert:
         if not isinstance(envelope, dict) or "message" not in envelope:
             raise BadRequest("Bad Request: invalid Pub/Sub message format")
 
+        # convert the message publish_time string -> datetime
+        # occasionally the string doesn't include microseconds so we need a try/except
+        publish_time = envelope["message"]["publish_time"].replace("Z", "+00:00")
+        try:
+            publish_time = datetime.strptime(publish_time, "%Y-%m-%dT%H:%M:%S.%f%z")
+        except ValueError:
+            publish_time = datetime.strptime(publish_time, "%Y-%m-%dT%H:%M:%S%z")
+
         return cls(
             msg=types_.PubsubMessageLike(
                 # this class requires data. the rest should be present in the message, but let's be lenient
                 data=envelope["message"]["data"],
                 attributes=envelope["message"].get("attributes"),
                 message_id=envelope["message"].get("message_id"),
-                publish_time=envelope["message"].get("publish_time"),
+                publish_time=publish_time,
                 ordering_key=envelope["message"].get("ordering_key"),
             ),
             schema_name=schema_name,
