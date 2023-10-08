@@ -26,20 +26,18 @@ import io
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import fastavro
 from attrs import define, field
 
-from . import registry, types_
+from . import registry, types_, utils
 from .exceptions import BadRequest, OpenAlertError, SchemaNotFoundError
-from .utils import Cast
 
 if TYPE_CHECKING:
     import google._upb._message
     import google.cloud.pubsub_v1
     import pandas as pd  # always lazy-load pandas. it hogs memory on cloud functions and run
-
 
 LOGGER = logging.getLogger(__name__)
 PACKAGE_DIR = importlib.resources.files(__package__)
@@ -229,10 +227,10 @@ class Alert:
         # [TODO] this should be rewritten to catch specific errors
         # for now, just try avro then json, catching basically all errors in the process
         try:
-            self._dict = Cast.avro_to_dict(self.msg.data)
+            self._dict = utils.Cast.avro_to_dict(self.msg.data)
         except Exception:
             try:
-                self._dict = Cast.json_to_dict(self.msg.data)
+                self._dict = utils.Cast.json_to_dict(self.msg.data)
             except Exception:
                 raise OpenAlertError("failed to deserialize the alert bytes")
         return self._dict

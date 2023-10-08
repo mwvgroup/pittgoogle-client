@@ -94,9 +94,9 @@ from attrs import define, field
 from attrs.validators import gt, instance_of, is_callable, optional
 from google.api_core.exceptions import NotFound
 
-from . import Alert, Auth
+from .alert import Alert
+from .auth import Auth
 from .exceptions import SchemaNotFoundError
-
 
 LOGGER = logging.getLogger(__name__)
 PACKAGE_DIR = importlib.resources.files(__package__)

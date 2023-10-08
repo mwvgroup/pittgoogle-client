@@ -32,8 +32,8 @@ import google.cloud.bigquery as bigquery
 from attrs import define, field
 from attrs.validators import instance_of, optional
 
-from . import Alert, Auth
-
+from .alert import Alert
+from .auth import Auth
 
 LOGGER = logging.getLogger(__name__)
 
