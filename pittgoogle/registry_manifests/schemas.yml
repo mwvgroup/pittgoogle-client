@@ -7,10 +7,10 @@
 # - The path must be relative to the package directory or null if no schema file is being registered.
 - name: "elasticc.v0_9_1.alert"
   description: "Avro schema of alerts published by ELAsTiCC."
-  path: PACKAGE_DIR / "schemas/elasticc/elasticc.v0_9_1.alert.avsc"
+  path: "schemas/elasticc/elasticc.v0_9_1.alert.avsc"
 - name: "elasticc.v0_9_1.brokerClassification"
   description: "Avro schema of alerts to be sent to DESC containing classifications of ELAsTiCC alerts."
-  path: PACKAGE_DIR / "schemas/elasticc/elasticc.v0_9_1.brokerClassification.avsc"
+  path: "schemas/elasticc/elasticc.v0_9_1.brokerClassification.avsc"
 - name: "ztf"
   description: "ZTF schema. The ZTF survey publishes alerts in Avro format with the schema attached in the header. Pitt-Google publishes ZTF alerts in json format. This schema covers both cases."
   path: null
