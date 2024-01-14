@@ -50,20 +50,19 @@ class Table:
         Name of the BigQuery dataset this table belongs to.
 
     projectid : `str`, optional
-        The topic owner's Google Cloud project ID. Either this or `auth` is required. Use this
-        if you are connecting to a subscription owned by a different project than this topic. Note:
+        The table owner's Google Cloud project ID. Either this or `auth` is required. Note:
         :attr:`pittgoogle.utils.ProjectIds` is a registry containing Pitt-Google's project IDs.
     auth : :class:`pittgoogle.auth.Auth`, optional
-        Credentials for the Google Cloud project that owns this topic. If not provided,
+        Credentials for the Google Cloud project that owns this table. If not provided,
         it will be created from environment variables when needed.
-    client : `pubsub_v1.PublisherClient`, optional
-        Pub/Sub client that will be used to access the topic. If not provided, a new client will
+    client : `bigquery.Client`, optional
+        BigQuery client that will be used to access the table. If not provided, a new client will
         be created (using `auth`) the first time it is requested.
     """
 
     name: str = field()
     dataset: str = field()
-    projectid: str = field(default=None)
+    _projectid: str = field(default=None)
     _auth: Auth = field(default=None, validator=optional(instance_of(Auth)))
     _client: Optional[bigquery.Client] = field(
         default=None, validator=optional(instance_of(bigquery.Client))
@@ -115,26 +114,30 @@ class Table:
 
     @property
     def auth(self) -> Auth:
-        """Credentials for the Google Cloud project that owns this topic.
+        """Credentials for the Google Cloud project that owns this table.
 
         This will be created from environment variables if `self._auth` is None.
         """
         if self._auth is None:
             self._auth = Auth()
 
-        if (self.projectid != self._auth.GOOGLE_CLOUD_PROJECT) and (self.projectid is not None):
+        if (self._projectid != self._auth.GOOGLE_CLOUD_PROJECT) and (self._projectid is not None):
             LOGGER.warning(f"setting projectid to match auth: {self._auth.GOOGLE_CLOUD_PROJECT}")
-        self.projectid = self._auth.GOOGLE_CLOUD_PROJECT
+            self._projectid = self._auth.GOOGLE_CLOUD_PROJECT
 
         return self._auth
 
     @property
     def id(self) -> str:
         """Fully qualified table ID."""
-        # make sure we have a projectid. if it needs to be set, call auth
-        if self.projectid is None:
-            self.auth
         return f"{self.projectid}.{self.dataset}.{self.name}"
+
+    @property
+    def projectid(self) -> str:
+        """The table owner's Google Cloud project ID."""
+        if self._projectid is None:
+            self._projectid = self.auth.GOOGLE_CLOUD_PROJECT
+        return self._projectid
 
     @property
     def table(self) -> bigquery.Table:

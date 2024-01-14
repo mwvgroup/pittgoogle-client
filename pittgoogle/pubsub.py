@@ -174,7 +174,7 @@ class Topic:
     """
 
     name: str = field()
-    projectid: str = field(default=None)
+    _projectid: str = field(default=None)
     _auth: Auth = field(default=None, validator=optional(instance_of(Auth)))
     _client: Optional[pubsub_v1.PublisherClient] = field(
         default=None, validator=optional(instance_of(pubsub_v1.PublisherClient))
@@ -232,19 +232,23 @@ class Topic:
         if self._auth is None:
             self._auth = Auth()
 
-        if (self.projectid != self._auth.GOOGLE_CLOUD_PROJECT) and (self.projectid is not None):
+        if (self._projectid != self._auth.GOOGLE_CLOUD_PROJECT) and (self._projectid is not None):
             LOGGER.warning(f"setting projectid to match auth: {self._auth.GOOGLE_CLOUD_PROJECT}")
-        self.projectid = self._auth.GOOGLE_CLOUD_PROJECT
+            self._projectid = self._auth.GOOGLE_CLOUD_PROJECT
 
         return self._auth
 
     @property
     def path(self) -> str:
         """Fully qualified path to the topic."""
-        # make sure we have a projectid. if it needs to be set, call auth
-        if self.projectid is None:
-            self.auth
         return f"projects/{self.projectid}/topics/{self.name}"
+
+    @property
+    def projectid(self) -> str:
+        """The topic owner's Google Cloud project ID."""
+        if self._projectid is None:
+            self._projectid = self.auth.GOOGLE_CLOUD_PROJECT
+        return self._projectid
 
     @property
     def client(self) -> pubsub_v1.PublisherClient:
