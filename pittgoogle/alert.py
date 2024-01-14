@@ -242,9 +242,23 @@ class Alert:
 
         import pandas as pd  # always lazy-load pandas. it hogs memory on cloud functions and run
 
-        src_df = pd.DataFrame(self.get("source"), index=[0])
-        prvs_df = pd.DataFrame(self.get("prv_sources"))
-        self._dataframe = pd.concat([src_df, prvs_df], ignore_index=True)
+        # sources and previous sources are expected to have the same fields
+        sources_df = pd.DataFrame([self.get("source")] + self.get("prv_sources"))
+        # sources and forced sources may have different fields
+        forced_df = pd.DataFrame(self.get("prv_forced_sources"))
+
+        # use nullable integer data type to avoid converting ints to floats
+        # for columns in one dataframe but not the other
+        sources_ints = [c for c, v in sources_df.dtypes.items() if v == int]
+        sources_df = sources_df.astype(
+            {c: "Int64" for c in set(sources_ints) - set(forced_df.columns)}
+        )
+        forced_ints = [c for c, v in forced_df.dtypes.items() if v == int]
+        forced_df = forced_df.astype(
+            {c: "Int64" for c in set(forced_ints) - set(sources_df.columns)}
+        )
+
+        self._dataframe = pd.concat([sources_df, forced_df], ignore_index=True)
         return self._dataframe
 
     @property
