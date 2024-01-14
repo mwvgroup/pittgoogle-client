@@ -8,6 +8,7 @@ objectid: [diaObject, diaObjectId]
 source: diaSource
 sourceid: [diaSource, diaSourceId]
 prv_sources: prvDiaSources
+prv_forced_sources: prvDiaForcedSources
 mjd: midPointTai
 filter: filterName
 mag: magpsf
