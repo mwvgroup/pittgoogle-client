@@ -26,7 +26,7 @@ import io
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import fastavro
 from attrs import define, field
@@ -77,10 +77,10 @@ class Alert:
         Union["google.cloud.pubsub_v1.types.PubsubMessage", types_.PubsubMessageLike]
     ] = field(default=None)
     """Incoming Pub/Sub message object."""
-    _attributes: Optional[Union[dict, "google._upb._message.ScalarMapContainer"]] = field(
+    _attributes: Optional[Union[Dict, "google._upb._message.ScalarMapContainer"]] = field(
         default=None
     )
-    _dict: Optional[dict] = field(default=None)
+    _dict: Optional[Dict] = field(default=None)
     _dataframe: Optional["pd.DataFrame"] = field(default=None)
     schema_name: Optional[str] = field(default=None)
     _schema: Optional[types_.Schema] = field(default=None, init=False)
@@ -88,7 +88,7 @@ class Alert:
 
     # ---- class methods ---- #
     @classmethod
-    def from_cloud_run(cls, envelope: dict, schema_name: Optional[str] = None) -> "Alert":
+    def from_cloud_run(cls, envelope: Dict, schema_name: Optional[str] = None) -> "Alert":
         """Create an `Alert` from an HTTP request envelope containing a Pub/Sub message, as received by a Cloud Run module.
 
         Example code for a Cloud Run module that uses this method to open a ZTF alert:
@@ -148,8 +148,8 @@ class Alert:
     @classmethod
     def from_dict(
         cls,
-        payload: dict,
-        attributes: Optional[Union[dict, "google._upb._message.ScalarMapContainer"]] = None,
+        payload: Dict,
+        attributes: Optional[Union[Dict, "google._upb._message.ScalarMapContainer"]] = None,
         schema_name: Optional[str] = None,
     ) -> "Alert":  # [TODO] update tom_desc to use this
         """Create an `Alert` from a dictionary (`payload`)."""
@@ -173,7 +173,7 @@ class Alert:
 
     # ---- properties ---- #
     @property
-    def attributes(self) -> dict:
+    def attributes(self) -> Dict:
         """Custom metadata for the message. Pub/Sub handles this as a dict-like called "attributes".
 
         If this was not set when the `Alert` was instantiated, a new dictionary will be created using
@@ -187,7 +187,7 @@ class Alert:
         return self._attributes
 
     @property
-    def dict(self) -> dict:
+    def dict(self) -> Dict:
         """Alert data as a dictionary. Created from `self.msg.data`, if needed.
 
         Raises
