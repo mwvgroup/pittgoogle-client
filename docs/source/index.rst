@@ -21,6 +21,7 @@
 
     tutorials/bigquery
     tutorials/cloud-storage
+    tutorials/ztf-figures
 
 .. toctree::
     :caption: API Reference
@@ -29,7 +30,6 @@
 
     api/auth
     api/bigquery
-    api/figures
     api/pubsub
     api/utils
 

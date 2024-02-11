@@ -1,3 +1,5 @@
+.. _cloud storage:
+
 Cloud Storage Tutorial
 ==============================
 
@@ -65,13 +67,10 @@ Download alerts for a given ``objectId``
         blob.download_to_filename(local_path)
         print(f'Downloaded {local_path}')
 
-Plot cutouts and lightcurves
+Open a file
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The functions in this section were adapted from
-https://github.com/ZwickyTransientFacility/ztf-avro-alert/blob/master/notebooks/Filtering\_alerts.ipynb.
-
-Open a file (see the previous section to download files)
+Load to a dict:
 
 .. code:: python
 
@@ -84,27 +83,17 @@ Open a file (see the previous section to download files)
 
     print(alert_dict.keys())
 
-Plot cutouts
+Load to a pandas DataFrame:
 
 .. code:: python
 
-    pittgoogle.figures.plot_cutouts(alert_dict)
-    plt.show(block=False)
+    lightcurve_df = pittgoogle.utils.Cast.alert_dict_to_dataframe(alert_dict)
 
-Cast to a dataframe and plot lightcurves
 
-.. code:: python
+Plot light curves and cutouts
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    lc_df = pittgoogle.utils.Cast.alert_dict_to_dataframe(alert_dict)
-    pittgoogle.figures.plot_lightcurve(lc_df)
-    plt.show(block=False)
-
-Plot everything together
-
-.. code:: python
-
-    pittgoogle.figures.plot_lightcurve_cutouts(alert_dict)
-    plt.show(block=False)
+See :ref:`ztf figures`
 
 Command line
 ------------

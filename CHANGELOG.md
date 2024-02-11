@@ -10,10 +10,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
+### Added
+
+-   ZTF Figures Tutorial
+
 ### Changed
 
 -   update README.md to point to the new docs
 -   remove setup and requirements files that are no longer needed after switching away from Read The Docs
+
+### Removed
+
+-   `figures` module (content moved to tutorial). This allowed the removal of the following explicit
+    dependencies: `aplpy`, `matplotlib`, `numpy`.
 
 ## \[0.2.0\] - 2023-07-02
 
@@ -33,4 +42,3 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Fixed
 
 -   cleanup some issues flagged by Codacy
-
