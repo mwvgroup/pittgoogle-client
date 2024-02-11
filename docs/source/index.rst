@@ -24,6 +24,13 @@
     tutorials/ztf-figures
 
 .. toctree::
+    :caption: For Developers
+    :maxdepth: 3
+    :hidden:
+
+    for-developers/pypi
+
+.. toctree::
     :caption: API Reference
     :maxdepth: 3
     :hidden:
