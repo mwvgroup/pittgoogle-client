@@ -9,7 +9,7 @@ try:
 except ImportError:  # for Python<3.8
     import importlib_metadata as metadata
 
-from . import auth, bigquery, exceptions, figures, pubsub, utils
+from . import auth, bigquery, exceptions, pubsub, utils
 
 __version__ = metadata.version("pittgoogle-client")
 

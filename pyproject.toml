@@ -24,15 +24,12 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.9"
-aplpy = ">=2.1"
 attrs = ">=23.1"
 astropy = ">=5.3"
 fastavro = ">=1.7.4"
 google-auth-oauthlib = ">=1.0"
 google-cloud-bigquery = ">=3.11.2"
 google-cloud-pubsub = ">=2.17.1"
-matplotlib = ">=3.7.1"
-numpy = ">=1.25"
 pandas = ">=2.0.2"
 tabulate = ">=0.9"
 

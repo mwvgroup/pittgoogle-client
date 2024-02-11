@@ -1,3 +1,5 @@
+.. _bigquery:
+
 BigQuery Tutorial
 ==================
 
@@ -77,13 +79,13 @@ It's options are demonstrated below.
 
     # Option 1: Get a single DataFrame of all results
 
-    lcs_df = pittgoogle.bigquery.query_objects(columns, objectIds=objectIds)
+    lightcurves_df = pittgoogle.bigquery.query_objects(columns, objectIds=objectIds)
     # This will execute a dry run and tell you how much data will be processed.
     # You will be asked to confirm before proceeding.
     # In the future we'll skip this using
     dry_run = False
 
-    lcs_df.sample(10)
+    lightcurves_df.sample(10)
     # cleaned of duplicates
 
 Congratulations! You've now retrieved your first data from the transient
@@ -101,8 +103,8 @@ common name in the table schema we looked at earlier, or you can use
     fid_names = pittgoogle.utils.ztf_fid_names()  # dict
     print(fid_names)
 
-    lcs_df['filter'] = lcs_df['fid'].map(fid_names)
-    lcs_df.head()
+    lightcurves_df['filter'] = lightcurves_df['fid'].map(fid_names)
+    lightcurves_df.head()
 
 Queries can return large datasets. You may want to use a generator to
 step through objects individually, and avoid loading the entire dataset
@@ -118,9 +120,9 @@ into memory at once. ``query_objects()`` can return one for you:
     )
     # cleaned of duplicates
 
-    for lc_df in objects:
-        print(f'\nobjectId: {lc_df.objectId}')  # objectId in metadata
-        print(lc_df.sample(5))
+    for lightcurve_df in objects:
+        print(f'\nobjectId: {lightcurve_df.objectId}')  # objectId in metadata
+        print(lightcurve_df.sample(5))
 
 Each DataFrame contains data on a single object, and is indexed by
 ``candid``. The ``objectId`` is in the metadata.
@@ -156,7 +158,7 @@ results:
 
     for lcjson in jobj:
         print(lcjson)
-        # lc_df = pd.read_json(lcjson)  # read back to a df
+        # lightcurve_df = pd.read_json(lcjson)  # read back to a df
 
 Finally, ``query_objects()`` can return the raw query job object that it
 gets from its API call using ``google.cloud.bigquery``'s ``query()``
@@ -184,9 +186,9 @@ method.
 
         # pgb can cast to a DataFrame or json string
         # this option also cleans the duplicates
-        lc_df = pittgoogle.bigquery.format_history_query_results(row=row)
-        print(f'\nobjectId: {lc_df.objectId}')  # objectId in metadata
-        print(lc_df.head(1))
+        lightcurve_df = pittgoogle.bigquery.format_history_query_results(row=row)
+        print(f'\nobjectId: {lightcurve_df.objectId}')  # objectId in metadata
+        print(lightcurve_df.head(1))
         lcjson = pittgoogle.bigquery.format_history_query_results(row=row, format='json')
         print('\n', lcjson)
 
@@ -195,15 +197,14 @@ method.
 Plot a lightcurve
 ^^^^^^^^^^^^^^^^^
 
+The following DataFrame can be used with the code in :ref:`ztf figures` to plot the object's light curves.
+
 .. code:: python
 
     # Get an object's lightcurve DataFrame with the minimum required columns
     columns = ['jd','fid','magpsf','sigmapsf','diffmaglim']
     objectId = 'ZTF20acqgklx'
-    lc_df = pittgoogle.bigquery.query_objects(columns, objectIds=[objectId], dry_run=False)
-
-    # make the plot
-    pittgoogle.figures.plot_lightcurve(lc_df, objectId=objectId)
+    lightcurve_df = pittgoogle.bigquery.query_objects(columns, objectIds=[objectId], dry_run=False)
 
 Cone search
 ~~~~~~~~~~~
