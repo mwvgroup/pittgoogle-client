@@ -29,7 +29,6 @@
 
     api/auth
     api/bigquery
-    api/figures
     api/pubsub
     api/utils
 
