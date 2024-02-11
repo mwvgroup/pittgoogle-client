@@ -5,5 +5,5 @@
 
 Read the docs: [mwvgroup.github.io/pittgoogle-client](https://mwvgroup.github.io/pittgoogle-client/).
 
-This is the client package for the
+This is the client package for interacting with the
 [Pitt-Google astronomical alert broker](https://pitt-broker.rtfd.io/).
