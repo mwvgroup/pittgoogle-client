@@ -23,11 +23,14 @@ Create a subscription to the "ztf-loop" topic:
 
 .. code-block:: python
 
-    subscription = pittgoogle.pubsub.Subscription(
-        "my-ztf-loop-subscription",
-        # topic only required if the subscription does not yet exist in Google Cloud
-        topic=pittgoogle.pubsub.Topic("ztf-loop", pittgoogle.utils.ProjectIds.pittgoogle)
-    )
+    # topic the subscription will be connected to
+    # only required if the subscription does not yet exist in Google Cloud
+    topic = pittgoogle.Topic(name="ztf-loop", projectid=pittgoogle.ProjectIds.pittgoogle)
+
+    # choose your own name for the subscription
+    subscription = pittgoogle.Subscription(name="my-ztf-loop-subscription", topic=topic, schema_name="ztf")
+
+    # make sure the subscription exists and we can connect to it. create it if necessary
     subscription.touch()
 
 Pull a small batch of alerts. Helpful for testing. Not recommended for long-runnining listeners.
@@ -76,25 +79,30 @@ API
 ----
 
 """
+import importlib.resources
+import io
+import json
 import logging
 import queue
 from concurrent.futures import ThreadPoolExecutor
 from time import sleep
-from typing import Any, ByteString, Callable, List, Optional, Union
+from typing import Any, Callable, List, Optional, Union
 
-from attrs import converters, define, field
+import fastavro
+import google.cloud.pubsub_v1 as pubsub_v1
+from attrs import define, field
 from attrs.validators import gt, instance_of, is_callable, optional
 from google.api_core.exceptions import NotFound
-from google.cloud import pubsub_v1
 
+from .alert import Alert
 from .auth import Auth
-from .exceptions import OpenAlertError
-from .utils import Cast
+from .exceptions import SchemaNotFoundError
 
 LOGGER = logging.getLogger(__name__)
+PACKAGE_DIR = importlib.resources.files(__package__)
 
 
-def msg_callback_example(alert: "Alert") -> "Response":
+def msg_callback_example(alert: Alert) -> "Response":
     print(f"processing message: {alert.metadata['message_id']}")
     return Response(ack=True, result=alert.dict)
 
@@ -108,6 +116,7 @@ def batch_callback_example(batch: list) -> None:
 def pull_batch(
     subscription: Union[str, "Subscription"],
     max_messages: int = 1,
+    schema_name: str = str(),
     **subscription_kwargs,
 ) -> List["Alert"]:
     """Pull a single batch of messages from the `subscription`.
@@ -118,6 +127,10 @@ def pull_batch(
         Subscription to be pulled. If `str`, the name of the subscription.
     max_messages : `int`
         Maximum number of messages to be pulled.
+    schema_name : `str`
+        One of "ztf", "ztf.lite", "elasticc.v0_9_1.alert", "elasticc.v0_9_1.brokerClassification".
+        Schema name of the alerts in the subscription. Passed to :class:`pittgoogle.pubsub.Alert`
+        for unpacking. If not provided, some properties of the `Alert` may not be available.
     subscription_kwargs
         Keyword arguments sent to :class:`pittgoogle.pubsub.Subscription`.
         Ignored if `subscription` is a :class:`pittgoogle.pubsub.Subscription`.
@@ -129,13 +142,15 @@ def pull_batch(
         {"subscription": subscription.path, "max_messages": max_messages}
     )
 
-    message_list = [Alert(msg=msg.message) for msg in response.received_messages]
-    ack_ids = [msg.ack_id for msg in response.received_messages]
+    alerts = [
+        Alert.from_msg(msg.message, schema_name=schema_name) for msg in response.received_messages
+    ]
 
+    ack_ids = [msg.ack_id for msg in response.received_messages]
     if len(ack_ids) > 0:
         subscription.client.acknowledge({"subscription": subscription.path, "ack_ids": ack_ids})
 
-    return message_list
+    return alerts
 
 
 @define
@@ -146,24 +161,174 @@ class Topic:
     ------------
     name : `str`
         Name of the Pub/Sub topic.
-    projectid : `str`
-        The topic owner's Google Cloud project ID. Note: :attr:`pittgoogle.utils.ProjectIds`
-        is a registry containing Pitt-Google's project IDs.
+    projectid : `str`, optional
+        The topic owner's Google Cloud project ID. Either this or `auth` is required. Use this
+        if you are connecting to a subscription owned by a different project than this topic. Note:
+        :attr:`pittgoogle.utils.ProjectIds` is a registry containing Pitt-Google's project IDs.
+    auth : :class:`pittgoogle.auth.Auth`, optional
+        Credentials for the Google Cloud project that owns this topic. If not provided,
+        it will be created from environment variables when needed.
+    client : `pubsub_v1.PublisherClient`, optional
+        Pub/Sub client that will be used to access the topic. If not provided, a new client will
+        be created (using `auth`) the first time it is requested.
     """
 
     name: str = field()
-    projectid: str = field()
+    _projectid: str = field(default=None)
+    _auth: Auth = field(default=None, validator=optional(instance_of(Auth)))
+    _client: Optional[pubsub_v1.PublisherClient] = field(
+        default=None, validator=optional(instance_of(pubsub_v1.PublisherClient))
+    )
 
-    @property
-    def path(self) -> str:
-        """Fully qualified path to the topic."""
-        return f"projects/{self.projectid}/topics/{self.name}"
+    @classmethod
+    def from_cloud(
+        cls,
+        name: str,
+        *,
+        projectid: str,
+        survey: Optional[str] = None,
+        testid: Optional[str] = None,
+    ):
+        """Create a `Topic` with a `client` using implicit credentials (no explicit `auth`).
+
+        Parameters
+        ----------
+        name : `str`
+            Name of the topic. If `survey` and/or `testid` are provided, they will be added to this
+            name following the Pitt-Google naming syntax.
+        projectid : `str`
+            Project ID of the Goodle Cloud project that owns this resource. Project IDs used by
+            Pitt-Google are listed in the registry for convenience (:class:`pittgoogle.registry.ProjectIds`).
+            Required because it cannot be retrieved from the `client` and there is no explicit `auth`.
+        survey : `str`, optional
+            Name of the survey. If provided, it will be prepended to `name` following the
+            Pitt-Google naming syntax.
+        testid : `str`, optional
+            Pipeline identifier. If this is not `None`, `False`, or `"False"` it will be appended to
+            the `name` following the Pitt-Google naming syntax. This used to allow pipeline modules
+            to find the correct resources without interfering with other pipelines that may have
+            deployed resources with the same base names (e.g., for development and testing purposes).
+        """
+        # if survey and/or testid passed in, use them to construct full name using the pitt-google naming syntax
+        if survey is not None:
+            name = f"{survey}-{name}"
+        # must accommodate False and "False" for consistency with the broker pipeline
+        if testid and testid != "False":
+            name = f"{name}-{testid}"
+        return cls(name, projectid=projectid, client=pubsub_v1.PublisherClient())
 
     @classmethod
     def from_path(cls, path) -> "Topic":
         """Parse the `path` and return a new `Topic`."""
         _, projectid, _, name = path.split("/")
         return cls(name, projectid)
+
+    @property
+    def auth(self) -> Auth:
+        """Credentials for the Google Cloud project that owns this topic.
+
+        This will be created from environment variables if `self._auth` is None.
+        """
+        if self._auth is None:
+            self._auth = Auth()
+
+        if (self._projectid != self._auth.GOOGLE_CLOUD_PROJECT) and (self._projectid is not None):
+            LOGGER.warning(f"setting projectid to match auth: {self._auth.GOOGLE_CLOUD_PROJECT}")
+            self._projectid = self._auth.GOOGLE_CLOUD_PROJECT
+
+        return self._auth
+
+    @property
+    def path(self) -> str:
+        """Fully qualified path to the topic."""
+        return f"projects/{self.projectid}/topics/{self.name}"
+
+    @property
+    def projectid(self) -> str:
+        """The topic owner's Google Cloud project ID."""
+        if self._projectid is None:
+            self._projectid = self.auth.GOOGLE_CLOUD_PROJECT
+        return self._projectid
+
+    @property
+    def client(self) -> pubsub_v1.PublisherClient:
+        """Pub/Sub client for topic access.
+
+        Will be created using `self.auth.credentials` if necessary.
+        """
+        if self._client is None:
+            self._client = pubsub_v1.PublisherClient(credentials=self.auth.credentials)
+        return self._client
+
+    def touch(self) -> None:
+        """Test the connection to the topic, creating it if necessary."""
+        try:
+            self.client.get_topic(topic=self.path)
+            LOGGER.info(f"topic exists: {self.path}")
+
+        except NotFound:
+            self.client.create_topic(name=self.path)
+            LOGGER.info(f"topic created: {self.path}")
+
+    def delete(self) -> None:
+        """Delete the topic."""
+        try:
+            self.client.delete_topic(topic=self.path)
+        except NotFound:
+            LOGGER.info(f"nothing to delete. topic not found: {self.path}")
+        else:
+            LOGGER.info(f"deleted topic: {self.path}")
+
+    def publish(self, alert: "Alert") -> int:
+        """Publish a message with `alert.dict` as the payload and `alert.attributes` as the attributes.
+
+        If the `alert` has an elasticc schema, the payload will be serialized as schemaless Avro.
+        Otherwise, json will be used.
+        """
+        # we need to decide which format to use: json, avro with schema, or avro without schema
+        # the format that pitt-google currently (2023-09-23) uses to publish messages depends on the stream:
+        #     - consumer modules pass on the original alert data packet, as produced by the survey.
+        #       they do not need to use this method (in fact, the consumers do not even use python),
+        #       so we can ignore this case.
+        #     - all other broker pipeline modules (Pitt-Google-Broker repo) use json.
+        #     - modules in the pittgoogle-user repo publish classifications for elasticc, and thus
+        #       use schemaless avro.
+        # at some point, we should re-evaluate the broker pipeline in particular.
+        #
+        # for now, we will get close enough to the current behavior if we assume that:
+        #     - elasticc messages should be published as schemaless avro
+        #     - else, we should publish a json message
+        # this will match the current behavior in all cases except the elasticc broker pipeline modules.
+        # neither broker pipeline uses pittgoogle-client at this time (they use pgb-broker-utils),
+        # so we don't need to update or accommodate them yet.
+        #
+        # we'll get the survey name from self.schema.survey, but first we should check whether the
+        # schema exists so we can be lenient and just fall back to json instead of raising an error.
+        try:
+            alert.schema
+        except SchemaNotFoundError:
+            avro_schema = None
+        else:
+            if alert.schema.survey in ["elasticc"]:
+                avro_schema = alert.schema.avsc
+            else:
+                avro_schema = None
+
+        if not avro_schema:
+            # serialize using json
+            message = json.dumps(alert.dict).encode("utf-8")
+        else:
+            # serialize as schemaless avro
+            fout = io.BytesIO()
+            fastavro.schemaless_writer(fout, avro_schema, alert.dict)
+            fout.seek(0)
+            message = fout.getvalue()
+
+        # attribute keys and values must be strings. let's sort the keys while we're at it
+        attributes = {str(key): str(alert.attributes[key]) for key in sorted(alert.attributes)}
+
+        future = self.client.publish(self.path, data=message, **attributes)
+        return future.result()
 
 
 @define
@@ -183,6 +348,10 @@ class Subscription:
     client : `pubsub_v1.SubscriberClient`, optional
         Pub/Sub client that will be used to access the subscription. This kwarg is useful if you
         want to reuse a client. If None, a new client will be created.
+    schema_name : `str`
+        One of "ztf", "ztf.lite", "elasticc.v0_9_1.alert", "elasticc.v0_9_1.brokerClassification".
+        Schema name of the alerts in the subscription. Passed to :class:`pittgoogle.pubsub.Alert`
+        for unpacking. If not provided, some properties of the `Alert` may not be available.
     """
 
     name: str = field()
@@ -191,6 +360,7 @@ class Subscription:
     _client: Optional[pubsub_v1.SubscriberClient] = field(
         default=None, validator=optional(instance_of(pubsub_v1.SubscriberClient))
     )
+    schema_name: str = field(factory=str)
 
     @property
     def projectid(self) -> str:
@@ -265,6 +435,19 @@ class Subscription:
             LOGGER.info(f"nothing to delete. subscription not found: {self.path}")
         else:
             LOGGER.info(f"deleted subscription: {self.path}")
+
+    def pull_batch(self, max_messages: int = 1) -> List["Alert"]:
+        """Pull a single batch of messages.
+
+        Recommended for testing. Not recommended for long-running listeners (use the
+        :meth:`~Consumer.stream` method instead).
+
+        Parameters
+        ----------
+        max_messages : `int`
+            Maximum number of messages to be pulled.
+        """
+        return pull_batch(self, max_messages=max_messages, schema_name=self.schema_name)
 
 
 @define()
@@ -432,86 +615,7 @@ class Consumer:
         max_messages : `int`
             Maximum number of messages to be pulled.
         """
-        return pull_batch(self.subscription, max_messages)
-
-
-@define(kw_only=True)
-class Alert:
-    """Pitt-Google container for a Pub/Sub message.
-
-    Typical usage is to instantiate an `Alert` using only a `msg`, and then the other attributes
-    will be automatically extracted and returned (lazily).
-
-    All parameters are keyword only.
-
-    Parameters
-    ------------
-    bytes : `bytes`, optional
-        The message payload, as returned by Pub/Sub. It may be Avro or JSON serialized depending
-        on the topic.
-    dict : `dict`, optional
-        The message payload as a dictionary.
-    metadata : `dict`, optional
-        The message metadata.
-    msg : `google.cloud.pubsub_v1.types.PubsubMessage`, optional
-        The Pub/Sub message object, documented at
-        `<https://googleapis.dev/python/pubsub/latest/types.html>`__.
-    """
-
-    _bytes: Optional[ByteString] = field(default=None)
-    _dict: Optional[dict] = field(default=None)
-    _metadata: Optional[dict] = field(default=None)
-    msg: Optional["pubsub_v1.types.PubsubMessage"] = field(default=None)
-    """Original Pub/Sub message object."""
-
-    @property
-    def bytes(self) -> bytes:
-        """Message payload in original format (Avro or JSON serialized bytes)."""
-        if self._bytes is None:
-            # add try-except when we know what we're looking for
-            self._bytes = self.msg.data
-            if self._bytes is None:
-                # if we add a "path" attribute for the path to an avro file on disk
-                # we can load it like this:
-                #     with open(self.path, "rb") as f:
-                #         self._bytes = f.read()
-                pass
-        return self._bytes
-
-    @property
-    def dict(self) -> dict:
-        """Message payload as a dictionary.
-
-        Raises
-        ------
-        :class:`pittgoogle.exceptions.OpenAlertError`
-            if unable to deserialize the alert bytes.
-        """
-        if self._dict is None:
-            # this should be rewritten to catch specific errors
-            # for now, just try avro then json, catching basically all errors in the process
-            try:
-                self._dict = Cast.avro_to_dict(self.bytes)
-            except Exception:
-                try:
-                    self._dict = Cast.json_to_dict(self.bytes)
-                except Exception:
-                    raise OpenAlertError("failed to deserialize the alert bytes")
-        return self._dict
-
-    @property
-    def metadata(self) -> dict:
-        """Message metadata as a flat dictionary."""
-        if self._metadata is None:
-            self._metadata = {
-                "message_id": self.msg.message_id,
-                "publish_time": self.msg.publish_time,
-                # ordering must be enabled on the subscription for this to be useful
-                "ordering_key": self.msg.ordering_key,
-                # flatten the dict containing our custom attributes
-                **self.msg.attributes,
-            }
-        return self._metadata
+        return self.subscription.pull_batch(max_messages=max_messages)
 
 
 @define(kw_only=True, frozen=True)
@@ -532,5 +636,5 @@ class Response:
         If there is no batch callback the results will be lost.
     """
 
-    ack: bool = field(default=True, converter=converters.to_bool)
+    ack: bool = field(default=True, converter=bool)
     result: Any = field(default=None)
