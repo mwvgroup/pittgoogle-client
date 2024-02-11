@@ -2,15 +2,16 @@
 """``figures`` contains functions for plotting alert and history data.
 See the tutorials for usage help.
 """
-import gzip
-import io
+# import gzip
+# import io
 from typing import Optional
 
-import aplpy
+# import aplpy
 import matplotlib as mpl
 import numpy as np
 import pandas as pd
-from astropy.io import fits
+
+# from astropy.io import fits
 from astropy.time import Time
 from matplotlib import pyplot as plt
 
@@ -79,51 +80,51 @@ def plot_lightcurve(
 
 
 # --- Plot cutouts
-def plot_stamp(stamp, fig=None, subplot=None, **kwargs):
-    """Adapted from:
-    https://github.com/ZwickyTransientFacility/ztf-avro-alert/blob/master/notebooks/Filtering_alerts.ipynb
-    """
+# def plot_stamp(stamp, fig=None, subplot=None, **kwargs):
+#     """Adapted from:
+#     https://github.com/ZwickyTransientFacility/ztf-avro-alert/blob/master/notebooks/Filtering_alerts.ipynb
+#     """
 
-    with gzip.open(io.BytesIO(stamp), "rb") as f:
-        with fits.open(io.BytesIO(f.read())) as hdul:
-            if fig is None:
-                fig = plt.figure(figsize=(4, 4))
-            if subplot is None:
-                subplot = (1, 1, 1)
-            ffig = aplpy.FITSFigure(hdul[0], figure=fig, subplot=subplot, **kwargs)
+#     with gzip.open(io.BytesIO(stamp), "rb") as f:
+#         with fits.open(io.BytesIO(f.read())) as hdul:
+#             if fig is None:
+#                 fig = plt.figure(figsize=(4, 4))
+#             if subplot is None:
+#                 subplot = (1, 1, 1)
+#             ffig = aplpy.FITSFigure(hdul[0], figure=fig, subplot=subplot, **kwargs)
 
-            # the following has been throwing: `ValueError: a must be > 0 and <= 1`
-            # this is fixed by requiring astropy==3.2.1
-            # Note: I see this related thing: https://github.com/aplpy/aplpy/issues/420
-            # but I am using the latest APLpy version (2.0.3).
-            # update (2023-06-26): this seems to be working now with astropy==5.2.2
-            ffig.show_grayscale(stretch="arcsinh")
-    return ffig
-
-
-def plot_cutouts(alert_dict):
-    """Adapted from:
-    https://github.com/ZwickyTransientFacility/ztf-avro-alert/blob/master/notebooks/Filtering_alerts.ipynb
-    """
-
-    # fig, axes = plt.subplots(1,3, figsize=(12,4))
-    fig = plt.figure(figsize=(12, 4))
-    for i, cutout in enumerate(["Science", "Template", "Difference"]):
-        stamp = alert_dict["cutout{}".format(cutout)]["stampData"]
-        ffig = plot_stamp(stamp, fig=fig, subplot=(1, 3, i + 1))
-        ffig.set_title(cutout)
+#             # the following has been throwing: `ValueError: a must be > 0 and <= 1`
+#             # this is fixed by requiring astropy==3.2.1
+#             # Note: I see this related thing: https://github.com/aplpy/aplpy/issues/420
+#             # but I am using the latest APLpy version (2.0.3).
+#             # update (2023-06-26): this seems to be working now with astropy==5.2.2
+#             ffig.show_grayscale(stretch="arcsinh")
+#     return ffig
 
 
-# --- Plot all
-def plot_lightcurve_cutouts(alert_dict):
-    """Adapted from:
-    https://github.com/ZwickyTransientFacility/ztf-avro-alert/blob/master/notebooks/Filtering_alerts.ipynb
-    """
+# def plot_cutouts(alert_dict):
+#     """Adapted from:
+#     https://github.com/ZwickyTransientFacility/ztf-avro-alert/blob/master/notebooks/Filtering_alerts.ipynb
+#     """
 
-    fig = plt.figure(figsize=(16, 4))
-    dflc = pgbu.Cast.alert_dict_to_dataframe(alert_dict)
-    plot_lightcurve(dflc, ax=plt.subplot(1, 4, 1))
-    for i, cutout in enumerate(["Science", "Template", "Difference"]):
-        stamp = alert_dict["cutout{}".format(cutout)]["stampData"]
-        ffig = plot_stamp(stamp, fig=fig, subplot=(1, 4, i + 2))
-        ffig.set_title(cutout)
+#     # fig, axes = plt.subplots(1,3, figsize=(12,4))
+#     fig = plt.figure(figsize=(12, 4))
+#     for i, cutout in enumerate(["Science", "Template", "Difference"]):
+#         stamp = alert_dict["cutout{}".format(cutout)]["stampData"]
+#         ffig = plot_stamp(stamp, fig=fig, subplot=(1, 3, i + 1))
+#         ffig.set_title(cutout)
+
+
+# # --- Plot all
+# def plot_lightcurve_cutouts(alert_dict):
+#     """Adapted from:
+#     https://github.com/ZwickyTransientFacility/ztf-avro-alert/blob/master/notebooks/Filtering_alerts.ipynb
+#     """
+
+#     fig = plt.figure(figsize=(16, 4))
+#     dflc = pgbu.Cast.alert_dict_to_dataframe(alert_dict)
+#     plot_lightcurve(dflc, ax=plt.subplot(1, 4, 1))
+#     for i, cutout in enumerate(["Science", "Template", "Difference"]):
+#         stamp = alert_dict["cutout{}".format(cutout)]["stampData"]
+#         ffig = plot_stamp(stamp, fig=fig, subplot=(1, 4, i + 2))
+#         ffig.set_title(cutout)
