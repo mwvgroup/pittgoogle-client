@@ -12,10 +12,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Added
 
+-   `Alert` and `Table` classes.
+-   Registry for alert schemas and GCP Project IDs.
+-   Alert schemas (Avro) and schema maps (yaml).
+-   Exceptions: `BadRequest` and `SchemaNotFoundError`.
+-   Types: `PubsubMessageLike` and `Schema`.
 -   ZTF Figures Tutorial
 
 ### Changed
 
+-   Update PubSub classes.
 -   update README.md to point to the new docs
 -   remove setup and requirements files that are no longer needed after switching away from Read The Docs
 
@@ -23,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 -   `figures` module (content moved to tutorial). This allowed the removal of the following explicit
     dependencies: `aplpy`, `matplotlib`, `numpy`.
+-   v0.1 BigQuery functions.
 
 ## \[0.2.0\] - 2023-07-02
 
