@@ -5,32 +5,13 @@ import logging
 from base64 import b64decode, b64encode
 from collections import OrderedDict
 from io import BytesIO
-from typing import ClassVar
 
 import fastavro
-import pandas as pd
 from astropy.table import Table
 from astropy.time import Time
 from attrs import define
 
 LOGGER = logging.getLogger(__name__)
-
-
-@define
-class ProjectIds:
-    """Registry of Google Cloud Project IDs."""
-
-    pittgoogle: ClassVar[str] = "ardent-cycling-243415"
-    """Pitt-Google's production project."""
-
-    pittgoogle_dev: ClassVar[str] = "avid-heading-329016"
-    """Pitt-Google's development project."""
-
-    # pittgoogle_billing: ClassVar[str] = "light-cycle-328823"
-    # """Pitt-Google's billing project."""
-
-    elasticc: ClassVar[str] = "elasticc-challenge"
-    """Project running a classifier for ELAsTiCC alerts and reporting to DESC."""
 
 
 @define
@@ -124,24 +105,6 @@ class Cast:
         return Cast.avro_to_dict(b64decode(bytes_data))
 
     # --- Work with alert dictionaries
-    @staticmethod
-    def alert_dict_to_dataframe(alert_dict: dict) -> pd.DataFrame:
-        """Package a ZTF alert dictionary into a dataframe.
-
-        Adapted from:
-        https://github.com/ZwickyTransientFacility/ztf-avro-alert/blob/master/notebooks/Filtering_alerts.ipynb
-        """
-        dfc = pd.DataFrame(alert_dict["candidate"], index=[0])
-        df_prv = pd.DataFrame(alert_dict["prv_candidates"])
-        df = pd.concat([dfc, df_prv], ignore_index=True, sort=True)
-        df = df[dfc.columns]  # return to original column ordering
-
-        # we'll attach some metadata
-        # note this may not be preserved after all operations
-        # https://stackoverflow.com/questions/14688306/adding-meta-information-metadata-to-pandas-dataframe
-        df.objectId = alert_dict["objectId"]
-        return df
-
     @staticmethod
     def alert_dict_to_table(alert_dict: dict) -> Table:
         """Package a ZTF alert dictionary into an Astopy Table."""
