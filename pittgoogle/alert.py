@@ -47,20 +47,21 @@ PACKAGE_DIR = importlib.resources.files(__package__)
 class Alert:
     """Pitt-Google container for an astronomical alert.
 
-    Recommended to instantiate using one of the `from_*` methods.
+    Don't call this directly.
+    Use one of the `from_*` methods instead.
 
     All parameters are keyword only.
 
     Parameters
-    ------------
-    bytes : `bytes`, optional
+    ----------
+    bytes : `bytes` (optional)
         The message payload, as returned by Pub/Sub. It may be Avro or JSON serialized depending
         on the topic.
-    dict : `dict`, optional
+    dict : `dict` (optional)
         The message payload as a dictionary.
-    metadata : `dict`, optional
+    metadata : `dict` (optional)
         The message metadata.
-    msg : `google.cloud.pubsub_v1.types.PubsubMessage`, optional
+    msg : `google.cloud.pubsub_v1.types.PubsubMessage` (optional)
         The Pub/Sub message object, documented at
         `<https://cloud.google.com/python/docs/reference/pubsub/latest/google.cloud.pubsub_v1.types.PubsubMessage>`__.
     schema_name : `str`
@@ -91,7 +92,24 @@ class Alert:
     def from_cloud_run(cls, envelope: Dict, schema_name: Optional[str] = None) -> "Alert":
         """Create an `Alert` from an HTTP request envelope containing a Pub/Sub message, as received by a Cloud Run module.
 
-        Example code for a Cloud Run module that uses this method to open a ZTF alert:
+        Parameters
+        ----------
+        envelope : dict
+            The HTTP request envelope containing the Pub/Sub message.
+        schema_name : str (optional)
+            The name of the schema to use. Defaults to None.
+
+        Returns
+        -------
+            Alert : An instance of the `Alert` class.
+
+        Raises
+        ------
+            BadRequest : If the Pub/Sub message is invalid or missing.
+
+        Example
+        -------
+        Code for a Cloud Run module that uses this method to open a ZTF alert:
 
         .. code-block:: python
 
@@ -111,7 +129,7 @@ class Alert:
                     # if the request does not contain a valid message, this raises a `BadRequest`
                     alert = pittgoogle.Alert.from_cloud_run(envelope=flask.request.get_json(), schema_name="ztf")
 
-                except pg.exceptions.BadRequest as exc:
+                except pittgoogle.exceptions.BadRequest as exc:
                     # return the error text and an HTTP 400 Bad Request code
                     return str(exc), 400
 
@@ -151,20 +169,60 @@ class Alert:
         payload: Dict,
         attributes: Optional[Union[Dict, "google._upb._message.ScalarMapContainer"]] = None,
         schema_name: Optional[str] = None,
-    ) -> "Alert":  # [TODO] update tom_desc to use this
-        """Create an `Alert` from a dictionary (`payload`)."""
+    ) -> "Alert":
+        """Create an `Alert` object from the given `payload` dictionary.
+
+        Parameters
+        ----------
+        payload : dict
+            The dictionary containing the data for the `Alert` object.
+        attributes : dict or google._upb._message.ScalarMapContainer (optional)
+            Additional attributes for the `Alert` object. Defaults to None.
+        schema_name : str (optional)
+            The name of the schema. Defaults to None.
+
+        Returns
+        -------
+            Alert: An instance of the `Alert` class.
+        """
         return cls(dict=payload, attributes=attributes, schema_name=schema_name)
 
     @classmethod
     def from_msg(
         cls, msg: "google.cloud.pubsub_v1.types.PubsubMessage", schema_name: Optional[str] = None
-    ) -> "Alert":  # [TODO] update tom_desc to use this
-        """Create an `Alert` from a `google.cloud.pubsub_v1.types.PubsubMessage`."""
+    ) -> "Alert":
+        """
+        Create an `Alert` object from a `google.cloud.pubsub_v1.types.PubsubMessage`.
+
+        Parameters
+        ----------
+        msg : `google.cloud.pubsub_v1.types.PubsubMessage`
+            The PubsubMessage object to create the Alert from.
+        schema_name : str (optional)
+            The name of the schema to use for the Alert. Defaults to None.
+
+        Returns
+        -------
+        Alert : The created `Alert` object.
+        """
         return cls(msg=msg, schema_name=schema_name)
 
     @classmethod
     def from_path(cls, path: Union[str, Path], schema_name: Optional[str] = None) -> "Alert":
-        """Create an `Alert` from the file at `path`."""
+        """Create an `Alert` object from the file at `path`.
+
+        Parameters
+        ----------
+        path : str or Path
+            The path to the file containing the alert data.
+        schema_name : str, optional
+            The name of the schema to use for the alert, by default None.
+
+        Returns
+        -------
+        Alert
+            An instance of the `Alert` class.
+        """
         with open(path, "rb") as f:
             bytes_ = f.read()
         return cls(
@@ -178,7 +236,8 @@ class Alert:
 
         If this was not set when the `Alert` was instantiated, a new dictionary will be created using
         the `attributes` field in :attr:`pittgoogle.Alert.msg` the first time it is requested.
-        Update this dictionary as desired (it will not affect the original `msg`).
+        Update this dictionary as desired.
+        Updates will not affect the original `msg`.
         When publishing the alert using :attr:`pittgoogle.Topic.publish`, this dictionary will be
         sent as the Pub/Sub message attributes.
         """
@@ -193,7 +252,7 @@ class Alert:
         Raises
         ------
         :class:`pittgoogle.exceptions.OpenAlertError`
-            if unable to deserialize the alert bytes.
+            If unable to deserialize the alert bytes.
         """
         if self._dict is not None:
             return self._dict
@@ -237,6 +296,7 @@ class Alert:
 
     @property
     def dataframe(self) -> "pd.DataFrame":
+        """Return a pandas DataFrame containing the source detections."""
         if self._dataframe is not None:
             return self._dataframe
 
@@ -307,7 +367,7 @@ class Alert:
 
     # ---- methods ---- #
     def add_id_attributes(self) -> None:
-        """Add the IDs to the attributes."""
+        """Add the IDs to the attributes. ("alertid", "objectid", "sourceid")"""
         ids = ["alertid", "objectid", "sourceid"]
         values = [self.get(id) for id in ids]
 

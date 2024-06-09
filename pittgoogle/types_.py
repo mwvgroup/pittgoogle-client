@@ -20,8 +20,8 @@ PACKAGE_DIR = importlib.resources.files(__package__)
 class Schema:
     """Class for an individual schema.
 
-    This class is not intended to be used directly. Instead, get a schema from the registry:
-    `pittgoogle.registry.Schemas`.
+    This class is not intended to be used directly.
+    Use `pittgoogle.registry.Schemas` instead.
     """
 
     name: str = field()
