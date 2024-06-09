@@ -1,10 +1,12 @@
 # Setup Development Mode
 
-Instructions for setting up development or "editable" mode are given below. This is a way of pip-installing the package from the source code in your local directory which gives you immediate access to your changes, though you may need to re-import the package or re-load the python environment.
-
-When you are ready to publicly release a new version of `pittgoogle-client`, publish to PyPI using the release process described in [issues #7](https://github.com/mwvgroup/pittgoogle-client/pull/7).
+Instructions for setting up development or "editable" mode are given below.
+This is a method of pip-installing pointed at your local repository so you can iterate code and import changes for testing.
 
 See also: [Python Packaging User Guide](https://packaging.python.org/en/latest/).
+
+When you are ready to release a new version of `pittgoogle-client`, publish to PyPI using the release
+process described in [issues #7](https://github.com/mwvgroup/pittgoogle-client/pull/7).
 
 ## Setup
 
@@ -22,7 +24,7 @@ conda activate pittgoogle
 pip install -e $(pwd)
 ```
 
-## Work in development ("editable") mode:
+## Work in development ("editable") mode
 
 Now you can work with the code in your local pittgoogle-client repo in python:
 
