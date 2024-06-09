@@ -78,8 +78,10 @@ class Table:
         survey: Optional[str] = None,
         testid: Optional[str] = None,
     ):
-        """Create a `Table` with a `client` using implicit credentials (no explicit `auth`).
+        """Create a `Table` object using a `client` with implicit credentials.
 
+        Useful when creating a `Table` object from within a Cloud Run module or similar.
+        The table in Google BigQuery is expected to exist already.
         The `projectid` will be retrieved from the `client`.
 
         Parameters
@@ -129,7 +131,7 @@ class Table:
 
     @property
     def id(self) -> str:
-        """Fully qualified table ID."""
+        """Fully qualified table ID with syntax "projectid.dataset_name.table_name"."""
         return f"{self.projectid}.{self.dataset}.{self.name}"
 
     @property
@@ -157,6 +159,18 @@ class Table:
         return self._client
 
     def insert_rows(self, rows: Union[list[dict], list[Alert]]) -> list[dict]:
+        """Inserts rows into the BigQuery table.
+
+        Parameters
+        ----------
+        rows : list[dict] or list[Alert]
+            The rows to be inserted. Can be a list of dictionaries or a list of Alert objects.
+
+        Returns
+        -------
+        list[dict]
+            A list of errors encountered.
+        """
         # if elements of rows are Alerts, need to extract the dicts
         myrows = [row.dict if isinstance(row, Alert) else row for row in rows]
         errors = self.client.insert_rows(self.table, myrows)
