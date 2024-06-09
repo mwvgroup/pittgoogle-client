@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
+(none)
+
+## \[0.3.0\] - 2024-06-08
+
 ### Added
 
 - `Alert` and `Table` classes.
@@ -21,15 +25,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Changed
 
-- Update PubSub classes.
-- update README.md to point to the new docs
-- remove setup and requirements files that are no longer needed after switching away from Read The Docs
+- Major updates to `pubsub` classes.
+- Make README.md point to the new docs.
 
 ### Removed
 
 - `figures` module (content moved to tutorial). This allowed the removal of the following explicit
-    dependencies: `aplpy`, `matplotlib`, `numpy`.
-- v0.1 BigQuery functions.
+    dependencies: `aplpy`, `matplotlib`, `numpy`. Content moved to ZTF Figures Tutorial.
+- v0.1 `bigquery` functions.
+- Setup and requirements files that are no longer needed after switching away from Read The Docs.
 
 ## \[0.2.0\] - 2023-07-02
 
