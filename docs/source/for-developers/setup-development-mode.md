@@ -1,4 +1,4 @@
-# Setup Development Mode
+# Development Mode
 
 Instructions for setting up development or "editable" mode are given below.
 This is a method of pip-installing pointed at your local repository so you can iterate code and import changes for testing.
@@ -24,7 +24,7 @@ conda activate pittgoogle
 pip install -e $(pwd)
 ```
 
-## Work in development ("editable") mode
+## Work
 
 Now you can work with the code in your local pittgoogle-client repo in python:
 
