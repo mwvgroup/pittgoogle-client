@@ -79,6 +79,7 @@ API
 ----
 
 """
+import datetime
 import importlib.resources
 import io
 import json
@@ -448,6 +449,20 @@ class Subscription:
             Maximum number of messages to be pulled.
         """
         return pull_batch(self, max_messages=max_messages, schema_name=self.schema_name)
+
+    def purge(self):
+        """Purge all messages from the subscription."""
+        msg = (
+            "WARNING: This is permanent.\n"
+            f"Are you sure you want to purge all messages from the subscription\n{self.path}?\n"
+            "(y/n): "
+        )
+        proceed = input(msg)
+        if proceed.lower() == "y":
+            LOGGER.info(f"Purging all messages from subscription {self.path}")
+            _ = self.client.seek(
+                request=dict(subscription=self.path, time=datetime.datetime.now())
+            )
 
 
 @define()
