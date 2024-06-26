@@ -21,6 +21,7 @@ API
 ----
 
 """
+import base64
 import importlib.resources
 import io
 import logging
@@ -153,8 +154,8 @@ class Alert:
 
         return cls(
             msg=types_.PubsubMessageLike(
-                # this class requires data. the rest should be present in the message, but let's be lenient
-                data=envelope["message"]["data"],
+                # data is required. the rest should be present in the message, but use get to be lenient
+                data=base64.b64decode(envelope["message"]["data"].encode("utf-8")),
                 attributes=envelope["message"].get("attributes"),
                 message_id=envelope["message"].get("message_id"),
                 publish_time=publish_time,

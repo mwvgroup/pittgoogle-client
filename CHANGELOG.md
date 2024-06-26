@@ -12,6 +12,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 (none)
 
+## \[0.3.1\] - 2024-06-26
+
+### Added
+
+- Subscription.purge method.
+
+### Fixed
+
+- Bugfix message format in Alert.from_cloud_run.
+
+### Changed
+
+- Updated dependencies in poetry.lock file to latest versions.
+- Relaxed pandas version pin in pyproject.toml file (for SuperNNova library).
+
+### Removed
+
+- pittgoogle_env.yml file
+
 ## \[0.3.0\] - 2024-06-08
 
 ### Added
