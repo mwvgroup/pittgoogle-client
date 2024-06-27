@@ -97,7 +97,7 @@ from google.api_core.exceptions import NotFound
 
 from .alert import Alert
 from .auth import Auth
-from .exceptions import SchemaNotFoundError
+from .exceptions import PubSubInvalid, SchemaNotFoundError
 
 LOGGER = logging.getLogger(__name__)
 PACKAGE_DIR = importlib.resources.files(__package__)
@@ -393,10 +393,10 @@ class Subscription:
         `TypeError`
             if the subscription needs to be created but no topic was provided.
 
-        `NotFound`
+        `google.api_core.exceptions.NotFound`
             if the subscription needs to be created but the topic does not exist in Google Cloud.
 
-        `AssertionError`
+        `pittgoogle.exceptions.PubSubInvalid`
             if the subscription exists but it is not attached to self.topic and self.topic is not None.
         """
         try:
@@ -404,10 +404,10 @@ class Subscription:
             LOGGER.info(f"subscription exists: {self.path}")
 
         except NotFound:
-            subscrip = self._create()
+            subscrip = self._create()  # may raise TypeError or NotFound
             LOGGER.info(f"subscription created: {self.path}")
 
-        self._validate_topic(subscrip.topic)
+        self._set_topic(subscrip.topic)  # may raise PubSubInvalid
 
     def _create(self) -> pubsub_v1.types.Subscription:
         if self.topic is None:
@@ -417,14 +417,23 @@ class Subscription:
             return self.client.create_subscription(name=self.path, topic=self.topic.path)
 
         # this error message is not very clear. let's help.
-        except NotFound as nfe:
-            raise NotFound(f"The topic does not exist: {self.topic.path}") from nfe
+        except NotFound as excep:
+            msg = f"The subscription cannot be created because the topic does not exist: {self.topic.path}"
+            raise NotFound(msg) from excep
 
-    def _validate_topic(self, connected_topic_path) -> None:
+    def _set_topic(self, connected_topic_path) -> None:
+        # if the topic is invalid, raise an error
         if (self.topic is not None) and (connected_topic_path != self.topic.path):
-            raise AssertionError(
-                f"The subscription is attached to topic {connected_topic_path}. Expected {self.topic.path}"
+            msg = (
+                "The subscription exists but is attached to a different topic.\n"
+                f"\tFound topic: {connected_topic_path}\n"
+                f"\tExpected topic: {self.topic.path}\n"
+                "Either point to the found topic using a keyword argument or"
+                "delete the existing subscription and try again."
             )
+            raise PubSubInvalid(msg)
+
+        # set the topic
         self.topic = Topic.from_path(connected_topic_path)
         LOGGER.debug("topic validated")
 

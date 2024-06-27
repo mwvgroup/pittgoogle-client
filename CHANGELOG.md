@@ -10,7 +10,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
-(none)
+### Added
+
+- PubSubInvalid exception. Raised when an invalid Pub/Sub configuration is encountered.
 
 ## \[0.3.1\] - 2024-06-26
 
