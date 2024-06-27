@@ -14,6 +14,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 - PubSubInvalid exception. Raised when an invalid Pub/Sub configuration is encountered.
 
+### Changed
+
+- Rename the PubSub.Consumer parameter batch_maxwait -> batch_max_wait_between_messages for clarity.
+
 ## \[0.3.1\] - 2024-06-26
 
 ### Added

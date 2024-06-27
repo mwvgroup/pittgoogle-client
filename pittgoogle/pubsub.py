@@ -490,7 +490,7 @@ class Consumer:
         returned by the `msg_callback`.
     batch_maxn : `int`, optional
         Maximum number of messages in a batch. This has no effect if `batch_callback` is None.
-    batch_maxwait : `int`, optional
+    batch_max_wait_between_messages : `int`, optional
         Max number of seconds to wait between messages before before processing a batch.
         This has no effect if `batch_callback` is None.
     max_backlog : `int`, optional
@@ -507,7 +507,7 @@ class Consumer:
         default=None, validator=optional(is_callable())
     )
     batch_maxn: int = field(default=100, converter=int)
-    batch_maxwait: int = field(default=30, converter=int)
+    batch_max_wait_between_messages: int = field(default=30, converter=int)
     max_backlog: int = field(default=1000, validator=gt(0))
     max_workers: Optional[int] = field(default=None, validator=optional(instance_of(int)))
     _executor: ThreadPoolExecutor = field(
@@ -601,7 +601,9 @@ class Consumer:
         batch, count = [], 0
         while True:
             try:
-                batch.append(self._queue.get(block=True, timeout=self.batch_maxwait))
+                batch.append(
+                    self._queue.get(block=True, timeout=self.batch_max_wait_between_messages)
+                )
 
             except queue.Empty:
                 # hit the max wait. process the batch
