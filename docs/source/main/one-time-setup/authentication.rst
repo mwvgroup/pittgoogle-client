@@ -6,8 +6,11 @@ Authentication
 Authentication for API calls is obtained directly from Google Cloud.
 Two options are implemented in pittgoogle. Complete at least one:
 
-- :ref:`Service Account (recommended) <service account>`
-- :ref:`OAuth2 <oauth2>`
+.. toctree::
+    :maxdepth: 3
+
+    Service Account (recommended)<self>
+    OAuth2<authentication-oauth>
 
 .. _service account:
 

@@ -12,6 +12,7 @@ Projects are free.
 They are easy to create and delete.
 One user can have many projects, and users can share projects.
 Access is usually managed through the Google Console using a Gmail account, as shown below.
+
 If you already have access to a Google Cloud project, you can skip this step.
 
 .. _setup project:

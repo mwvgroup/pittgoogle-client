@@ -1,5 +1,5 @@
-Data Listing
-==============================================
+Data Listings
+=============
 
 This page contains a listing of the data resources served by Pitt-Google Alert Broker.
 

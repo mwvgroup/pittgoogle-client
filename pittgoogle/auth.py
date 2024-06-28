@@ -8,7 +8,7 @@
 .. note::
 
     To authenticate, you must have completed one of the setup options described in
-    :doc:`/overview/authentication`. The recommended workflow is to use a
+    :doc:`/main/one-time-setup/authentication`. The recommended workflow is to use a
     :ref:`service account <service account>` and :ref:`set environment variables <set env vars>`.
     In that case, you will not need to call this module directly.
 

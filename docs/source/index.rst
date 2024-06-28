@@ -7,7 +7,7 @@
     :maxdepth: 3
     :hidden:
 
-    main/listing
+    main/listings
     Install<main/one-time-setup/install>
     main/one-time-setup/index
     main/faq/index
@@ -18,19 +18,19 @@
     :hidden:
 
     for-developers/setup-environment
+    for-developers/manage-dependencies-poetry
+    for-developers/release-new-version
 
 .. toctree::
     :caption: API Reference
     :maxdepth: 3
     :hidden:
 
-    api-reference/alert
     api-reference/auth
     api-reference/bigquery
     api-reference/exceptions
     api-reference/pubsub
     api-reference/registry
-    api-reference/types
     api-reference/utils
 
 pittgoogle-client
