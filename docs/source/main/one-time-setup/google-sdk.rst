@@ -1,37 +1,16 @@
-Advanced Setup
-===============
+.. _install gcp cli:
+
+Google Cloud SDK
+========================
 
 .. note::
 
-    Nothing on this page is required for standard access.
-    In most cases, you should just :ref:`install pittgoogle <install>` instead.
+    This page contains instructions for installing command-line tools.
+    This is not required in order to use ``pittgoogle-client`` itself but
+    is helpful for some use cases. If you don't know whether you need this,
+    skip it for now.
 
-Install Libraries for Google Cloud APIs
-----------------------------------------
-
-.. _install gcp python:
-
-Python
-~~~~~~~~~~~~~~~~
-
-You can pip install any of the Google Cloud python libraries.
-Here are the 3 we use most.
-
-.. code-block:: bash
-
-    pip install google-cloud-bigquery
-    pip install google-cloud-pubsub
-    pip install google-cloud-storage
-
-Here is a complete list:
-`Python Cloud Client Libraries <https://cloud.google.com/python/docs/reference>`__.
-
-.. _install gcp cli:
-
-Command Line
-~~~~~~~~~~~~~~~~
-
-The Google Cloud SDK includes the 3 command line tools: gcloud, bq, and gsutil (see
+The Google Cloud command-line tools include: gcloud, bq, and gsutil (see
 `default components <https://cloud.google.com/sdk/docs/components#default_components>`__
 ).
 
@@ -46,7 +25,7 @@ For Linux and Mac, use:
 In either case, follow the instructions to complete the installation.
 Then open a new terminal or restart your shell.
 Make sure your :ref:`environment variables <set env vars>` are set, reset them if needed.
-Then initialize gcloud using
+Then initialize gcloud using:
 
 .. code-block:: bash
 
@@ -55,7 +34,7 @@ Then initialize gcloud using
 and follow the directions.
 Note that this may open a browser and ask you to complete the setup there.
 
-The remaining steps are optional, but recommended for the smoothest experience.
+The remaining steps are recommended but optional.
 
 Set your new project as the default:
 
@@ -71,3 +50,7 @@ Instruct gcloud to authenticate using your key file containing
     gcloud auth activate-service-account \
         --project="$GOOGLE_CLOUD_PROJECT" \
         --key-file="$GOOGLE_APPLICATION_CREDENTIALS"
+
+You may want to `create a configuration <https://cloud.google.com/sdk/docs/configurations>`__ if you use multiple projects or want to control settings like the default region.
+
+# [TODO] give instructions to add the ``gcloud auth`` command to the conda activation file and/or to create a configuration and activate it with the conda env.
