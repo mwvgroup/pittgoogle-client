@@ -467,7 +467,7 @@ class Subscription:
         msg = (
             "WARNING: This is permanent.\n"
             f"Are you sure you want to purge all messages from the subscription\n{self.path}?\n"
-            "(y/n): "
+            "(y/[n]): "
         )
         proceed = input(msg)
         if proceed.lower() == "y":
