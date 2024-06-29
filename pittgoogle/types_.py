@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-"""Functions to support working with alerts and related data."""
+"""Classes defining new types."""
 import importlib.resources
 import logging
 from typing import TYPE_CHECKING, Optional
@@ -21,7 +21,7 @@ class Schema:
     """Class for an individual schema.
 
     This class is not intended to be used directly.
-    Use `pittgoogle.registry.Schemas` instead.
+    Use :class:`pittgoogle.Schemas` instead.
     """
 
     name: str = field()

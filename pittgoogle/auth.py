@@ -1,41 +1,12 @@
 # -*- coding: UTF-8 -*-
-"""A class to handle authentication with Google Cloud.
-
-.. contents::
-   :local:
-   :depth: 2
+"""Classes to manage authentication with Google Cloud.
 
 .. note::
 
     To authenticate, you must have completed one of the setup options described in
-    :doc:`/main/one-time-setup/authentication`. The recommended workflow is to use a
+    :doc:`/main/one-time-setup/authentication`. The recommendation is to use a
     :ref:`service account <service account>` and :ref:`set environment variables <set env vars>`.
     In that case, you will not need to call this module directly.
-
-Usage Example
---------------
-
-The basic call is:
-
-.. code-block:: python
-
-    import pittgoogle
-
-    myauth = pittgoogle.auth.Auth()
-
-This will load authentication settings from your :ref:`environment variables <set env vars>`.
-You can override this behavior with keyword arguments. This does not automatically load the
-credentials. To do that, request them explicitly:
-
-.. code-block:: python
-
-    myauth.credentials
-
-It will first look for a service account key file, then fallback to OAuth2.
-
-API
-----
-
 """
 import logging
 import os
@@ -56,28 +27,51 @@ LOGGER = logging.getLogger(__name__)
 
 @define
 class Auth:
-    """Credentials for authentication to a Google Cloud project.
+    """Credentials for authenticating with a Google Cloud project.
 
-    Missing parameters will be obtained from an environment variable of the same name,
-    if it exists.
+    This class provides methods to obtain and load credentials from either a service account
+    key file or an OAuth2 session.
+    To authenticate, you must have completed one of the setup options described in the
+    :doc:`/main/one-time-setup/authentication`.:doc:`/main/one-time-setup/authentication`
 
-    :param GOOGLE_CLOUD_PROJECT:
-        Project ID of the Google Cloud project to connect to.
+    Attributes
+    ----------
+    GOOGLE_CLOUD_PROJECT : str
+        The project ID of the Google Cloud project to connect to. This can be set as an
+        environment variable.
 
-    :param GOOGLE_APPLICATION_CREDENTIALS:
-        Path to a keyfile containing service account credentials.
-        Either this or both `OAUTH_CLIENT_*` settings are required for successful
-        authentication using `Auth`.
+    GOOGLE_APPLICATION_CREDENTIALS : str
+        The path to a keyfile containing service account credentials. Either this or the
+        `OAUTH_CLIENT_*` settings are required for successful authentication.
 
-    :param OAUTH_CLIENT_ID:
-        Client ID for an OAuth2 connection.
-        Either this and `OAUTH_CLIENT_SECRET`, or the `GOOGLE_APPLICATION_CREDENTIALS`
-        setting, are required for successful authentication using `Auth`.
+    OAUTH_CLIENT_ID : str
+        The client ID for an OAuth2 connection. Either this and `OAUTH_CLIENT_SECRET`, or
+        the `GOOGLE_APPLICATION_CREDENTIALS` setting, are required for successful
+        authentication.
 
-    :param OAUTH_CLIENT_SECRET:
-        Client secret for an OAuth2 connection.
-        Either this and `OAUTH_CLIENT_ID`, or the `GOOGLE_APPLICATION_CREDENTIALS` setting,
-        are required for successful authentication using `Auth`.
+    OAUTH_CLIENT_SECRET : str
+        The client secret for an OAuth2 connection. Either this and `OAUTH_CLIENT_ID`, or
+        the `GOOGLE_APPLICATION_CREDENTIALS` setting, are required for successful
+        authentication.
+
+    Usage
+    -----
+
+    The basic call is:
+
+    .. code-block:: python
+
+        myauth = pittgoogle.Auth()
+
+    This will load authentication settings from your :ref:`environment variables <set env vars>`.
+    You can override this behavior with keyword arguments. This does not automatically load the
+    credentials. To do that, request them explicitly:
+
+    .. code-block:: python
+
+        myauth.credentials
+
+    It will first look for a service account key file, then fallback to OAuth2.
     """
 
     GOOGLE_CLOUD_PROJECT = field(factory=lambda: os.getenv("GOOGLE_CLOUD_PROJECT", None))

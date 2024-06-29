@@ -1,29 +1,11 @@
 # -*- coding: UTF-8 -*-
 """Classes to facilitate connections to BigQuery datasets and tables.
 
-.. contents::
-   :local:
-   :depth: 2
-
 .. note::
 
     This module relies on :mod:`pittgoogle.auth` to authenticate API calls.
     The examples given below assume the use of a :ref:`service account <service account>` and
-    :ref:`environment variables <set env vars>`. In this case, :mod:`pittgoogle.auth` does not
-    need to be called explicitly.
-
-Usage Examples
----------------
-
-.. code-block:: python
-
-    import pittgoogle
-
-    [TODO]
-
-API
-----
-
+    :ref:`environment variables <set env vars>`.
 """
 import logging
 from typing import Optional, Union
