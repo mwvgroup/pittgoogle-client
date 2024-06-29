@@ -449,8 +449,11 @@ class Subscription:
     def pull_batch(self, max_messages: int = 1) -> List["Alert"]:
         """Pull a single batch of messages.
 
-        Recommended for testing. Not recommended for long-running listeners (use the
-        :meth:`~Consumer.stream` method instead).
+        This method is recommended for use cases that need a small number of alerts on-demand,
+        often for testing and development.
+
+        This method is *not* recommended for long-running listeners as it is likely to be unstable
+        -- use :meth:`~Consumer.stream` instead.
 
         Parameters
         ----------

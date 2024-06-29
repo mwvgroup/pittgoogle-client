@@ -1,3 +1,6 @@
+# https://packaging.python.org/en/latest/guides/writing-pyproject-toml
+# https://python-poetry.org/docs/basic-usage/#specifying-dependencies
+#
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
@@ -23,6 +26,8 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
+# https://python-poetry.org/docs/dependency-specification/
+# https://python-poetry.org/docs/dependency-specification/#git-dependencies
 python = "^3.9"
 attrs = ">=23.1"
 astropy = ">=5.3"
