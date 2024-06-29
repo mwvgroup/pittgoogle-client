@@ -1,26 +1,5 @@
 # -*- coding: UTF-8 -*-
-"""Classes to facilitate working with astronomical alerts.
-
-.. contents::
-   :local:
-   :depth: 2
-
-Usage Examples
----------------
-
-Load an alert from disk:
-
-.. code-block:: python
-
-    import pittgoogle
-
-    path = "path/to/ztf_alert.avro"  # point this to a file containing an alert
-    alert = pittgoogle.Alert.from_path(path, schema_name="ztf")
-
-API
-----
-
-"""
+"""Classes to facilitate working with astronomical alerts."""
 import base64
 import importlib.resources
 import io
@@ -47,8 +26,9 @@ PACKAGE_DIR = importlib.resources.files(__package__)
 class Alert:
     """Pitt-Google container for an astronomical alert.
 
-    Don't call this directly.
-    Use one of the `from_*` methods instead.
+    Instances of this class are returned by other calls like :meth:`pittgoogle.Subscription.pull_batch`,
+    so it is often not necessary to instantiate this directly.
+    In cases where you do want to create an `Alert` directly, use one of the `from_*` methods like `pittgoogle.Alert.from_dict`.
 
     All parameters are keyword only.
 
