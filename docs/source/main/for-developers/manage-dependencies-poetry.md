@@ -6,6 +6,7 @@ Poetry was implemented in this repo in [pull #7](https://github.com/mwvgroup/pit
 ## Setup your environment
 
 Create a new conda environment for poetry and install it ([Poetry installation](https://python-poetry.org/docs/#installation)).
+If you already did this, just activate the environment.
 
 ```bash
 conda create --name poetry-py311 python=3.11
