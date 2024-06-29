@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-"""Classes to facilitate working with astronomical alerts."""
+"""Classes for working with astronomical alerts."""
 import base64
 import importlib.resources
 import io
@@ -24,34 +24,29 @@ PACKAGE_DIR = importlib.resources.files(__package__)
 
 @define(kw_only=True)
 class Alert:
-    """Pitt-Google container for an astronomical alert.
+    """Container for an astronomical alert.
 
     Instances of this class are returned by other calls like :meth:`pittgoogle.Subscription.pull_batch`,
     so it is often not necessary to instantiate this directly.
-    In cases where you do want to create an `Alert` directly, use one of the `from_*` methods like `pittgoogle.Alert.from_dict`.
+    In cases where you do want to create an `Alert` directly, use one of the `from_*` methods like
+    :meth:`pittgoogle.Alert.from_dict`.
 
     All parameters are keyword only.
 
-    Parameters
-    ----------
-    bytes : `bytes` (optional)
-        The message payload, as returned by Pub/Sub. It may be Avro or JSON serialized depending
-        on the topic.
-    dict : `dict` (optional)
-        The message payload as a dictionary.
-    metadata : `dict` (optional)
-        The message metadata.
-    msg : `google.cloud.pubsub_v1.types.PubsubMessage` (optional)
-        The Pub/Sub message object, documented at
-        `<https://cloud.google.com/python/docs/reference/pubsub/latest/google.cloud.pubsub_v1.types.PubsubMessage>`__.
-    schema_name : `str`
-        One of (case insensitive):
-            - ztf
-            - ztf.lite
-            - elasticc.v0_9_1.alert
-            - elasticc.v0_9_1.brokerClassification
-        Schema name of the alert. Used for unpacking. If not provided, some properties of the
-        `Alert` may not be available.
+    Args:
+        bytes (bytes, optional):
+            The message payload, as returned by Pub/Sub. It may be Avro or JSON serialized depending
+            on the topic.
+        dict (dict, optional):
+            The message payload as a dictionary.
+        metadata (dict, optional):
+            The message metadata.
+        msg (google.cloud.pubsub_v1.types.PubsubMessage, optional):
+            The Pub/Sub message object, documented at
+            `<https://cloud.google.com/python/docs/reference/pubsub/latest/google.cloud.pubsub_v1.types.PubsubMessage>`__.
+        schema_name (str):
+            Schema name of the alert. Used for unpacking. If not provided, some properties of the
+            `Alert` may not be available. See :meth:`pittgoogle.Schemas.names` for a list of options.
     """
 
     msg: Optional[
@@ -59,7 +54,7 @@ class Alert:
     ] = field(default=None)
     """Incoming Pub/Sub message object."""
     _attributes: Optional[Mapping[str, str]] = field(default=None)
-    _dict: Optional[Dict] = field(default=None)
+    _dict: dict | None = field(default=None)
     _dataframe: Optional["pd.DataFrame"] = field(default=None)
     schema_name: Optional[str] = field(default=None)
     _schema: Optional[types_.Schema] = field(default=None, init=False)
