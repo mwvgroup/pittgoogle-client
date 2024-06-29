@@ -2,7 +2,7 @@ Frequently Asked Questions
 ==============================================
 
 .. toctree::
-    :maxdepth: 3
+    :maxdepth: 1
 
     cost
     find-project-id

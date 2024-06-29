@@ -18,6 +18,7 @@ poetry install --with=docs
 cd docs  # assuming we started in the repo root directory
 
 # Build the documentation
+make clean
 make html
 ```
 
