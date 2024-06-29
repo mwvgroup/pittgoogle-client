@@ -27,7 +27,7 @@ import io
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Mapping, Optional, Union
 
 import fastavro
 from attrs import define, field
@@ -36,7 +36,6 @@ from . import registry, types_, utils
 from .exceptions import BadRequest, OpenAlertError, SchemaNotFoundError
 
 if TYPE_CHECKING:
-    import google._upb._message
     import google.cloud.pubsub_v1
     import pandas as pd  # always lazy-load pandas. it hogs memory on cloud functions and run
 
@@ -79,9 +78,7 @@ class Alert:
         Union["google.cloud.pubsub_v1.types.PubsubMessage", types_.PubsubMessageLike]
     ] = field(default=None)
     """Incoming Pub/Sub message object."""
-    _attributes: Optional[Union[Dict, "google._upb._message.ScalarMapContainer"]] = field(
-        default=None
-    )
+    _attributes: Optional[Mapping[str, str]] = field(default=None)
     _dict: Optional[Dict] = field(default=None)
     _dataframe: Optional["pd.DataFrame"] = field(default=None)
     schema_name: Optional[str] = field(default=None)
@@ -168,7 +165,7 @@ class Alert:
     def from_dict(
         cls,
         payload: Dict,
-        attributes: Optional[Union[Dict, "google._upb._message.ScalarMapContainer"]] = None,
+        attributes: Optional[Mapping[str, str]] = None,
         schema_name: Optional[str] = None,
     ) -> "Alert":
         """Create an `Alert` object from the given `payload` dictionary.
@@ -177,7 +174,7 @@ class Alert:
         ----------
         payload : dict
             The dictionary containing the data for the `Alert` object.
-        attributes : dict or google._upb._message.ScalarMapContainer (optional)
+        attributes : dict-like (optional)
             Additional attributes for the `Alert` object. Defaults to None.
         schema_name : str (optional)
             The name of the schema. Defaults to None.
@@ -189,9 +186,12 @@ class Alert:
         return cls(dict=payload, attributes=attributes, schema_name=schema_name)
 
     @classmethod
-    def from_msg(
-        cls, msg: "google.cloud.pubsub_v1.types.PubsubMessage", schema_name: Optional[str] = None
-    ) -> "Alert":
+    def from_msg(cls, msg, schema_name: Optional[str] = None) -> "Alert":
+        # [FIXME] This type hint is causing an error when building docs.
+        #   Warning, treated as error:
+        #   Cannot resolve forward reference in type annotations of "pittgoogle.alert.Alert.from_msg":
+        #   name 'google' is not defined
+        # cls, msg: "google.cloud.pubsub_v1.types.PubsubMessage", schema_name: Optional[str] = None
         """
         Create an `Alert` object from a `google.cloud.pubsub_v1.types.PubsubMessage`.
 
