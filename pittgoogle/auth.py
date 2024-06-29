@@ -31,8 +31,8 @@ class Auth:
 
     This class provides methods to obtain and load credentials from either a service account
     key file or an OAuth2 session.
-    To authenticate, you must have completed one of the setup options described in the
-    :doc:`/main/one-time-setup/authentication`.:doc:`/main/one-time-setup/authentication`
+    To authenticate, you must have completed one of the setup options described in
+    :doc:`/main/one-time-setup/authentication`.
 
     Attributes
     ----------
@@ -54,8 +54,7 @@ class Auth:
         the `GOOGLE_APPLICATION_CREDENTIALS` setting, are required for successful
         authentication.
 
-    Usage
-    -----
+    Example:
 
     The basic call is:
 

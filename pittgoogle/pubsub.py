@@ -280,7 +280,7 @@ class Subscription:
             If not provided, some properties of the Alert may not be available. For a list of schema names, see
             :meth:`pittgoogle.Schemas.names`.
 
-    Usage:
+    Example:
 
     Create a subscription to the "ztf-loop" topic:
 
@@ -450,7 +450,8 @@ class Consumer:
         executor (concurrent.futures.ThreadPoolExecutor, optional):
             Executor to be used by the Google API to pull and process messages in the background.
 
-    Usage:
+    Example:
+
     Open a streaming pull. Recommended for long-running listeners. This will pull and process
     messages in the background, indefinitely. User must supply a callback that processes a single message.
     It should accept a :class:`pittgoogle.pubsub.Alert` and return a :class:`pittgoogle.pubsub.Response`.
