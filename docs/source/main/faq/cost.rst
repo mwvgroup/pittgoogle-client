@@ -3,13 +3,20 @@
 Costs
 --------------
 
-Pitt-Google Broker makes astronomy data available in Google Cloud services like Pub/Sub, BigQuery, and Cloud Storage.
-Google provides a baseline level of access for free with no credit card or billing account required.
-The free tier is structured as a usage quota that renews monthly.
-Access beyond the free tier is "pay-as-you-go".
-Some examples are given in the table below.
-If you exceed the free-tier quota and have not set up billing, your access will be restricted until
-the quota renews.
+The Pitt-Google Alert Broker makes data available in Google Cloud repositories.
+The data are public and user-pays, meaning that anyone can access as much or little as they want, and everyone pays for what *they* use.
+Making the data available in this way can allow us to support a very large number of users.
+Payment goes to Google (not Pitt-Google Broker).
+All authentication and billing is managed through Google Cloud projects.
+
+Compared to more traditional computing costs, cloud charges are much smaller but more frequent.
+Some example charges are given in the table below.
+Small projects can run for free.
+Google provides a baseline level of "free tier" access, structured as a usage quota that renews monthly.
+No credit card or billing account is required.
+Other cost-offset options include $300 in free credits available to everyone, and $5000 in research credits available to many academics (see links below).
+Large projects can use as much as they want to pay for.
+Google's structure is "pay-as-you-go" with a monthly billing cycle, cancel at any time.
 
 .. list-table:: Pricing Examples (as of Aug. 2021)
     :class: tight-table
