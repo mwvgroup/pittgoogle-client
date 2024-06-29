@@ -6,7 +6,7 @@ import io
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Mapping, Optional, Union
+from typing import TYPE_CHECKING, Any, Mapping, Union
 
 import fastavro
 from attrs import define, field
@@ -49,27 +49,27 @@ class Alert:
             `Alert` may not be available. See :meth:`pittgoogle.Schemas.names` for a list of options.
     """
 
-    msg: Optional[
-        Union["google.cloud.pubsub_v1.types.PubsubMessage", types_.PubsubMessageLike]
-    ] = field(default=None)
+    msg: Union["google.cloud.pubsub_v1.types.PubsubMessage", types_.PubsubMessageLike, None] = (
+        field(default=None)
+    )
     """Incoming Pub/Sub message object."""
-    _attributes: Optional[Mapping[str, str]] = field(default=None)
-    _dict: dict | None = field(default=None)
-    _dataframe: Optional["pd.DataFrame"] = field(default=None)
-    schema_name: Optional[str] = field(default=None)
-    _schema: Optional[types_.Schema] = field(default=None, init=False)
-    path: Optional[Path] = field(default=None)
+    _attributes: Mapping[str, str] | None = field(default=None)
+    _dict: Mapping | None = field(default=None)
+    _dataframe: Union["pd.DataFrame", None] = field(default=None)
+    schema_name: str | None = field(default=None)
+    _schema: types_.Schema | None = field(default=None, init=False)
+    path: Path | None = field(default=None)
 
     # ---- class methods ---- #
     @classmethod
-    def from_cloud_run(cls, envelope: Dict, schema_name: Optional[str] = None) -> "Alert":
+    def from_cloud_run(cls, envelope: Mapping, schema_name: str | None = None) -> "Alert":
         """Create an `Alert` from an HTTP request envelope containing a Pub/Sub message, as received by a Cloud Run module.
 
         Parameters
         ----------
         envelope : dict
             The HTTP request envelope containing the Pub/Sub message.
-        schema_name : str (optional)
+        schema_name : str | None (optional)
             The name of the schema to use. Defaults to None.
 
         Returns
@@ -86,10 +86,8 @@ class Alert:
 
         .. code-block:: python
 
-            import pittgoogle
             # flask is used to work with HTTP requests, which trigger Cloud Run modules
             # the request contains the Pub/Sub message, which contains the alert packet
-            import flask
 
             app = flask.Flask(__name__)
 
@@ -139,9 +137,9 @@ class Alert:
     @classmethod
     def from_dict(
         cls,
-        payload: Dict,
-        attributes: Optional[Mapping[str, str]] = None,
-        schema_name: Optional[str] = None,
+        payload: Mapping,
+        attributes: Mapping[str, str] | None = None,
+        schema_name: str | None = None,
     ) -> "Alert":
         """Create an `Alert` object from the given `payload` dictionary.
 
@@ -161,7 +159,7 @@ class Alert:
         return cls(dict=payload, attributes=attributes, schema_name=schema_name)
 
     @classmethod
-    def from_msg(cls, msg, schema_name: Optional[str] = None) -> "Alert":
+    def from_msg(cls, msg, schema_name: str | None = None) -> "Alert":
         # [FIXME] This type hint is causing an error when building docs.
         #   Warning, treated as error:
         #   Cannot resolve forward reference in type annotations of "pittgoogle.alert.Alert.from_msg":
@@ -184,7 +182,7 @@ class Alert:
         return cls(msg=msg, schema_name=schema_name)
 
     @classmethod
-    def from_path(cls, path: Union[str, Path], schema_name: Optional[str] = None) -> "Alert":
+    def from_path(cls, path: str | Path, schema_name: str | None = None) -> "Alert":
         """Create an `Alert` object from the file at `path`.
 
         Parameters
@@ -207,7 +205,7 @@ class Alert:
 
     # ---- properties ---- #
     @property
-    def attributes(self) -> Dict:
+    def attributes(self) -> Mapping:
         """Custom metadata for the message. Pub/Sub handles this as a dict-like called "attributes".
 
         If this was not set when the `Alert` was instantiated, a new dictionary will be created using
@@ -222,7 +220,7 @@ class Alert:
         return self._attributes
 
     @property
-    def dict(self) -> Dict:
+    def dict(self) -> dict:
         """Alert data as a dictionary. Created from `self.msg.data`, if needed.
 
         Raises
@@ -298,7 +296,7 @@ class Alert:
         return self._dataframe
 
     @property
-    def alertid(self) -> Union[str, int]:
+    def alertid(self) -> str | int:
         """Convenience property to get the alert ID.
 
         If the survey does not define an alert ID, this returns the `sourceid`.
@@ -306,7 +304,7 @@ class Alert:
         return self.get("alertid", self.sourceid)
 
     @property
-    def objectid(self) -> Union[str, int]:
+    def objectid(self) -> str | int:
         """Convenience property to get the object ID.
 
         The "object" represents a collection of sources, as determined by the survey.
@@ -314,7 +312,7 @@ class Alert:
         return self.get("objectid")
 
     @property
-    def sourceid(self) -> Union[str, int]:
+    def sourceid(self) -> str | int:
         """Convenience property to get the source ID.
 
         The "source" is the detection that triggered the alert.
@@ -411,8 +409,8 @@ class Alert:
         )
 
     def get_key(
-        self, field: str, name_only: bool = False, default: Optional[str] = None
-    ) -> Optional[Union[str, list[str]]]:
+        self, field: str, name_only: bool = False, default: str | None = None
+    ) -> str | list[str] | None:
         """Return the survey-specific field name.
 
         Parameters
