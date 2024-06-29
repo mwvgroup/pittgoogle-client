@@ -8,7 +8,8 @@ When you are ready to release a new version of `pittgoogle-client`, publish to P
 
 3. On the repo's GitHub [releases](https://github.com/mwvgroup/pittgoogle-client/releases) page:
     - Click "Draft a new release".
-    - Under "Choose a tag", enter the version tag as "v" followed by the release version ([semantic versioning](https://semver.org/) MAJOR.MINOR.PATCH).
+    - Under "Choose a tag", enter the version tag as "v" followed by the release version
+      ([semantic versioning](https://semver.org/) MAJOR.MINOR.PATCH).
     - Enter the same tag for the release title.
     - Click "Publish release".
 

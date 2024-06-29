@@ -1,7 +1,8 @@
 # Set up and Use a Developer Environment
 
 Instructions for setting up an environment with `pittgoogle` installed in development or "editable" mode are given below.
-This is a method of pip-installing the package from your local files so that you have quick access to your changes as you develop code.
+This is a method of pip-installing the package from your local files so that you have quick access to
+your changes as you develop code.
 
 See also: [Working in “development mode”](https://packaging.python.org/guides/distributing-packages-using-setuptools/#working-in-development-mode).
 

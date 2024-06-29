@@ -5,7 +5,7 @@ Poetry was implemented in this repo in [pull #7](https://github.com/mwvgroup/pit
 
 ## Setup your environment
 
-Create a new conda environment for poetry and install it (https://python-poetry.org/docs/#installation).
+Create a new conda environment for poetry and install it ([Poetry installation](https://python-poetry.org/docs/#installation)).
 
 ```bash
 conda create --name poetry-py311 python=3.11
@@ -19,7 +19,8 @@ pip install poetry
 ## Install existing dependencies
 
 This repo already contains a poetry.lock file, so running `poetry install` will give you
-the exact versions specified there (https://python-poetry.org/docs/basic-usage/#installing-dependencies).
+the exact versions specified there ([Poetry install dependencies](https://python-poetry.org/docs/basic-usage/#installing-dependencies)).
+
 If you would rather start over completely, skip ahead to the next section.
 
 ```bash
@@ -29,8 +30,7 @@ poetry install
 ## Update Dependency Versions
 
 To upgrade to the latest versions compatible with the pyproject.toml file, you have two options below
-(https://python-poetry.org/docs/basic-usage/#updating-dependencies-to-their-latest-versions):
-
+([Poetry update dependencies](https://python-poetry.org/docs/basic-usage/#updating-dependencies-to-their-latest-versions)):
 
 ```bash
 # Option 1: Start over completely by deleting the lock file and re-installing.
@@ -46,8 +46,8 @@ Now commit the updated poetry.lock file to the repo.
 ## Add a Dependency
 
 Here are two examples
-(https://python-poetry.org/docs/managing-dependencies/#adding-a-dependency-to-a-group,
-see also: https://python-poetry.org/docs/dependency-specification/):
+([Poetry add dependencies](https://python-poetry.org/docs/managing-dependencies/#adding-a-dependency-to-a-group),
+see also: [Poetry version-constraint syntax](https://python-poetry.org/docs/dependency-specification/)):
 
 ```bash
 # This example adds pandas to the main dependencies.
