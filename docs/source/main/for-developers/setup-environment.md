@@ -27,11 +27,13 @@ pip install -e $(pwd)
 Now you can work with the code in your local pittgoogle-client repo in python:
 
 ```python
+import importlib
 import pittgoogle
 
+# do your testing
 # make new changes in your local pittgoogle-client repo code
 # then use importlib to reload the package with the new changes
-import importlib
+
 importlib.reload(pittgoogle)
 # if you don't have access to the new changes at this point, try reloading again
 # if that doesn't work, restart your python interpreter
