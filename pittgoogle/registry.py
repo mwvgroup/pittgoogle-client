@@ -34,11 +34,37 @@ class ProjectIds:
 
 @define(frozen=True)
 class Schemas:
-    """Registry of schemas used by Pitt-Google."""
+    """Registry of schemas used by Pitt-Google.
+
+    Example:
+
+    .. code-block:: python
+
+        # View list of registered schema names.
+        pittgoogle.Schemas.names
+
+        # Load a schema (choose a name from above and substitute it below).
+        schema = pittgoogle.Schemas.get(schema_name="ztf")
+
+
+    For Developers:
+
+    Register a New Schema
+
+    Schemas are defined in the yaml file [registry_manifests/schemas.yml](registry_manifests/schemas.yml).
+    To register a new schema, add a section to that file.
+    The fields are the same as those of a :class:`pittgoogle.types_.Schema`.
+    The `helper` field value must be the name of a valid `*_helper` method in :class:`pittgoogle.types_.Schema`.
+    If a suitable method does not already exist for your schema, add one by following the default as an example.
+    If your new helper method requires a new dependency, be sure to add it following
+    :doc:`/main/for-developers/manage-dependencies-poetry`
+    If you want to include your schema's ".avsc" file with the pittgoogle package, be sure to
+    commit the file(s) to the repo under the "schemas" directory.
+    """
 
     @classmethod
     def get(cls, schema_name: str) -> types_.Schema:
-        """Return the registered schema called `schema_name`.
+        """Return the schema registered with name `schema_name`.
 
         Raises
         ------
@@ -48,18 +74,13 @@ class Schemas:
         for schema in SCHEMA_MANIFEST:
             if schema["name"] != schema_name:
                 continue
-
-            return types_.Schema(
-                name=schema["name"],
-                description=schema["description"],
-                path=PACKAGE_DIR / schema["path"] if schema["path"] is not None else None,
-            )
+            return types_.Schema.from_yaml(schema_dict=schema)
 
         raise SchemaNotFoundError(
             f"{schema_name} not found. for a list of valid names, use `pittgoogle.Schemas.names()`."
         )
 
-    @classmethod
-    def names(cls) -> list[str]:
+    @staticmethod
+    def names() -> list[str]:
         """Return the names of all registered schemas."""
         return [schema["name"] for schema in SCHEMA_MANIFEST]
