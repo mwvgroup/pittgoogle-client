@@ -12,7 +12,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 (none)
 
-## \[0.3.2\] - 2024-06-28
+## \[v0.3.3\] - 2024-06-28
+
+### Changed
+
+- Minor documentation updates.
+
+## \[v0.3.2\] - 2024-06-28
 
 ### Added
 
@@ -23,7 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Major documentation reorganization and updates.
 - Rename the PubSub.Consumer parameter batch_maxwait -> batch_max_wait_between_messages for clarity.
 
-## \[0.3.1\] - 2024-06-26
+## \[v0.3.1\] - 2024-06-26
 
 ### Added
 
@@ -42,7 +48,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 - pittgoogle_env.yml file
 
-## \[0.3.0\] - 2024-06-08
+## \[v0.3.0\] - 2024-06-08
 
 ### Added
 
@@ -65,7 +71,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - v0.1 `bigquery` functions.
 - Setup and requirements files that are no longer needed after switching away from Read The Docs.
 
-## \[0.2.0\] - 2023-07-02
+## \[v0.2.0\] - 2023-07-02
 
 ### Added
 
