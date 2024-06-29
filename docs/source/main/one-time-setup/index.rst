@@ -6,7 +6,7 @@ One-Time Setup
 Using pittgoogle-client to interact with cloud resources requires the following one-time setup tasks:
 
 .. toctree::
-    :maxdepth: 3
+    :maxdepth: 1
 
     Install pittgoogle-client<install>
     Setup a Google Cloud Project<project>

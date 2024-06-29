@@ -3,28 +3,29 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+pittgoogle-client
+=================
+
+`pittgoogle-client` is a python library for accessing astronomy data served by
+`Pitt-Google Alert Broker <https://github.com/mwvgroup/Pitt-Google-Broker>`__.
+Tutorials and examples can be found at
+`Pitt-Google User Demos <https://github.com/mwvgroup/pittgoogle-user-demos>`__.
+If you run into trouble, please
+`open an Issue <https://github.com/mwvgroup/pittgoogle-client/issues>`__.
+
 .. toctree::
-    :maxdepth: 3
-    :hidden:
+    :caption: Overview
+    :maxdepth: 1
 
     main/listings
     Install<main/one-time-setup/install>
     main/one-time-setup/index
     main/faq/index
-
-.. toctree::
-    :caption: For Developers
-    :maxdepth: 3
-    :hidden:
-
-    for-developers/setup-environment
-    for-developers/manage-dependencies-poetry
-    for-developers/release-new-version
+    main/for-developers/index
 
 .. toctree::
     :caption: API Reference
-    :maxdepth: 3
-    :hidden:
+    :maxdepth: 1
 
     api-reference/auth
     api-reference/bigquery
@@ -32,12 +33,3 @@
     api-reference/pubsub
     api-reference/registry
     api-reference/utils
-
-pittgoogle-client
-=================
-
-`pittgoogle-client` is a python library for accessing astronomy data served by
-`Pitt-Google Alert Broker <https://github.com/mwvgroup/Pitt-Google-Broker>`__.
-
-If you run into trouble, please
-`open an Issue <https://github.com/mwvgroup/pittgoogle-client/issues>`__.
