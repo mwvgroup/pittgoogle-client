@@ -37,15 +37,16 @@ release = version
 # ones.
 extensions = [
     "myst_parser",
-    "sphinx.ext.autosectionlabel",
     "sphinx.ext.autodoc",
     "sphinx.ext.coverage",
-    "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
     "sphinx.ext.autosummary",
     "sphinx.ext.napoleon",
-    "sphinx_autodoc_typehints",
     "sphinx_copybutton",
+    # [FIXME] do we really need these?
+    # "sphinx_autodoc_typehints",  # causes error can't resolve forward reference
+    "sphinx.ext.autosectionlabel",
+    "sphinx.ext.mathjax",
 ]
 
 set_type_checking_flag = True  # set typing.TYPE_CHECKING = True

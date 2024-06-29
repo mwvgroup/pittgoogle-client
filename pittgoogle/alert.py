@@ -1,12 +1,12 @@
 # -*- coding: UTF-8 -*-
-"""Classes to facilitate working with astronomical alerts."""
+"""Classes for working with astronomical alerts."""
 import base64
 import importlib.resources
 import io
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Mapping, Optional, Union
+from typing import TYPE_CHECKING, Any, Mapping, Union
 
 import fastavro
 from attrs import define, field
@@ -24,70 +24,63 @@ PACKAGE_DIR = importlib.resources.files(__package__)
 
 @define(kw_only=True)
 class Alert:
-    """Pitt-Google container for an astronomical alert.
+    """Container for an astronomical alert.
 
     Instances of this class are returned by other calls like :meth:`pittgoogle.Subscription.pull_batch`,
     so it is often not necessary to instantiate this directly.
-    In cases where you do want to create an `Alert` directly, use one of the `from_*` methods like `pittgoogle.Alert.from_dict`.
+    In cases where you do want to create an `Alert` directly, use one of the `from_*` methods like
+    :meth:`pittgoogle.Alert.from_dict`.
 
     All parameters are keyword only.
 
-    Parameters
-    ----------
-    bytes : `bytes` (optional)
-        The message payload, as returned by Pub/Sub. It may be Avro or JSON serialized depending
-        on the topic.
-    dict : `dict` (optional)
-        The message payload as a dictionary.
-    metadata : `dict` (optional)
-        The message metadata.
-    msg : `google.cloud.pubsub_v1.types.PubsubMessage` (optional)
-        The Pub/Sub message object, documented at
-        `<https://cloud.google.com/python/docs/reference/pubsub/latest/google.cloud.pubsub_v1.types.PubsubMessage>`__.
-    schema_name : `str`
-        One of (case insensitive):
-            - ztf
-            - ztf.lite
-            - elasticc.v0_9_1.alert
-            - elasticc.v0_9_1.brokerClassification
-        Schema name of the alert. Used for unpacking. If not provided, some properties of the
-        `Alert` may not be available.
+    Args:
+        bytes (bytes, optional):
+            The message payload, as returned by Pub/Sub. It may be Avro or JSON serialized depending
+            on the topic.
+        dict (dict, optional):
+            The message payload as a dictionary.
+        metadata (dict, optional):
+            The message metadata.
+        msg (google.cloud.pubsub_v1.types.PubsubMessage, optional):
+            The Pub/Sub message object, documented at
+            `<https://cloud.google.com/python/docs/reference/pubsub/latest/google.cloud.pubsub_v1.types.PubsubMessage>`__.
+        schema_name (str):
+            Schema name of the alert. Used for unpacking. If not provided, some properties of the
+            `Alert` may not be available. See :meth:`pittgoogle.Schemas.names` for a list of options.
     """
 
-    msg: Optional[
-        Union["google.cloud.pubsub_v1.types.PubsubMessage", types_.PubsubMessageLike]
-    ] = field(default=None)
-    """Incoming Pub/Sub message object."""
-    _attributes: Optional[Mapping[str, str]] = field(default=None)
-    _dict: Optional[Dict] = field(default=None)
-    _dataframe: Optional["pd.DataFrame"] = field(default=None)
-    schema_name: Optional[str] = field(default=None)
-    _schema: Optional[types_.Schema] = field(default=None, init=False)
-    path: Optional[Path] = field(default=None)
+    # Use "Union" because " | " is throwing an error when combined with forward references.
+    msg: Union["google.cloud.pubsub_v1.types.PubsubMessage", types_.PubsubMessageLike, None] = (
+        field(default=None)
+    )
+    _attributes: Mapping[str, str] | None = field(default=None)
+    _dict: Mapping | None = field(default=None)
+    _dataframe: Union["pd.DataFrame", None] = field(default=None)
+    schema_name: str | None = field(default=None)
+    _schema: types_.Schema | None = field(default=None, init=False)
+    path: Path | None = field(default=None)
 
     # ---- class methods ---- #
     @classmethod
-    def from_cloud_run(cls, envelope: Dict, schema_name: Optional[str] = None) -> "Alert":
+    def from_cloud_run(cls, envelope: Mapping, schema_name: str | None = None) -> "Alert":
         """Create an `Alert` from an HTTP request envelope containing a Pub/Sub message, as received by a Cloud Run module.
 
-        Parameters
-        ----------
-        envelope : dict
-            The HTTP request envelope containing the Pub/Sub message.
-        schema_name : str (optional)
-            The name of the schema to use. Defaults to None.
+        Args:
+            envelope (dict):
+                The HTTP request envelope containing the Pub/Sub message.
+            schema_name (str, optional):
+                The name of the schema to use. Defaults to None.
 
-        Returns
-        -------
-            Alert : An instance of the `Alert` class.
+        Returns:
+            Alert:
+                An instance of the `Alert` class.
 
-        Raises
-        ------
-            BadRequest : If the Pub/Sub message is invalid or missing.
+        Raises:
+            BadRequest:
+                If the Pub/Sub message is invalid or missing.
 
-        Example
-        -------
-        Code for a Cloud Run module that uses this method to open a ZTF alert:
+        Example:
+            Code for a Cloud Run module that uses this method to open a ZTF alert:
 
         .. code-block:: python
 
@@ -144,65 +137,63 @@ class Alert:
     @classmethod
     def from_dict(
         cls,
-        payload: Dict,
-        attributes: Optional[Mapping[str, str]] = None,
-        schema_name: Optional[str] = None,
+        payload: Mapping,
+        attributes: Mapping[str, str] | None = None,
+        schema_name: str | None = None,
     ) -> "Alert":
         """Create an `Alert` object from the given `payload` dictionary.
 
-        Parameters
-        ----------
-        payload : dict
-            The dictionary containing the data for the `Alert` object.
-        attributes : dict-like (optional)
-            Additional attributes for the `Alert` object. Defaults to None.
-        schema_name : str (optional)
-            The name of the schema. Defaults to None.
+        Args:
+            payload (dict):
+                The dictionary containing the data for the `Alert` object.
+            attributes (Mapping[str, str], None):
+                Additional attributes for the `Alert` object. Defaults to None.
+            schema_name (str, None):
+                The name of the schema. Defaults to None.
 
-        Returns
-        -------
-            Alert: An instance of the `Alert` class.
+        Returns:
+            Alert:
+                An instance of the `Alert` class.
         """
         return cls(dict=payload, attributes=attributes, schema_name=schema_name)
 
     @classmethod
-    def from_msg(cls, msg, schema_name: Optional[str] = None) -> "Alert":
-        # [FIXME] This type hint is causing an error when building docs.
-        #   Warning, treated as error:
-        #   Cannot resolve forward reference in type annotations of "pittgoogle.alert.Alert.from_msg":
-        #   name 'google' is not defined
-        # cls, msg: "google.cloud.pubsub_v1.types.PubsubMessage", schema_name: Optional[str] = None
-        """
-        Create an `Alert` object from a `google.cloud.pubsub_v1.types.PubsubMessage`.
+    def from_msg(
+        cls, msg: "google.cloud.pubsub_v1.types.PubsubMessage", schema_name: str | None = None
+    ) -> "Alert":
+        """Create an `Alert` object from a `google.cloud.pubsub_v1.types.PubsubMessage`.
 
-        Parameters
-        ----------
-        msg : `google.cloud.pubsub_v1.types.PubsubMessage`
-            The PubsubMessage object to create the Alert from.
-        schema_name : str (optional)
-            The name of the schema to use for the Alert. Defaults to None.
+        Args:
+            msg (google.cloud.pubsub_v1.types.PubsubMessage):
+                The PubsubMessage object to create the Alert from.
+            schema_name (str, optional):
+                The name of the schema to use for the Alert. Defaults to None.
 
-        Returns
-        -------
-        Alert : The created `Alert` object.
+        Returns:
+            Alert:
+                The created `Alert` object.
         """
         return cls(msg=msg, schema_name=schema_name)
 
     @classmethod
-    def from_path(cls, path: Union[str, Path], schema_name: Optional[str] = None) -> "Alert":
-        """Create an `Alert` object from the file at `path`.
+    def from_path(cls, path: str | Path, schema_name: str | None = None) -> "Alert":
+        """Creates an `Alert` object from the file at the specified `path`.
 
-        Parameters
-        ----------
-        path : str or Path
-            The path to the file containing the alert data.
-        schema_name : str, optional
-            The name of the schema to use for the alert, by default None.
+        Args:
+            path (str or Path):
+                The path to the file containing the alert data.
+            schema_name (str, optional):
+                The name of the schema to use for the alert. Defaults to None.
 
-        Returns
-        -------
-        Alert
-            An instance of the `Alert` class.
+        Returns:
+            Alert:
+                An instance of the `Alert` class.
+
+        Raises:
+            FileNotFoundError:
+                If the file at the specified `path` does not exist.
+            IOError:
+                If there is an error reading the file.
         """
         with open(path, "rb") as f:
             bytes_ = f.read()
@@ -212,32 +203,50 @@ class Alert:
 
     # ---- properties ---- #
     @property
-    def attributes(self) -> Dict:
-        """Custom metadata for the message. Pub/Sub handles this as a dict-like called "attributes".
+    def attributes(self) -> Mapping:
+        """Return the alert's custom metadata.
 
-        If this was not set when the `Alert` was instantiated, a new dictionary will be created using
-        the `attributes` field in :attr:`pittgoogle.Alert.msg` the first time it is requested.
-        Update this dictionary as desired.
-        Updates will not affect the original `msg`.
-        When publishing the alert using :attr:`pittgoogle.Topic.publish`, this dictionary will be
-        sent as the Pub/Sub message attributes.
+        If this was not provided (typical case), this attribute will contain a copy of
+        the incoming :attr:`Alert.msg.attributes`.
+
+        You may update this dictionary as desired. If you publish this alert using
+        :attr:`pittgoogle.Topic.publish`, this dictionary will be sent as the outgoing
+        message's Pub/Sub attributes.
         """
         if self._attributes is None:
             self._attributes = dict(self.msg.attributes)
         return self._attributes
 
     @property
-    def dict(self) -> Dict:
-        """Alert data as a dictionary. Created from `self.msg.data`, if needed.
+    def dict(self) -> Mapping:
+        """Return the alert data as a dictionary.
 
-        Raises
-        ------
-        :class:`pittgoogle.exceptions.OpenAlertError`
-            If unable to deserialize the alert bytes.
+        If this was not provided (typical case), this attribute will contain the deserialized
+        alert bytes stored in the incoming :attr:`Alert.msg.data` as a dictionary.
+
+        You may update this dictionary as desired. If you publish this alert using
+        :attr:`pittgoogle.Topic.publish`, this dictionary will be sent as the outgoing
+        Pub/Sub message's data payload.
+
+        Note: The following is required in order to deserialize the incoming alert bytes.
+        The bytes can be in either Avro or JSON format, depending on the topic.
+        If the alert bytes are Avro and contain the schema in the header, the deserialization can
+        be done without requiring :attr:`Alert.schema`. However, if the alert bytes are
+        schemaless Avro, the deserialization requires the :attr:`Alert.schema.avsc` attribute to
+        contain the schema definition.
+
+        Returns:
+            dict:
+                The alert data as a dictionary.
+
+        Raises:
+            OpenAlertError:
+                If unable to deserialize the alert bytes.
         """
         if self._dict is not None:
             return self._dict
 
+        # [TODO] Add a `required` attribute to types_.Schema (whether the schema is required in order to deserialize the alerts).
         # deserialize self.msg.data (avro or json bytestring) into a dict.
         # if self.msg.data is either (1) json; or (2) avro that contains the schema in the header,
         # self.schema is not required for deserialization, so we want to be lenient.
@@ -303,24 +312,24 @@ class Alert:
         return self._dataframe
 
     @property
-    def alertid(self) -> Union[str, int]:
-        """Convenience property to get the alert ID.
+    def alertid(self) -> str | int:
+        """Return the alert ID. Convenience wrapper around :attr:`Alert.get`.
 
         If the survey does not define an alert ID, this returns the `sourceid`.
         """
         return self.get("alertid", self.sourceid)
 
     @property
-    def objectid(self) -> Union[str, int]:
-        """Convenience property to get the object ID.
+    def objectid(self) -> str | int:
+        """Return the object ID. Convenience wrapper around :attr:`Alert.get`.
 
         The "object" represents a collection of sources, as determined by the survey.
         """
         return self.get("objectid")
 
     @property
-    def sourceid(self) -> Union[str, int]:
-        """Convenience property to get the source ID.
+    def sourceid(self) -> str | int:
+        """Return the source ID. Convenience wrapper around :attr:`Alert.get`.
 
         The "source" is the detection that triggered the alert.
         """
@@ -328,12 +337,11 @@ class Alert:
 
     @property
     def schema(self) -> types_.Schema:
-        """Loads the schema from the registry :class:`pittgoogle.registry.Schemas`.
+        """Return the schema from the :class:`pittgoogle.Schemas` registry.
 
-        Raises
-        ------
-        :class:`pittgoogle.exceptions.SchemaNotFoundError`
-            if the `schema_name` is not supplied or a schema with this name is not found
+        Raises:
+            pittgoogle.exceptions.SchemaNotFoundError:
+                If the `schema_name` is not supplied or a schema with this name is not found.
         """
         if self._schema is not None:
             return self._schema
@@ -348,7 +356,7 @@ class Alert:
 
     # ---- methods ---- #
     def add_id_attributes(self) -> None:
-        """Add the IDs to the attributes. ("alertid", "objectid", "sourceid")"""
+        """Add the IDs ("alertid", "objectid", "sourceid") to :attr:`Alert.attributes`."""
         ids = ["alertid", "objectid", "sourceid"]
         values = [self.get(id) for id in ids]
 
@@ -364,24 +372,19 @@ class Alert:
                 self.attributes[idname] = idvalue
 
     def get(self, field: str, default: Any = None) -> Any:
-        """Return the value of `field` in this alert.
+        """Return the value of a field from the alert data.
 
-        The keys in the alert dictionary :attr:`pittgoogle.alert.Alert.dict` are survey-specific field names.
-        This method allows you to `get` values from the dict using generic names that will work across
-        surveys. `self.schema.map` is the mapping of generic -> survey-specific names.
-        To access a field using a survey-specific name, get it directly from the alert `dict`.
+        Parameters:
+            field (str):
+                Name of a field. This must be one of the generic field names used by Pitt-Google
+                (keys in :attr:`Alert.schema.map`). To use a survey-specific field name instead, use
+                :attr:`Alert.dict.get`.
+            default (str, optional):
+                The default value to be returned if the field is not found.
 
-        Parameters
-        ----------
-        field : str
-            Name of a field in the alert's schema. This must be one of the keys in the dict `self.schema.map`.
-        default : str or None
-            Default value to be returned if the field is not found.
-
-        Returns
-        -------
-        value : any
-            Value in the :attr:`pittgoogle.alert.Alert.dict` corresponding to this field.
+        Returns:
+            any:
+                The value in the :attr:`Alert.dict` corresponding to the field.
         """
         survey_field = self.schema.map.get(field)  # str, list[str], or None
 
@@ -416,27 +419,25 @@ class Alert:
         )
 
     def get_key(
-        self, field: str, name_only: bool = False, default: Optional[str] = None
-    ) -> Optional[Union[str, list[str]]]:
+        self, field: str, name_only: bool = False, default: str | None = None
+    ) -> str | list[str] | None:
         """Return the survey-specific field name.
 
-        Parameters
-        ----------
-        field : str
-            Generic field name whose survey-specific name is to be returned. This must be one of the
-            keys in the dict `self.schema.map`.
-        name_only : bool
-            In case the survey-specific field name is nested below the top level, whether to return
-            just the single final name as a str (True) or the full path as a list[str] (False).
-        default : str or None
-            Default value to be returned if the field is not found.
+        Args:
+            field (str):
+                Generic field name whose survey-specific name is to be returned. This must be one of the
+                keys in the dict `self.schema.map`.
+            name_only (bool):
+                In case the survey-specific field name is nested below the top level, whether to return
+                just the single final name as a str (True) or the full path as a list[str] (False).
+            default (str or None):
+                Default value to be returned if the field is not found.
 
-        Returns
-        -------
-        survey_field : str or list[str]
-            Survey-specific name for the `field`, or `default` if the field is not found.
-            list[str] if this is a nested field and `name_only` is False, else str with the
-            final field name only.
+        Returns:
+            str or list[str]):
+                Survey-specific name for the `field`, or `default` if the field is not found.
+                list[str] if this is a nested field and `name_only` is False, else str with the
+                final field name only.
         """
         survey_field = self.schema.map.get(field)  # str, list[str], or None
 

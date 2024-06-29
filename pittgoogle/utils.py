@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-"""Functions to support working with alerts and related data."""
+"""Classes and functions to support working with alerts and related data."""
 import json
 import logging
 from base64 import b64decode, b64encode

@@ -1,83 +1,11 @@
 # -*- coding: UTF-8 -*-
 """Classes to facilitate connections to Pub/Sub streams.
 
-.. contents::
-   :local:
-   :depth: 2
-
 .. note::
 
     This module relies on :mod:`pittgoogle.auth` to authenticate API calls.
     The examples given below assume the use of a :ref:`service account <service account>` and
-    :ref:`environment variables <set env vars>`. In this case, :mod:`pittgoogle.auth` does not
-    need to be called explicitly.
-
-Usage Examples
----------------
-
-.. code-block:: python
-
-    import pittgoogle
-
-Create a subscription to the "ztf-loop" topic:
-
-.. code-block:: python
-
-    # topic the subscription will be connected to
-    # only required if the subscription does not yet exist in Google Cloud
-    topic = pittgoogle.Topic(name="ztf-loop", projectid=pittgoogle.ProjectIds.pittgoogle)
-
-    # choose your own name for the subscription
-    subscription = pittgoogle.Subscription(name="my-ztf-loop-subscription", topic=topic, schema_name="ztf")
-
-    # make sure the subscription exists and we can connect to it. create it if necessary
-    subscription.touch()
-
-Pull a small batch of alerts. Helpful for testing. Not recommended for long-runnining listeners.
-
-.. code-block:: python
-
-    alerts = pittgoogle.pubsub.pull_batch(subscription, max_messages=4)
-
-Open a streaming pull. Recommended for long-runnining listeners. This will pull and process
-messages in the background, indefinitely. User must supply a callback that processes a single message.
-It should accept a :class:`pittgoogle.pubsub.Alert` and return a :class:`pittgoogle.pubsub.Response`.
-Optionally, can provide a callback that processes a batch of messages. Note that messages are
-acknowledged (and thus permanently deleted) _before_ the batch callback runs, so it is recommended
-to do as much processing as possible in the message callback and use a batch callback only when
-necessary.
-
-.. code-block:: python
-
-    def my_msg_callback(alert):
-        # process the message here. we'll just print the ID.
-        print(f"processing message: {alert.metadata['message_id']}")
-
-        # return a Response. include a result if using a batch callback.
-        return pittgoogle.pubsub.Response(ack=True, result=alert.dict)
-
-    def my_batch_callback(results):
-        # process the batch of results (list of results returned by my_msg_callback)
-        # we'll just print the number of results in the batch
-        print(f"batch processing {len(results)} results)
-
-    consumer = pittgoogle.pubsub.Consumer(
-        subscription=subscription, msg_callback=my_msg_callback, batch_callback=my_batch_callback
-    )
-
-    # open the stream in the background and process messages through the callbacks
-    # this blocks indefinitely. use `Ctrl-C` to close the stream and unblock
-    consumer.stream()
-
-Delete the subscription from Google Cloud.
-
-.. code-block:: python
-
-    subscription.delete()
-
-API
-----
-
+    :ref:`environment variables <set env vars>`.
 """
 import datetime
 import importlib.resources
@@ -334,25 +262,46 @@ class Topic:
 
 @define
 class Subscription:
-    """Basic attributes of a Pub/Sub subscription and methods to manage it.
+    """Creates a Pub/Sub subscription and provides methods to manage it.
 
-    Parameters
-    -----------
-    name : `str`
-        Name of the Pub/Sub subscription.
-    auth : :class:`pittgoogle.auth.Auth`, optional
-        Credentials for the Google Cloud project that owns this subscription. If not provided,
-        it will be created from environment variables.
-    topic : :class:`pittgoogle.pubsub.Topic`, optional
-        Topic this subscription should be attached to. Required only when the subscription needs
-        to be created.
-    client : `pubsub_v1.SubscriberClient`, optional
-        Pub/Sub client that will be used to access the subscription. This kwarg is useful if you
-        want to reuse a client. If None, a new client will be created.
-    schema_name : `str`
-        One of "ztf", "ztf.lite", "elasticc.v0_9_1.alert", "elasticc.v0_9_1.brokerClassification".
-        Schema name of the alerts in the subscription. Passed to :class:`pittgoogle.pubsub.Alert`
-        for unpacking. If not provided, some properties of the `Alert` may not be available.
+    Args:
+        name (str):
+            Name of the Pub/Sub subscription.
+        auth (pittgoogle.auth.Auth, optional):
+            Credentials for the Google Cloud project that owns this subscription. If not provided, it will be created
+            from environment variables.
+        topic (pittgoogle.pubsub.Topic, optional):
+            Topic this subscription should be attached to. Required only when the subscription needs to be created.
+        client (google.cloud.pubsub_v1.SubscriberClient, optional):
+            Pub/Sub client that will be used to access the subscription. This kwarg is useful if you want to
+            reuse a client. If None, a new client will be created.
+        schema_name (str):
+            Schema name of the alerts in the subscription. Passed to :class:`pittgoogle.Alert` for unpacking.
+            If not provided, some properties of the Alert may not be available. For a list of schema names, see
+            :meth:`pittgoogle.Schemas.names`.
+
+    Usage:
+
+    Create a subscription to the "ztf-loop" topic:
+
+    .. code-block:: python
+
+        # topic the subscription will be connected to
+        # only required if the subscription does not yet exist in Google Cloud
+        topic = pittgoogle.Topic(name="ztf-loop", projectid=pittgoogle.ProjectIds.pittgoogle)
+
+        # choose your own name for the subscription
+        subscription = pittgoogle.Subscription(name="my-ztf-loop-subscription", topic=topic, schema_name="ztf")
+
+        # make sure the subscription exists and we can connect to it. create it if necessary
+        subscription.touch()
+
+    Pull a small batch of alerts. Helpful for testing. (For long-runnining listeners, see
+    :class:`pittgoogle.Consumer`.)
+
+    .. code-block:: python
+
+        alerts = subscription.pull_batch(subscription, max_messages=4)
     """
 
     name: str = field()
@@ -481,27 +430,57 @@ class Subscription:
 class Consumer:
     """Consumer class to pull a Pub/Sub subscription and process messages.
 
-    Parameters
-    -----------
-    subscription : `str` or :class:`pittgoogle.pubsub.Subscription`
-        Pub/Sub subscription to be pulled (it must already exist in Google Cloud).
-    msg_callback : `callable`
-        Function that will process a single message. It should accept a
-        :class:`pittgoogle.pubsub.Alert` and return a :class:`pittgoogle.pubsub.Response`.
-    batch_callback : `callable`, optional
-        Function that will process a batch of results. It should accept a list of the results
-        returned by the `msg_callback`.
-    batch_maxn : `int`, optional
-        Maximum number of messages in a batch. This has no effect if `batch_callback` is None.
-    batch_max_wait_between_messages : `int`, optional
-        Max number of seconds to wait between messages before before processing a batch.
-        This has no effect if `batch_callback` is None.
-    max_backlog : `int`, optional
-        Maximum number of pulled but unprocessed messages before pausing the pull.
-    max_workers : `int`, optional
-        Maximum number of workers for the `executor`. This has no effect if an `executor` is provided.
-    executor : `concurrent.futures.ThreadPoolExecutor`, optional
-        Executor to be used by the Google API to pull and process messages in the background.
+    Args:
+        subscription (str or Subscription):
+            Pub/Sub subscription to be pulled (it must already exist in Google Cloud).
+        msg_callback (callable):
+            Function that will process a single message. It should accept a Alert and return a Response.
+        batch_callback (callable, optional):
+            Function that will process a batch of results. It should accept a list of the results
+            returned by the msg_callback.
+        batch_maxn (int, optional):
+            Maximum number of messages in a batch. This has no effect if batch_callback is None.
+        batch_max_wait_between_messages (int, optional):
+            Max number of seconds to wait between messages before processing a batch. This has
+            no effect if batch_callback is None.
+        max_backlog (int, optional):
+            Maximum number of pulled but unprocessed messages before pausing the pull.
+        max_workers (int, optional):
+            Maximum number of workers for the executor. This has no effect if an executor is provided.
+        executor (concurrent.futures.ThreadPoolExecutor, optional):
+            Executor to be used by the Google API to pull and process messages in the background.
+
+    Usage:
+    Open a streaming pull. Recommended for long-running listeners. This will pull and process
+    messages in the background, indefinitely. User must supply a callback that processes a single message.
+    It should accept a :class:`pittgoogle.pubsub.Alert` and return a :class:`pittgoogle.pubsub.Response`.
+    Optionally, can provide a callback that processes a batch of messages. Note that messages are
+    acknowledged (and thus permanently deleted) _before_ the batch callback runs, so it is recommended
+    to do as much processing as possible in the message callback and use a batch callback only when
+    necessary.
+
+    .. code-block:: python
+
+        def my_msg_callback(alert):
+            # process the message here. we'll just print the ID.
+            print(f"processing message: {alert.metadata['message_id']}")
+
+            # return a Response. include a result if using a batch callback.
+            return pittgoogle.pubsub.Response(ack=True, result=alert.dict)
+
+        def my_batch_callback(results):
+            # process the batch of results (list of results returned by my_msg_callback)
+            # we'll just print the number of results in the batch
+            print(f"batch processing {len(results)} results)
+
+        consumer = pittgoogle.pubsub.Consumer(
+            subscription=subscription, msg_callback=my_msg_callback, batch_callback=my_batch_callback
+        )
+
+        # open the stream in the background and process messages through the callbacks
+        # this blocks indefinitely. use `Ctrl-C` to close the stream and unblock
+        consumer.stream()
+
     """
 
     _subscription: Union[str, Subscription] = field(validator=instance_of((str, Subscription)))

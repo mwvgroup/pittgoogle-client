@@ -12,6 +12,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 (none)
 
+## \[v0.3.4\] - 2024-06-29
+
+### Added
+
+- Documentation pages for `alert` and `types_`.
+
+### Changed
+
+- Updated docs dependencies. This helped fix a bug that was preventing some documentation from building.
+- Modernized some type hints to (e.g.,) use ` | ` instead of `typing.Optional`.
+- Moved usage examples into the respective class docstrings.
+- Cleaned up some documentation verbiage and Sphinx directives.
+
 ## \[v0.3.3\] - 2024-06-28
 
 ### Changed

@@ -27,9 +27,12 @@ If you run into trouble, please
     :caption: API Reference
     :maxdepth: 1
 
+    api-reference/index
+    api-reference/alert
     api-reference/auth
     api-reference/bigquery
     api-reference/exceptions
     api-reference/pubsub
     api-reference/registry
+    api-reference/types_
     api-reference/utils
