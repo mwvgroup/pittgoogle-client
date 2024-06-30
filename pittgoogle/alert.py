@@ -347,7 +347,7 @@ class Alert:
         return self._schema
 
     # ---- methods ---- #
-    def add_id_attributes(self) -> None:
+    def _add_id_attributes(self) -> None:
         """Add the IDs ("alertid", "objectid", "sourceid") to :attr:`Alert.attributes`."""
         ids = ["alertid", "objectid", "sourceid"]
         values = [self.get(id) for id in ids]

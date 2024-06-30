@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 <!-- (none) -->
 ### Changed
 
+- Make `Alert` method private, `add_id_attributes` -> `_add_id_attributes`.
 - Update docstrings for clarity and accuracy.
 - Fix up Sphinx and rst to improve how docs are being rendered.
 
