@@ -10,82 +10,88 @@
 """
 import logging
 import os
-from typing import TYPE_CHECKING, Union
 
+import attrs
 import google.auth
+import google.auth.credentials
+import google.oauth2.credentials
 import google_auth_oauthlib.helpers
-from attrs import define, field
 from requests_oauthlib import OAuth2Session
-
-if TYPE_CHECKING:
-    import google.auth.credentials
-    import google.oauth2.credentials
-
 
 LOGGER = logging.getLogger(__name__)
 
 
-@define
+@attrs.define
 class Auth:
     """Credentials for authenticating with a Google Cloud project.
 
-    This class provides methods to obtain and load credentials from either a service account
-    key file or an OAuth2 session.
-    To authenticate, you must have completed one of the setup options described in
-    :doc:`/one-time-setup/authentication`.
+    This class provides methods to load credentials from either a service account key file or an
+    OAuth2 session. To authenticate, you must have completed one of the setup options described
+    in :doc:`/one-time-setup/authentication`.
 
-    Attributes
-    ----------
-    GOOGLE_CLOUD_PROJECT : str
-        The project ID of the Google Cloud project to connect to. This can be set as an
-        environment variable.
+    In typical use cases, the following arguments are set as environment variables instead of
+    being passed to `Auth` explicitly.
 
-    GOOGLE_APPLICATION_CREDENTIALS : str
-        The path to a keyfile containing service account credentials. Either this or the
-        `OAUTH_CLIENT_*` settings are required for successful authentication.
+    Args:
+        GOOGLE_CLOUD_PROJECT (str, optional):
+            The project ID of the Google Cloud project to connect to.
 
-    OAUTH_CLIENT_ID : str
-        The client ID for an OAuth2 connection. Either this and `OAUTH_CLIENT_SECRET`, or
-        the `GOOGLE_APPLICATION_CREDENTIALS` setting, are required for successful
-        authentication.
+        GOOGLE_APPLICATION_CREDENTIALS (str, optional):
+            The path to a keyfile containing service account credentials. Either this or the
+            `OAUTH_CLIENT_*` settings are required for successful authentication.
 
-    OAUTH_CLIENT_SECRET : str
-        The client secret for an OAuth2 connection. Either this and `OAUTH_CLIENT_ID`, or
-        the `GOOGLE_APPLICATION_CREDENTIALS` setting, are required for successful
-        authentication.
+        OAUTH_CLIENT_ID (str, optional):
+            The client ID for an OAuth2 connection. Either this and `OAUTH_CLIENT_SECRET`, or
+            the `GOOGLE_APPLICATION_CREDENTIALS` setting, are required for successful
+            authentication.
+
+        OAUTH_CLIENT_SECRET (str, optional):
+            The client secret for an OAuth2 connection. Either this and `OAUTH_CLIENT_ID`, or
+            the `GOOGLE_APPLICATION_CREDENTIALS` setting, are required for successful
+            authentication.
 
     Example:
 
-    The basic call is:
+        The basic call is:
 
-    .. code-block:: python
+        .. code-block:: python
 
-        myauth = pittgoogle.Auth()
+            myauth = pittgoogle.Auth()
 
-    This will load authentication settings from your :ref:`environment variables <set env vars>`.
-    You can override this behavior with keyword arguments. This does not automatically load the
-    credentials. To do that, request them explicitly:
+        This will load authentication settings from your :ref:`environment variables <set env vars>`.
+        You can override this behavior with keyword arguments. This does not automatically load the
+        credentials. To do that, request them explicitly:
 
-    .. code-block:: python
+        .. code-block:: python
 
-        myauth.credentials
+            myauth.credentials
 
-    It will first look for a service account key file, then fallback to OAuth2.
+        It will first look for a service account key file, then fallback to OAuth2.
     """
 
-    GOOGLE_CLOUD_PROJECT = field(factory=lambda: os.getenv("GOOGLE_CLOUD_PROJECT", None))
-    GOOGLE_APPLICATION_CREDENTIALS = field(
+    # Strings _below_ the field will make these also show up as individual properties in rendered docs.
+    GOOGLE_CLOUD_PROJECT: str | None = attrs.field(
+        factory=lambda: os.getenv("GOOGLE_CLOUD_PROJECT", None)
+    )
+    """The project ID of the Google Cloud project to connect to."""
+    GOOGLE_APPLICATION_CREDENTIALS: str | None = attrs.field(
         factory=lambda: os.getenv("GOOGLE_APPLICATION_CREDENTIALS", None)
     )
-    OAUTH_CLIENT_ID = field(factory=lambda: os.getenv("OAUTH_CLIENT_ID", None))
-    OAUTH_CLIENT_SECRET = field(factory=lambda: os.getenv("OAUTH_CLIENT_SECRET", None))
-    _credentials = field(default=None, init=False)
-    _oauth2 = field(default=None, init=False)
+    """The path to a keyfile containing service account credentials."""
+    OAUTH_CLIENT_ID: str | None = attrs.field(factory=lambda: os.getenv("OAUTH_CLIENT_ID", None))
+    """The client ID for an OAuth2 connection."""
+    OAUTH_CLIENT_SECRET: str | None = attrs.field(
+        factory=lambda: os.getenv("OAUTH_CLIENT_SECRET", None)
+    )
+    """The client secret for an OAuth2 connection."""
+    # The rest don't need string descriptions because they are explicitly defined as properties below.
+    _credentials = attrs.field(default=None, init=False)
+    _oauth2 = attrs.field(default=None, init=False)
 
     @property
     def credentials(
         self,
-    ) -> Union["google.auth.credentials.Credentials", "google.oauth2.credentials.Credentials"]:
+    ) -> google.auth.credentials.Credentials | google.oauth2.credentials.Credentials:
         """Credentials, loaded from a service account key file or an OAuth2 session."""
         if self._credentials is None:
             self._credentials = self._get_credentials()
@@ -93,7 +99,7 @@ class Auth:
 
     def _get_credentials(
         self,
-    ) -> Union["google.auth.credentials.Credentials", "google.oauth2.credentials.Credentials"]:
+    ) -> google.auth.credentials.Credentials | google.oauth2.credentials.Credentials:
         """Load user credentials from a service account key file or an OAuth2 session.
 
         Try the service account first, fall back to OAuth2.

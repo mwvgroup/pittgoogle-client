@@ -282,26 +282,26 @@ class Subscription:
 
     Example:
 
-    Create a subscription to the "ztf-loop" topic:
+        Create a subscription to the "ztf-loop" topic:
 
-    .. code-block:: python
+        .. code-block:: python
 
-        # topic the subscription will be connected to
-        # only required if the subscription does not yet exist in Google Cloud
-        topic = pittgoogle.Topic(name="ztf-loop", projectid=pittgoogle.ProjectIds.pittgoogle)
+            # topic the subscription will be connected to
+            # only required if the subscription does not yet exist in Google Cloud
+            topic = pittgoogle.Topic(name="ztf-loop", projectid=pittgoogle.ProjectIds.pittgoogle)
 
-        # choose your own name for the subscription
-        subscription = pittgoogle.Subscription(name="my-ztf-loop-subscription", topic=topic, schema_name="ztf")
+            # choose your own name for the subscription
+            subscription = pittgoogle.Subscription(name="my-ztf-loop-subscription", topic=topic, schema_name="ztf")
 
-        # make sure the subscription exists and we can connect to it. create it if necessary
-        subscription.touch()
+            # make sure the subscription exists and we can connect to it. create it if necessary
+            subscription.touch()
 
-    Pull a small batch of alerts. Helpful for testing. (For long-runnining listeners, see
-    :class:`pittgoogle.Consumer`.)
+        Pull a small batch of alerts. Helpful for testing. (For long-runnining listeners, see
+        :class:`pittgoogle.Consumer`.)
 
-    .. code-block:: python
+        .. code-block:: python
 
-        alerts = subscription.pull_batch(subscription, max_messages=4)
+            alerts = subscription.pull_batch(subscription, max_messages=4)
     """
 
     name: str = field()
@@ -452,36 +452,35 @@ class Consumer:
 
     Example:
 
-    Open a streaming pull. Recommended for long-running listeners. This will pull and process
-    messages in the background, indefinitely. User must supply a callback that processes a single message.
-    It should accept a :class:`pittgoogle.pubsub.Alert` and return a :class:`pittgoogle.pubsub.Response`.
-    Optionally, can provide a callback that processes a batch of messages. Note that messages are
-    acknowledged (and thus permanently deleted) _before_ the batch callback runs, so it is recommended
-    to do as much processing as possible in the message callback and use a batch callback only when
-    necessary.
+        Open a streaming pull. Recommended for long-running listeners. This will pull and process
+        messages in the background, indefinitely. User must supply a callback that processes a single message.
+        It should accept a :class:`pittgoogle.pubsub.Alert` and return a :class:`pittgoogle.pubsub.Response`.
+        Optionally, can provide a callback that processes a batch of messages. Note that messages are
+        acknowledged (and thus permanently deleted) _before_ the batch callback runs, so it is recommended
+        to do as much processing as possible in the message callback and use a batch callback only when
+        necessary.
 
-    .. code-block:: python
+        .. code-block:: python
 
-        def my_msg_callback(alert):
-            # process the message here. we'll just print the ID.
-            print(f"processing message: {alert.metadata['message_id']}")
+            def my_msg_callback(alert):
+                # process the message here. we'll just print the ID.
+                print(f"processing message: {alert.metadata['message_id']}")
 
-            # return a Response. include a result if using a batch callback.
-            return pittgoogle.pubsub.Response(ack=True, result=alert.dict)
+                # return a Response. include a result if using a batch callback.
+                return pittgoogle.pubsub.Response(ack=True, result=alert.dict)
 
-        def my_batch_callback(results):
-            # process the batch of results (list of results returned by my_msg_callback)
-            # we'll just print the number of results in the batch
-            print(f"batch processing {len(results)} results)
+            def my_batch_callback(results):
+                # process the batch of results (list of results returned by my_msg_callback)
+                # we'll just print the number of results in the batch
+                print(f"batch processing {len(results)} results)
 
-        consumer = pittgoogle.pubsub.Consumer(
-            subscription=subscription, msg_callback=my_msg_callback, batch_callback=my_batch_callback
-        )
+            consumer = pittgoogle.pubsub.Consumer(
+                subscription=subscription, msg_callback=my_msg_callback, batch_callback=my_batch_callback
+            )
 
-        # open the stream in the background and process messages through the callbacks
-        # this blocks indefinitely. use `Ctrl-C` to close the stream and unblock
-        consumer.stream()
-
+            # open the stream in the background and process messages through the callbacks
+            # this blocks indefinitely. use `Ctrl-C` to close the stream and unblock
+            consumer.stream()
     """
 
     _subscription: Union[str, Subscription] = field(validator=instance_of((str, Subscription)))

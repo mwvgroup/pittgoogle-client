@@ -18,7 +18,6 @@ If you run into trouble, please
     :maxdepth: 1
 
     listings
-    Install<one-time-setup/install>
     one-time-setup/index
     faq/index
     for-developers/index

@@ -1,20 +1,20 @@
 # -*- coding: UTF-8 -*-
 """Classes and functions to support working with alerts and related data."""
+import base64
 import json
 import logging
-from base64 import b64decode, b64encode
 from collections import OrderedDict
 from io import BytesIO
 
+import astropy.table
+import astropy.time
+import attrs
 import fastavro
-from astropy.table import Table
-from astropy.time import Time
-from attrs import define
 
 LOGGER = logging.getLogger(__name__)
 
 
-@define
+@attrs.define
 class Cast:
     """Methods to convert data types."""
 
@@ -22,64 +22,58 @@ class Cast:
     def bytes_to_b64utf8(bytes_data):
         """Convert bytes data to UTF-8.
 
-        Parameters
-        -----------
-        bytes_data : `bytes`
-            Data to be converted to UTF-8.
+        Args:
+            bytes_data (bytes):
+                Data to be converted to UTF-8.
 
-        Returns
-        -----------
-        data : `dict`
-            ``bytes_data`` converted to a string in UTF-8 format
+        Returns:
+            str:
+                The ``bytes_data`` converted to a string in UTF-8 format.
         """
         if bytes_data is not None:
-            return b64encode(bytes_data).decode("utf-8")
+            return base64.b64encode(bytes_data).decode("utf-8")
 
     @staticmethod
     def json_to_dict(bytes_data):
-        """Convert json serialized bytes data to a dict.
+        """Converts JSON serialized bytes data to a dictionary.
 
-        Parameters
-        -----------
-        bytes_data : `bytes`
-            Data to be converted to a dictionary.
+        Args:
+            bytes_data (bytes):
+                Data to be converted to a dictionary.
 
         Returns:
-        data : `dict`
-            ``bytes_data`` unpacked into a dictionary.
+            dict:
+                The unpacked dictionary from the ``bytes_data``.
         """
         if bytes_data is not None:
             return json.loads(bytes_data)
 
     @staticmethod
     def b64json_to_dict(bytes_data):
-        """Convert base64 encoded, json serialized bytes data to a dict.
+        """Converts base64 encoded, JSON serialized bytes data to a dictionary.
 
-        Parameters
-        -----------
-        bytes_data : `Base64`
-            Data to be converted to a dictionary.
+        Args:
+            bytes_data (Base64):
+                Data to be converted to a dictionary.
 
         Returns:
-        data : `dict`
-            ``bytes_data`` unpacked into a dictionary.
+            dict:
+                The unpacked dictionary from the ``bytes_data``.
         """
         if bytes_data is not None:
-            return Cast.json_to_dict(b64decode(bytes_data))
+            return Cast.json_to_dict(base64.b64decode(bytes_data))
 
     @staticmethod
     def avro_to_dict(bytes_data):
-        """Convert Avro serialized bytes data to a dict. The schema must be attached in the header.
+        """Converts Avro serialized bytes data to a dictionary.
 
-        Parameters
-        ------------
-        bytes_data : `bytes`
-            Avro serialized bytes data to be converted to a dictionary
+        Args:
+            bytes_data (bytes):
+                Avro serialized bytes data to be converted to a dictionary. The schema must be attached in the header.
 
-        Returns
-        --------
-        data : `dict`
-            ``bytes_data`` unpacked into a dictionary.
+        Returns:
+            dict:
+                The unpacked dictionary from the ``bytes_data``.
         """
         if bytes_data is not None:
             with BytesIO(bytes_data) as fin:
@@ -90,24 +84,32 @@ class Cast:
 
     @staticmethod
     def b64avro_to_dict(bytes_data):
-        """Convert base64 encoded, Avro serialized bytes data to a dict.
+        """Converts base64 encoded, Avro serialized bytes data to a dictionary.
 
-        Parameters
-        -----------
-        bytes_data : `bytes`:
-            base64 encoded, Avro serialized bytes to be converted to a dictionary
+        Args:
+            bytes_data (bytes):
+                Base64 encoded, Avro serialized bytes data to be converted to a dictionary.
 
-        Returns
-        ---------
-        data : `dict`
-            ``bytes_data`` unpacked into a dictionary.
+        Returns:
+            dict:
+                The unpacked dictionary from the ``bytes_data``.
         """
-        return Cast.avro_to_dict(b64decode(bytes_data))
+        return Cast.avro_to_dict(base64.b64decode(bytes_data))
 
     # --- Work with alert dictionaries
     @staticmethod
-    def alert_dict_to_table(alert_dict: dict) -> Table:
-        """Package a ZTF alert dictionary into an Astopy Table."""
+    def alert_dict_to_table(alert_dict: dict) -> astropy.table.Table:
+        """Package a ZTF alert dictionary into an Astropy Table.
+
+        Args:
+            alert_dict (dict):
+                A dictionary containing ZTF alert information.
+
+        Returns:
+            astropy.table.Table:
+                An Astropy Table containing the alert information.
+
+        """
         # collect rows for the table
         candidate = OrderedDict(alert_dict["candidate"])
         rows = [candidate]
@@ -117,7 +119,7 @@ class Cast:
             rows.append(prv_cand_tmp)
 
         # create and return the table
-        table = Table(rows=rows)
+        table = astropy.table.Table(rows=rows)
         table.meta["comments"] = f"ZTF objectId: {alert_dict['objectId']}"
         return table
 
@@ -126,9 +128,12 @@ class Cast:
         """Drop the cutouts from the alert dictionary.
 
         Args:
-            alert_dict: ZTF alert formated as a dict
+            alert_dict (dict):
+                ZTF alert formatted as a dictionary.
+
         Returns:
-            `alert_data` with the cutouts (postage stamps) removed
+            dict:
+                The modified `alert_dict` with the cutouts (postage stamps) removed.
         """
         cutouts = ["cutoutScience", "cutoutTemplate", "cutoutDifference"]
         alert_stripped = {k: v for k, v in alert_dict.items() if k not in cutouts}
@@ -136,20 +141,18 @@ class Cast:
 
     # dates
     @staticmethod
-    def jd_to_readable_date(jd):
-        """Convert a Julian date to a human readable string.
+    def jd_to_readable_date(jd) -> str:
+        """Converts a Julian date to a human-readable string.
 
-        Parameters
-        -----------
-        jd : `float`
-            Datetime value in julian format
+        Args:
+            jd (float):
+                Datetime value in Julian format.
 
-        Returns
-        --------
-        date : `str`
-            ``jd`` in the format 'day mon year hour:min'
+        Returns:
+            str:
+                The ``jd`` in the format 'day mon year hour:min'.
         """
-        return Time(jd, format="jd").strftime("%d %b %Y - %H:%M:%S")
+        return astropy.time.Time(jd, format="jd").strftime("%d %b %Y - %H:%M:%S")
 
 
 # --- Survey-specific

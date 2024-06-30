@@ -1,7 +1,7 @@
 .. _install:
 
 Install pittgoogle-client
--------------------------
+=========================
 
 .. automodule:: pittgoogle
 
