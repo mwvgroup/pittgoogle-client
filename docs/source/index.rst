@@ -17,11 +17,11 @@ If you run into trouble, please
     :caption: Overview
     :maxdepth: 1
 
-    main/listings
-    Install<main/one-time-setup/install>
-    main/one-time-setup/index
-    main/faq/index
-    main/for-developers/index
+    listings
+    Install<one-time-setup/install>
+    one-time-setup/index
+    faq/index
+    for-developers/index
 
 .. toctree::
     :caption: API Reference

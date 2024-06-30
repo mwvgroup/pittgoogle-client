@@ -4,7 +4,7 @@
 .. note::
 
     To authenticate, you must have completed one of the setup options described in
-    :doc:`/main/one-time-setup/authentication`. The recommendation is to use a
+    :doc:`/one-time-setup/authentication`. The recommendation is to use a
     :ref:`service account <service account>` and :ref:`set environment variables <set env vars>`.
     In that case, you will not need to call this module directly.
 """
@@ -32,7 +32,7 @@ class Auth:
     This class provides methods to obtain and load credentials from either a service account
     key file or an OAuth2 session.
     To authenticate, you must have completed one of the setup options described in
-    :doc:`/main/one-time-setup/authentication`.
+    :doc:`/one-time-setup/authentication`.
 
     Attributes
     ----------
