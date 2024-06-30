@@ -13,7 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 <!-- (none) -->
 ### Changed
 
-- Minor fixes to improve how docs are being rendered.
+- Update docstrings for clarity and accuracy.
+- Fix up Sphinx and rst to improve how docs are being rendered.
 
 ## \[v0.3.4\] - 2024-06-29
 

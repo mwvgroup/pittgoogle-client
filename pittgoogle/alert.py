@@ -9,13 +9,13 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Mapping, Union
 
 import fastavro
+import google.cloud.pubsub_v1
 from attrs import define, field
 
 from . import registry, types_, utils
 from .exceptions import BadRequest, OpenAlertError, SchemaNotFoundError
 
 if TYPE_CHECKING:
-    import google.cloud.pubsub_v1
     import pandas as pd  # always lazy-load pandas. it hogs memory on cloud functions and run
 
 LOGGER = logging.getLogger(__name__)
@@ -26,39 +26,37 @@ PACKAGE_DIR = importlib.resources.files(__package__)
 class Alert:
     """Container for an astronomical alert.
 
-    Instances of this class are returned by other calls like :meth:`pittgoogle.Subscription.pull_batch`,
-    so it is often not necessary to instantiate this directly.
-    In cases where you do want to create an `Alert` directly, use one of the `from_*` methods like
-    :meth:`pittgoogle.Alert.from_dict`.
-
-    All parameters are keyword only.
+    To create an `Alert`, use one of the `from_*` methods like :meth:`pittgoogle.Alert.from_dict`.
+    Instances of this class are also returned by other calls like :meth:`pittgoogle.pubsub.Subscription.pull_batch`.
 
     Args:
-        bytes (bytes, optional):
-            The message payload, as returned by Pub/Sub. It may be Avro or JSON serialized depending
-            on the topic.
         dict (dict, optional):
-            The message payload as a dictionary.
-        metadata (dict, optional):
-            The message metadata.
-        msg (google.cloud.pubsub_v1.types.PubsubMessage, optional):
-            The Pub/Sub message object, documented at
-            `<https://cloud.google.com/python/docs/reference/pubsub/latest/google.cloud.pubsub_v1.types.PubsubMessage>`__.
+            The alert data as a dictionary. If not provided, it will be loaded from the
+        attributes (dict, optional):
+            Attributes or custom metadata for the alert.
         schema_name (str):
-            Schema name of the alert. Used for unpacking. If not provided, some properties of the
-            `Alert` may not be available. See :meth:`pittgoogle.Schemas.names` for a list of options.
+            Name of the schema for the alert. This is use to deserialize the alert bytes.
+            See :meth:`pittgoogle.registry.Schemas.names` for a list of options.
+            If not provided, some properties of the `Alert` may not be available.
+        msg (PubsubMessageLike or google.cloud.pubsub_v1.types.PubsubMessage, optional):
+            The incoming Pub/Sub message object. This class is documented at
+            `<https://cloud.google.com/python/docs/reference/pubsub/latest/google.cloud.pubsub_v1.types.PubsubMessage>`__.
+        path (pathlib.Path, optional):
+            Path to a file containing the alert data.
+
+    ----
     """
 
-    # Use "Union" because " | " is throwing an error when combined with forward references.
-    msg: Union["google.cloud.pubsub_v1.types.PubsubMessage", types_.PubsubMessageLike, None] = (
-        field(default=None)
-    )
-    _attributes: Mapping[str, str] | None = field(default=None)
     _dict: Mapping | None = field(default=None)
-    _dataframe: Union["pd.DataFrame", None] = field(default=None)
+    _attributes: Mapping[str, str] | None = field(default=None)
     schema_name: str | None = field(default=None)
-    _schema: types_.Schema | None = field(default=None, init=False)
+    msg: google.cloud.pubsub_v1.types.PubsubMessage | types_.PubsubMessageLike | None = field(
+        default=None
+    )
     path: Path | None = field(default=None)
+    # Use "Union" because " | " is throwing an error when combined with forward references.
+    _dataframe: Union["pd.DataFrame", None] = field(default=None)
+    _schema: types_.Schema | None = field(default=None, init=False)
 
     # ---- class methods ---- #
     @classmethod
@@ -80,33 +78,34 @@ class Alert:
                 If the Pub/Sub message is invalid or missing.
 
         Example:
+
             Code for a Cloud Run module that uses this method to open a ZTF alert:
 
-        .. code-block:: python
+            .. code-block:: python
 
-            import pittgoogle
-            # flask is used to work with HTTP requests, which trigger Cloud Run modules
-            # the request contains the Pub/Sub message, which contains the alert packet
-            import flask
+                import pittgoogle
+                # flask is used to work with HTTP requests, which trigger Cloud Run modules
+                # the request contains the Pub/Sub message, which contains the alert packet
+                import flask
 
-            app = flask.Flask(__name__)
+                app = flask.Flask(__name__)
 
-            # function that receives the request
-            @app.route("/", methods=["POST"])
-            def index():
+                # function that receives the request
+                @app.route("/", methods=["POST"])
+                def index():
 
-                try:
-                    # unpack the alert
-                    # if the request does not contain a valid message, this raises a `BadRequest`
-                    alert = pittgoogle.Alert.from_cloud_run(envelope=flask.request.get_json(), schema_name="ztf")
+                    try:
+                        # unpack the alert
+                        # if the request does not contain a valid message, this raises a `BadRequest`
+                        alert = pittgoogle.Alert.from_cloud_run(envelope=flask.request.get_json(), schema_name="ztf")
 
-                except pittgoogle.exceptions.BadRequest as exc:
-                    # return the error text and an HTTP 400 Bad Request code
-                    return str(exc), 400
+                    except pittgoogle.exceptions.BadRequest as exc:
+                        # return the error text and an HTTP 400 Bad Request code
+                        return str(exc), 400
 
-                # continue processing the alert
-                # when finished, return an empty string and an HTTP success code
-                return "", 204
+                    # continue processing the alert
+                    # when finished, return an empty string and an HTTP success code
+                    return "", 204
         """
         # check whether received message is valid, as suggested by Cloud Run docs
         if not envelope:
@@ -219,21 +218,14 @@ class Alert:
 
     @property
     def dict(self) -> Mapping:
-        """Return the alert data as a dictionary.
+        """Alert data as a dictionary.
 
         If this was not provided (typical case), this attribute will contain the deserialized
-        alert bytes stored in the incoming :attr:`Alert.msg.data` as a dictionary.
+        alert bytes from :attr:`Alert.msg.data`.
 
         You may update this dictionary as desired. If you publish this alert using
         :attr:`pittgoogle.Topic.publish`, this dictionary will be sent as the outgoing
         Pub/Sub message's data payload.
-
-        Note: The following is required in order to deserialize the incoming alert bytes.
-        The bytes can be in either Avro or JSON format, depending on the topic.
-        If the alert bytes are Avro and contain the schema in the header, the deserialization can
-        be done without requiring :attr:`Alert.schema`. However, if the alert bytes are
-        schemaless Avro, the deserialization requires the :attr:`Alert.schema.avsc` attribute to
-        contain the schema definition.
 
         Returns:
             dict:

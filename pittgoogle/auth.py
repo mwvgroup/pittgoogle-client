@@ -56,21 +56,21 @@ class Auth:
 
     Example:
 
-    The basic call is:
+        The basic call is:
 
-    .. code-block:: python
+        .. code-block:: python
 
-        myauth = pittgoogle.Auth()
+            myauth = pittgoogle.Auth()
 
-    This will load authentication settings from your :ref:`environment variables <set env vars>`.
-    You can override this behavior with keyword arguments. This does not automatically load the
-    credentials. To do that, request them explicitly:
+        This will load authentication settings from your :ref:`environment variables <set env vars>`.
+        You can override this behavior with keyword arguments. This does not automatically load the
+        credentials. To do that, request them explicitly:
 
-    .. code-block:: python
+        .. code-block:: python
 
-        myauth.credentials
+            myauth.credentials
 
-    It will first look for a service account key file, then fallback to OAuth2.
+        It will first look for a service account key file, then fallback to OAuth2.
     """
 
     GOOGLE_CLOUD_PROJECT = field(factory=lambda: os.getenv("GOOGLE_CLOUD_PROJECT", None))

@@ -1,16 +1,14 @@
 # -*- coding: UTF-8 -*-
 """Classes defining new types."""
+import datetime
 import importlib.resources
 import logging
-from typing import TYPE_CHECKING, Optional
+from pathlib import Path
+from typing import Optional
 
 import fastavro
 import yaml
 from attrs import define, field
-
-if TYPE_CHECKING:
-    import datetime
-    from pathlib import Path
 
 LOGGER = logging.getLogger(__name__)
 PACKAGE_DIR = importlib.resources.files(__package__)
@@ -26,9 +24,9 @@ class Schema:
 
     name: str = field()
     description: str = field()
-    path: Optional["Path"] = field(default=None)
-    _map: Optional[dict] = field(default=None, init=False)
-    _avsc: Optional[dict] = field(default=None, init=False)
+    path: Path | None = field(default=None)
+    _map: dict | None = field(default=None, init=False)
+    _avsc: dict | None = field(default=None, init=False)
 
     @property
     def survey(self) -> str:
@@ -69,7 +67,7 @@ class Schema:
 
 @define(frozen=True)
 class PubsubMessageLike:
-    """Container for an incoming Pub/Sub message that mimics a `google.cloud.pubsub_v1.types.PubsubMessage`.
+    """Container for an incoming alert.
 
     It is convenient for the :class:`pittgoogle.Alert` class to work with a message as a
     `pubsub_v1.types.PubsubMessage`. However, there are many ways to obtain an alert that do
@@ -80,7 +78,12 @@ class PubsubMessageLike:
     """
 
     data: bytes = field()
+    """Alert data as bytes. This is also known as the message "payload"."""
     attributes: dict = field(factory=dict)
-    message_id: Optional[str] = field(default=None)
-    publish_time: Optional["datetime.datetime"] = field(default=None)
-    ordering_key: Optional[str] = field(default=None)
+    """Alert attributes. This is custom metadata attached to the Pub/Sub message."""
+    message_id: str | None = field(default=None)
+    """Pub/Sub ID of the published message."""
+    publish_time: datetime.datetime | None = field(default=None)
+    """Timestamp of the published message."""
+    ordering_key: str | None = field(default=None)
+    """Pub/Sub ordering key of the published message."""
