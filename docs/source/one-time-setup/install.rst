@@ -5,13 +5,14 @@ Install pittgoogle-client
 
 .. automodule:: pittgoogle
 
-The basic install command is (conda recommended; see below):
+Use of a conda environment is recommended (see below).
+The basic install command is:
 
 .. code-block:: bash
 
     pip install pittgoogle-client
 
-This is imported in python as:
+The package is imported in python as:
 
 .. code-block:: python
 

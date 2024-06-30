@@ -1,6 +1,6 @@
-# Set up and Use a Developer Environment
+# Set up and use a developer environment
 
-Instructions for setting up an environment with `pittgoogle` installed in development or "editable" mode are given below.
+Instructions for setting up an environment with `pittgoogle-client` installed in development or "editable" mode are given below.
 This is a method of pip-installing the package from your local files so that you have quick access to
 your changes as you develop code.
 

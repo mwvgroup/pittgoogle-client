@@ -1,4 +1,4 @@
-# Managing Dependencies with Poetry
+# Managing dependencies with Poetry
 
 This page contains instructions for managing the `pittgoogle` package dependencies using [Poetry](https://python-poetry.org/).
 Poetry was implemented in this repo in [pull #7](https://github.com/mwvgroup/pittgoogle-client/pull/7).

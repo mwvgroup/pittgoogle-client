@@ -1,4 +1,4 @@
-# Build Documentation with Sphinx
+# Build documentation with Sphinx
 
 This page describes how to build documentation locally for testing.
 This is not always needed.
