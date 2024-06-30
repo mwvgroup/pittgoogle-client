@@ -2,19 +2,19 @@
 """Classes and functions to support working with alerts and related data."""
 import json
 import logging
-from base64 import b64decode, b64encode
+import base64
 from collections import OrderedDict
 from io import BytesIO
 
+import astropy.table
+import astropy.time
+import attrs
 import fastavro
-from astropy.table import Table
-from astropy.time import Time
-from attrs import define
 
 LOGGER = logging.getLogger(__name__)
 
 
-@define
+@attrs.define
 class Cast:
     """Methods to convert data types."""
 
@@ -33,7 +33,7 @@ class Cast:
             ``bytes_data`` converted to a string in UTF-8 format
         """
         if bytes_data is not None:
-            return b64encode(bytes_data).decode("utf-8")
+            return base64.b64encode(bytes_data).decode("utf-8")
 
     @staticmethod
     def json_to_dict(bytes_data):
@@ -65,7 +65,7 @@ class Cast:
             ``bytes_data`` unpacked into a dictionary.
         """
         if bytes_data is not None:
-            return Cast.json_to_dict(b64decode(bytes_data))
+            return Cast.json_to_dict(base64.b64decode(bytes_data))
 
     @staticmethod
     def avro_to_dict(bytes_data):
@@ -102,11 +102,11 @@ class Cast:
         data : `dict`
             ``bytes_data`` unpacked into a dictionary.
         """
-        return Cast.avro_to_dict(b64decode(bytes_data))
+        return Cast.avro_to_dict(base64.b64decode(bytes_data))
 
     # --- Work with alert dictionaries
     @staticmethod
-    def alert_dict_to_table(alert_dict: dict) -> Table:
+    def alert_dict_to_table(alert_dict: dict) -> astropy.table.Table:
         """Package a ZTF alert dictionary into an Astopy Table."""
         # collect rows for the table
         candidate = OrderedDict(alert_dict["candidate"])
@@ -117,7 +117,7 @@ class Cast:
             rows.append(prv_cand_tmp)
 
         # create and return the table
-        table = Table(rows=rows)
+        table = astropy.table.Table(rows=rows)
         table.meta["comments"] = f"ZTF objectId: {alert_dict['objectId']}"
         return table
 
@@ -136,7 +136,7 @@ class Cast:
 
     # dates
     @staticmethod
-    def jd_to_readable_date(jd):
+    def jd_to_readable_date(jd) -> str:
         """Convert a Julian date to a human readable string.
 
         Parameters
@@ -149,7 +149,7 @@ class Cast:
         date : `str`
             ``jd`` in the format 'day mon year hour:min'
         """
-        return Time(jd, format="jd").strftime("%d %b %Y - %H:%M:%S")
+        return astropy.time.Time(jd, format="jd").strftime("%d %b %Y - %H:%M:%S")
 
 
 # --- Survey-specific

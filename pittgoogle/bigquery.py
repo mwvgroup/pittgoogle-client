@@ -2,9 +2,8 @@
 """Classes to facilitate connections to BigQuery datasets and tables."""
 import logging
 
+import attrs
 import google.cloud.bigquery
-from attrs import define, field
-from attrs.validators import instance_of, optional
 
 from .alert import Alert
 from .auth import Auth
@@ -12,7 +11,7 @@ from .auth import Auth
 LOGGER = logging.getLogger(__name__)
 
 
-@define
+@attrs.define
 class Table:
     """Methods and properties for a BigQuery table.
 
@@ -33,17 +32,22 @@ class Table:
     """
 
     # Strings _below_ the field will make these also show up as individual properties in rendered docs.
-    name: str = field()
+    name: str = attrs.field()
     """Name of the BigQuery table."""
-    dataset: str = field()
+    dataset: str = attrs.field()
     """Name of the BigQuery dataset this table belongs to."""
     # The rest don't need string descriptions because they are explicitly defined as properties below.
-    _projectid: str = field(default=None)
-    _auth: Auth = field(default=None, validator=optional(instance_of(Auth)))
-    _client: google.cloud.bigquery.Client | None = field(
-        default=None, validator=optional(instance_of(google.cloud.bigquery.Client))
+    _projectid: str = attrs.field(default=None)
+    _auth: Auth = attrs.field(
+        default=None, validator=attrs.validators.optional(attrs.validators.instance_of(Auth))
     )
-    _table: google.cloud.bigquery.Table | None = field(default=None, init=False)
+    _client: google.cloud.bigquery.Client | None = attrs.field(
+        default=None,
+        validator=attrs.validators.optional(
+            attrs.validators.instance_of(google.cloud.bigquery.Client)
+        ),
+    )
+    _table: google.cloud.bigquery.Table | None = attrs.field(default=None, init=False)
 
     @classmethod
     def from_cloud(
