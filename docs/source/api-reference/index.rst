@@ -6,11 +6,13 @@ pittgoogle
 
 .. autosummary::
 
-    pittgoogle.Alert
-    pittgoogle.Auth
-    pittgoogle.Consumer
-    pittgoogle.ProjectIds
-    pittgoogle.Schemas
-    pittgoogle.Subscription
-    pittgoogle.Table
-    pittgoogle.Topic
+    .. autosummary::
+
+        pittgoogle.alert.Alert
+        pittgoogle.auth.Auth
+        pittgoogle.bigquery.Table
+        pittgoogle.pubsub.Consumer
+        pittgoogle.pubsub.Subscription
+        pittgoogle.pubsub.Topic
+        pittgoogle.registry.ProjectIds
+        pittgoogle.registry.Schemas

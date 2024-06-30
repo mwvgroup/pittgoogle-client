@@ -29,6 +29,8 @@ class Table:
         client (google.cloud.bigquery.Client, optional):
             BigQuery client that will be used to access the table.
             If not provided, a new client will be created the first time it is requested.
+
+    ----
     """
 
     # Strings _below_ the field will make these also show up as individual properties in rendered docs.
@@ -134,6 +136,10 @@ class Table:
         """Google Cloud BigQuery Table object that is connected to the Cloud resource.
 
         Makes a `get_table` request if necessary.
+
+        Returns:
+            google.cloud.bigquery.Table:
+                The BigQuery Table object, connected to the Cloud resource.
         """
         if self._table is None:
             self._table = self.client.get_table(self.id)
@@ -144,6 +150,10 @@ class Table:
         """Google Cloud BigQuery Client used to access the table.
 
         This will be created using :attr:`Table.auth` if necessary.
+
+        Returns:
+            google.cloud.bigquery.Client:
+                The BigQuery client instance.
         """
         if self._client is None:
             self._client = google.cloud.bigquery.Client(credentials=self.auth.credentials)
