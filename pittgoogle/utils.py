@@ -1,8 +1,8 @@
 # -*- coding: UTF-8 -*-
 """Classes and functions to support working with alerts and related data."""
+import base64
 import json
 import logging
-import base64
 from collections import OrderedDict
 from io import BytesIO
 
@@ -22,64 +22,58 @@ class Cast:
     def bytes_to_b64utf8(bytes_data):
         """Convert bytes data to UTF-8.
 
-        Parameters
-        -----------
-        bytes_data : `bytes`
-            Data to be converted to UTF-8.
+        Args:
+            bytes_data (bytes):
+                Data to be converted to UTF-8.
 
-        Returns
-        -----------
-        data : `dict`
-            ``bytes_data`` converted to a string in UTF-8 format
+        Returns:
+            str:
+                The ``bytes_data`` converted to a string in UTF-8 format.
         """
         if bytes_data is not None:
             return base64.b64encode(bytes_data).decode("utf-8")
 
     @staticmethod
     def json_to_dict(bytes_data):
-        """Convert json serialized bytes data to a dict.
+        """Converts JSON serialized bytes data to a dictionary.
 
-        Parameters
-        -----------
-        bytes_data : `bytes`
-            Data to be converted to a dictionary.
+        Args:
+            bytes_data (bytes):
+                Data to be converted to a dictionary.
 
         Returns:
-        data : `dict`
-            ``bytes_data`` unpacked into a dictionary.
+            dict:
+                The unpacked dictionary from the ``bytes_data``.
         """
         if bytes_data is not None:
             return json.loads(bytes_data)
 
     @staticmethod
     def b64json_to_dict(bytes_data):
-        """Convert base64 encoded, json serialized bytes data to a dict.
+        """Converts base64 encoded, JSON serialized bytes data to a dictionary.
 
-        Parameters
-        -----------
-        bytes_data : `Base64`
-            Data to be converted to a dictionary.
+        Args:
+            bytes_data (Base64):
+                Data to be converted to a dictionary.
 
         Returns:
-        data : `dict`
-            ``bytes_data`` unpacked into a dictionary.
+            dict:
+                The unpacked dictionary from the ``bytes_data``.
         """
         if bytes_data is not None:
             return Cast.json_to_dict(base64.b64decode(bytes_data))
 
     @staticmethod
     def avro_to_dict(bytes_data):
-        """Convert Avro serialized bytes data to a dict. The schema must be attached in the header.
+        """Converts Avro serialized bytes data to a dictionary.
 
-        Parameters
-        ------------
-        bytes_data : `bytes`
-            Avro serialized bytes data to be converted to a dictionary
+        Args:
+            bytes_data (bytes):
+                Avro serialized bytes data to be converted to a dictionary. The schema must be attached in the header.
 
-        Returns
-        --------
-        data : `dict`
-            ``bytes_data`` unpacked into a dictionary.
+        Returns:
+            dict:
+                The unpacked dictionary from the ``bytes_data``.
         """
         if bytes_data is not None:
             with BytesIO(bytes_data) as fin:
@@ -90,24 +84,32 @@ class Cast:
 
     @staticmethod
     def b64avro_to_dict(bytes_data):
-        """Convert base64 encoded, Avro serialized bytes data to a dict.
+        """Converts base64 encoded, Avro serialized bytes data to a dictionary.
 
-        Parameters
-        -----------
-        bytes_data : `bytes`:
-            base64 encoded, Avro serialized bytes to be converted to a dictionary
+        Args:
+            bytes_data (bytes):
+                Base64 encoded, Avro serialized bytes data to be converted to a dictionary.
 
-        Returns
-        ---------
-        data : `dict`
-            ``bytes_data`` unpacked into a dictionary.
+        Returns:
+            dict:
+                The unpacked dictionary from the ``bytes_data``.
         """
         return Cast.avro_to_dict(base64.b64decode(bytes_data))
 
     # --- Work with alert dictionaries
     @staticmethod
     def alert_dict_to_table(alert_dict: dict) -> astropy.table.Table:
-        """Package a ZTF alert dictionary into an Astopy Table."""
+        """Package a ZTF alert dictionary into an Astropy Table.
+
+        Args:
+            alert_dict (dict):
+                A dictionary containing ZTF alert information.
+
+        Returns:
+            astropy.table.Table:
+                An Astropy Table containing the alert information.
+
+        """
         # collect rows for the table
         candidate = OrderedDict(alert_dict["candidate"])
         rows = [candidate]
@@ -126,9 +128,12 @@ class Cast:
         """Drop the cutouts from the alert dictionary.
 
         Args:
-            alert_dict: ZTF alert formated as a dict
+            alert_dict (dict):
+                ZTF alert formatted as a dictionary.
+
         Returns:
-            `alert_data` with the cutouts (postage stamps) removed
+            dict:
+                The modified `alert_dict` with the cutouts (postage stamps) removed.
         """
         cutouts = ["cutoutScience", "cutoutTemplate", "cutoutDifference"]
         alert_stripped = {k: v for k, v in alert_dict.items() if k not in cutouts}
