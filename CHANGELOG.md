@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 - Make `Alert` method private, `add_id_attributes` -> `_add_id_attributes`.
 - Update docstrings for clarity and accuracy.
+- Improve type hints.
 - Fix up Sphinx and rst to improve how docs are being rendered.
 
 ## \[v0.3.4\] - 2024-06-29
