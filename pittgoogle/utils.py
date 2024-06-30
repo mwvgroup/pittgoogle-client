@@ -142,17 +142,15 @@ class Cast:
     # dates
     @staticmethod
     def jd_to_readable_date(jd) -> str:
-        """Convert a Julian date to a human readable string.
+        """Converts a Julian date to a human-readable string.
 
-        Parameters
-        -----------
-        jd : `float`
-            Datetime value in julian format
+        Args:
+            jd (float):
+                Datetime value in Julian format.
 
-        Returns
-        --------
-        date : `str`
-            ``jd`` in the format 'day mon year hour:min'
+        Returns:
+            str:
+                The ``jd`` in the format 'day mon year hour:min'.
         """
         return astropy.time.Time(jd, format="jd").strftime("%d %b %Y - %H:%M:%S")
 
