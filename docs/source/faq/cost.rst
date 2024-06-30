@@ -7,7 +7,7 @@ The Pitt-Google Alert Broker makes data available in Google Cloud repositories.
 The data are public and user-pays, meaning that anyone can access as much or little as they want, and everyone pays for what *they* use.
 Making the data available in this way can allow us to support a very large number of users.
 Payment goes to Google (not Pitt-Google Broker).
-All authentication and billing is managed through Google Cloud projects.
+All authentication and billing is managed through :ref:`projects`.
 
 Compared to more traditional computing costs, cloud charges are much smaller but more frequent.
 Some example charges are given in the table below.

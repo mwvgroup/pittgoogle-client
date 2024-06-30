@@ -1,10 +1,17 @@
-# Release a New Version of pittgoogle-client
+# Release a new version of the `pittgoogle-client` package
 
-When you are ready to release a new version of `pittgoogle-client`, publish to PyPI using the following steps:
+This page shows how to release a new version of `pittgoogle-client.
+By following these instructions, you will:
+
+- Tag a new release on GitHub.
+- Publish a new version to PyPI.
+- Publish new documentation.
+
+## Instructions
 
 1. Make sure the code in the main branch is ready for release.
 
-2. Make sure the CHANGELOG.md file has been updated to reflect the changes being released.
+2. Make sure the CHANGELOG.md file has been updated to include all changes being released.
 
 3. On the repo's GitHub [releases](https://github.com/mwvgroup/pittgoogle-client/releases) page:
     - Click "Draft a new release".
@@ -16,7 +23,7 @@ When you are ready to release a new version of `pittgoogle-client`, publish to P
 
 Completing step 3 will:
 
-- Execute the test suite.
+- Tag a new version on GitHub.
 - Publish the documentation to GitHub pages.
 - Publish the package to PyPI.org.
 

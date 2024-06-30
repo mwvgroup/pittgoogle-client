@@ -1,7 +1,8 @@
 pittgoogle
 ==========
 
-.. These are from the ___init__.py file. Would be nice to find a way to pull them in automatically.
+.. These are from the ___init__.py file. Would be nice to find a way to pull them in automatically
+.. and also to make them hyperlinks.
 
 .. autosummary::
 
