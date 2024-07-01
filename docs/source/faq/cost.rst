@@ -1,7 +1,7 @@
 .. _cost:
 
 Costs
---------------
+======
 
 The Pitt-Google Alert Broker makes data available in Google Cloud repositories.
 The data are public and user-pays, meaning that anyone can access as much or little as they want, and everyone pays for what *they* use.
