@@ -9,9 +9,13 @@ objectid: [diaObject, diaObjectId]
 source: diaSource
 object: diaObject
 prv_sources: prvDiaSources
-prv_forced_sources: null
+prv_forced_sources: prvDiaForcedSources
+prv_nondetect_limits: prvDiaNondetectionLimits
 ss_object: ssObject
 # Other
+cutout_science: cutoutScience
+cutout_template: cutoutTemplate
+cutout_difference: cutoutDifference
 dec: [diaSource, dec]
 dec_err: [diaSource, decErr]
 filter: [diaSource, band]
@@ -24,7 +28,3 @@ mjd: [diaSource, midpointMjdTai]
 ra: [diaSource, ra]
 ra_err: [diaSource, raErr]
 snr: [diaSource, snr]
-# No cutouts in the alerts yet.
-cutout_science: null
-cutout_template: null
-cutout_difference: null
