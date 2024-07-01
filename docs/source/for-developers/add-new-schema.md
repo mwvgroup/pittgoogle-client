@@ -33,15 +33,20 @@ releases them.
 
 Case 3: You want to include schema definition files with the ``pittgoogle-client`` package. Follow
 ``elasticc`` as an example. (1) Commit the files to the repo under the *pittgoogle/schemas* directory. It
-is recommended that the main file name follow the syntax "\<schema_name\>.avsc". (2) Point the ``path``
-field at the new file, relative to the repo root. (3) If you've followed the recommendations, the default
-``helper`` should work, but you should check (more below). If you need to implement your own helper, do it.
+is recommended that the main filename follow the syntax "<schema_name>.avsc". (2) Point ``path``
+at the main file, relative to the package root. If the Avro schema is split into multiple files, you
+usually only need to point to the main one. (3) If you've followed the recommendations then the default
+``helper`` should work, but you should check (more below). If you need to implement your own helper
+or update the existing, do it.
 
 ## Potentially Required
 
 ### pittgoogle/types_.py
 
 *pittgoogle/types_.py* is the file containing the :class:`pittgoogle.types_.Schema` class.
+
+If ``schemaless_alert_bytes='false'``, the defaults (mostly null/None) should work and you can ignore
+this file (skip to the next section).
 
 A "helper" method must exist in :class:`pittgoogle.types_.Schema` that can find and load your new schema
 definition. The ``helper`` field in the yaml manifest (above) must be set to the name of this method. If a
