@@ -10,7 +10,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
-<!-- (none) -->
+(none)
+
+## \[v0.3.6\] - 2024-07-01
 
 ### Changed
 
