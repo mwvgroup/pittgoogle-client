@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Support for the LSST alert schema.
 - `types_.Schema._from_yaml` class method and the related helpers `_local_schema_helper` and
   `_lsst_schema_helper`.
+- Dependency on `lsst-alert-packet` package for the `_lsst_schema_helper`.
 - `types_.Schema.schemaless_alert_bytes` bool indicating whether the alert bytes are schemaless
   and thus a `types_.Schema.definition` is required in order to serialize and deserialize them.
 - `types_.Schama.manifest` containing the schemas.yml file loaded as a list of dicts.
