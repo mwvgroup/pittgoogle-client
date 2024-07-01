@@ -382,8 +382,9 @@ class Subscription:
             )
             raise PubSubInvalid(msg)
 
-        # set the topic
-        self.topic = Topic.from_path(connected_topic_path)
+        # if the topic isn't already set, do it now
+        if self.topic is None:
+            self.topic = Topic.from_path(connected_topic_path)
         LOGGER.debug("topic validated")
 
     def delete(self) -> None:

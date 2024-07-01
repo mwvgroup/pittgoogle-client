@@ -25,6 +25,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - `Schema.origin` and schema-map key name "SCHEMA_ORIGIN" (see Changed).
 - `types_.Schema.definition`. Not actually new, but repurposed (see Changed, Removed).
 
+### Fixed
+
+- Don't let `Subscription._set_topic` clobber an existing topic attribute. This was preventing the user
+  from creating a subscription attached to a topic in a different project.
+
 ### Changed
 
 - Changed some schema-map keys to include an underscore for clarity, e.g., "magerr" -> "mag_err"
