@@ -296,8 +296,8 @@ class Subscription:
             # make sure the subscription exists and we can connect to it. create it if necessary
             subscription.touch()
 
-        Pull a small batch of alerts. Helpful for testing. (For long-runnining listeners, see
-        :class:`pittgoogle.Consumer`.)
+        Pull a small batch of alerts. Helpful for testing. (Not recommended for long-running listeners;
+        use :class:`pittgoogle.pubsub.Consumer` instead.)
 
         .. code-block:: python
 

@@ -15,6 +15,7 @@ source: diaSource  # record
 object: diaObject  # record
 prv_forced_sources: prvDiaForcedSources  # array of records
 prv_sources: prvDiaSources  # array of records
+prv_nondetect_limits: prvDiaNondetectionLimits  # array of records
 ss_object: ssObject  # record
 #
 # Everything else.
