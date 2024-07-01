@@ -36,51 +36,69 @@ class ProjectIds:
 class Schemas:
     """Registry of schemas used by Pitt-Google.
 
-    Example:
+    Examples:
 
-    .. code-block:: python
+        .. code-block:: python
 
-        # View list of registered schema names.
-        pittgoogle.Schemas.names
+            # View list of registered schema names.
+            pittgoogle.Schemas.names
 
-        # Load a schema (choose a name from above and substitute it below).
-        schema = pittgoogle.Schemas.get(schema_name="ztf")
+            # View more information about the schemas.
+            pittgoogle.Schemas.manifest
 
+            # Load a schema (choose a name from above and substitute it below).
+            schema = pittgoogle.Schemas.get(schema_name="ztf")
 
-    For Developers:
+    **For Developers**: :doc:`/for-developers/add-new-schema`
 
-    Register a New Schema
-
-    Schemas are defined in the yaml file [registry_manifests/schemas.yml](registry_manifests/schemas.yml).
-    To register a new schema, add a section to that file.
-    The fields are the same as those of a :class:`pittgoogle.types_.Schema`.
-    The `helper` field value must be the name of a valid `*_helper` method in :class:`pittgoogle.types_.Schema`.
-    If a suitable method does not already exist for your schema, add one by following the default as an example.
-    If your new helper method requires a new dependency, be sure to add it following
-    :doc:`/main/for-developers/manage-dependencies-poetry`
-    If you want to include your schema's ".avsc" file with the pittgoogle package, be sure to
-    commit the file(s) to the repo under the "schemas" directory.
+    ----
     """
 
-    @classmethod
-    def get(cls, schema_name: str) -> types_.Schema:
-        """Return the schema registered with name `schema_name`.
+    @staticmethod
+    def get(schema_name: str) -> types_.Schema:
+        """Return the schema with name matching `schema_name`.
 
-        Raises
-        ------
-        :class:`pittgoogle.exceptions.SchemaNotFoundError`
-            if a schema called `schema_name` is not found
+        Returns:
+            Schema:
+                Schema from the registry with name matching `schema_name`.
+
+        Raises:
+            SchemaNotFoundError:
+                If a schema with name matching `schema_name` is not found in the registry.
+            SchemaNotFoundError:
+                If a schema definition cannot be loaded but one will be required to read the alert bytes.
         """
-        for schema in SCHEMA_MANIFEST:
-            if schema["name"] != schema_name:
-                continue
-            return types_.Schema.from_yaml(schema_dict=schema)
+        # Return the schema with name == schema_name, if one exists.
+        for mft_schema in SCHEMA_MANIFEST:
+            if mft_schema["name"] == schema_name:
+                return types_.Schema._from_yaml(schema_dict=mft_schema)
 
+        # Return the schema with name ~= schema_name, if one exists.
+        for mft_schema in SCHEMA_MANIFEST:
+            # Case 1: Split by "." and check whether first and last parts match.
+            # Catches names like 'lsst.v<MAJOR>_<MINOR>.alert' where users replace '<..>' with custom values.
+            split_name, split_mft_name = schema_name.split("."), mft_schema["name"].split(".")
+            if all([split_mft_name[i] == split_name[i] for i in [0, -1]]):
+                return types_.Schema._from_yaml(schema_dict=mft_schema, name=schema_name)
+
+        # That's all we know how to check so far.
         raise SchemaNotFoundError(
-            f"{schema_name} not found. for a list of valid names, use `pittgoogle.Schemas.names()`."
+            f"{schema_name} not found. For valid names, see `pittgoogle.Schemas.names`."
         )
 
-    @staticmethod
-    def names() -> list[str]:
-        """Return the names of all registered schemas."""
+    @property
+    def names(self) -> list[str]:
+        """Names of all registered schemas.
+
+        A name from this list can be used with the :meth:`Schemas.get` method to load a schema.
+        Capital letters between angle brackets indicate that you should substitute your own
+        values. For example, to use the LSST schema listed here as ``"lsst.v<MAJOR>_<MINOR>.alert"``,
+        choose your own major and minor versions and use like ``pittgoogle.Schemas.get("lsst.v7_1.alert")``.
+        View available schema versions by following the `origin` link in :attr:`Schemas.manifest`.
+        """
         return [schema["name"] for schema in SCHEMA_MANIFEST]
+
+    @property
+    def manifest(self) -> list[dict]:
+        """List of dicts containing the registration information of all known schemas."""
+        return SCHEMA_MANIFEST

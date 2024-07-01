@@ -239,7 +239,7 @@ class Topic:
             avro_schema = None
         else:
             if alert.schema.survey in ["elasticc"]:
-                avro_schema = alert.schema.avsc
+                avro_schema = alert.schema.definition
             else:
                 avro_schema = None
 

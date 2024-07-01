@@ -11,12 +11,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## \[Unreleased\]
 
 <!-- (none) -->
+
+### Added
+
+- Support for the LSST alert schema.
+- `types_.Schema._from_yaml` class method and the related helpers `_local_schema_helper` and
+  `_lsst_schema_helper`.
+- `types_.Schema.schemaless_alert_bytes` bool indicating whether the alert bytes are schemaless
+  and thus a `types_.Schema.definition` is required in order to serialize and deserialize them.
+- `types_.Schama.manifest` containing the schemas.yml file loaded as a list of dicts.
+- `types_.Schema.filter_map`, moved from the schema map's "FILTER_MAP".
+- `Schema.origin` and schema-map key name "SCHEMA_ORIGIN" (see Changed).
+- `types_.Schema.definition`. Not actually new, but repurposed (see Changed, Removed).
+
 ### Changed
 
-- Make `Alert` method private, `add_id_attributes` -> `_add_id_attributes`.
+- Changed some schema-map keys to include an underscore for clarity, e.g., "magerr" -> "mag_err"
+  (breaking change).
+- Change method to private `Alert.add_id_attributes` -> `Alert._add_id_attributes`.
+- Changed attribute name `types_.Schema.definition` -> `Schema.origin`. Related, changed
+  schema-map key name "SURVEY_SCHEMA" -> "SCHEMA_ORIGIN". Both for clarity.
+- `types_.Schema.definition` is now used to hold the actual schema definition. Currently this only
+  needed for Avro and so holds the dict loaded from the ".avsc" file(s).
 - Update docstrings for clarity and accuracy.
 - Improve type hints.
 - Fix up Sphinx and rst to improve how docs are being rendered.
+
+### Removed
+
+- `types_.Schema.avsc`. Replaced by `types_.Schema.definition`.
+- Schema-map keys "SURVEY_SCHEMA" (replaced), "TOPIC_SYNTAX" (dropped), "FILTER_MAP" (moved).
 
 ## \[v0.3.4\] - 2024-06-29
 

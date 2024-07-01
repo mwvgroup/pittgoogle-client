@@ -1,8 +1,6 @@
 SURVEY: elasticc
-SURVEY_SCHEMA: https://github.com/LSSTDESC/elasticc/tree/main/alert_schema
+SCHEMA_ORIGIN: https://github.com/LSSTDESC/elasticc/tree/main/alert_schema
 SCHEMA_VERSION: v0_9_1
-TOPIC_SYNTAX:
-FILTER_MAP:
 alertid: alertId
 objectid: [diaObject, diaObjectId]
 source: diaSource
@@ -12,10 +10,10 @@ prv_forced_sources: prvDiaForcedSources
 mjd: midPointTai
 filter: filterName
 mag: magpsf
-magerr: sigmapsf
-magzp: magzpsci
+mag_err: sigmapsf
+mag_zp: magzpsci
 flux: psFlux
-fluxerr: psFluxErr
+flux_err: psFluxErr
 ra: ra
 dec: decl
 cutout_science:
