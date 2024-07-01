@@ -21,7 +21,8 @@ those of a :class:`pittgoogle.types_.Schema`. The ``helper`` field must point to
 the new schema definition; more information below.
 
 Case 1: The schema definition is not *needed* in order to deserialize the alert bytes. This is true for
-all Json and the Avro streams which attach the schema in the data header. Set ``schemaless_alert_bytes='false'``. Leave ``helper`` and ``path`` as defaults.
+all Json and the Avro streams which attach the schema in the data header. Set
+``schemaless_alert_bytes='false'``. Leave ``helper`` and ``path`` as defaults.
 
 The rest of the cases assume the schema definition is required. This is true for "schemaless" Avro streams
 which do not attach the schema to the data packet. Set ``schemaless_alert_bytes='true'``

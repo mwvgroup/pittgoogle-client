@@ -18,7 +18,6 @@ for the reader).
 
 To add a schema map, make a copy of the file *pittgoogle/schemas/maps/TEMPLATE.yml* and alter it.
 
-
 ### How to use the TEMPLATE.yml file
 
 *pittgoogle/schemas/maps/TEMPLATE.yml* : Make a copy of this file and name it using the syntax
