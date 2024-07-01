@@ -1,0 +1,28 @@
+# To add a new schema map, make a copy of this template file and alter it.
+# See docs/source/for-developers/add-new-schema-map.md for more information.
+#
+# Survey name and schema origin.
+SURVEY: 'lsst'
+SCHEMA_ORIGIN: 'https://github.com/lsst/alert_packet/tree/main/python/lsst/alert/packet/schema'
+#
+# IDs.
+alertid: alertId  # str or int (typical type for the value of the field that both of these names represent)
+objectid: [diaObject, diaObjectId]  # str or int
+sourceid: [diaSource, diaSourceId]  # str or int
+#
+# Everything else.
+cutout_difference: cutoutDifference  # bytes (image stamp)
+cutout_science: cutoutScience  # bytes (image stamp)
+cutout_template: cutoutTemplate  # bytes (image stamp)
+dec: decl  # float
+filter: filterName  # int (`Schema.filter_map` often maps this to the filter's common name, like 2 -> 'r')
+flux: psFlux  # float (typically PSF flux, not aperture)
+fluxerr: psFluxErr  # float
+mag: magpsf  # float (typically PSF mag, not aperture)
+magerr: sigmapsf  # float
+magzp: magzpsci  # float (magnitude zero point)
+mjd: midPointTai  # float
+prv_forced_sources: prvDiaForcedSources  # record or array
+prv_sources: prvDiaSources  # record or array
+ra: ra  # float
+source: diaSource  # record or array
