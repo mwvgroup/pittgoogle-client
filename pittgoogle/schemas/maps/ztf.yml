@@ -1,5 +1,5 @@
 SURVEY: ztf
-SURVEY_SCHEMA: https://zwickytransientfacility.github.io/ztf-avro-alert/schema.html
+SCHEMA_ORIGIN: https://zwickytransientfacility.github.io/ztf-avro-alert/schema.html
 TOPIC_SYNTAX: ztf_yyyymmdd_programid1  # replace yyyymmdd with the date
 FILTER_MAP:
   1: g
@@ -14,5 +14,5 @@ cutout_science: cutoutScience
 cutout_template: cutoutTemplate
 filter: fid
 mag: magpsf
-magerr: sigmapsf
-magzp: magzpsci
+mag_err: sigmapsf
+mag_zp: magzpsci

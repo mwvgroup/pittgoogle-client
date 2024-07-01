@@ -1,0 +1,30 @@
+SURVEY: lsst
+SCHEMA_ORIGIN: 'https://github.com/lsst/alert_packet/tree/main/python/lsst/alert/packet/schema'
+# [FIXME] Check everything below.
+# IDs
+alertid: alertId
+sourceid: [diaSource, diaSourceId]
+objectid: [diaObject, diaObjectId]
+# Sources and Objects
+source: diaSource
+object: diaObject
+prv_sources: prvDiaSources
+prv_forced_sources: prvDiaForcedSources
+prv_nondetect_limits: prvDiaNondetectionLimits
+ss_object: ssObject
+# Other
+cutout_science: cutoutScience
+cutout_template: cutoutTemplate
+cutout_difference: cutoutDifference
+dec: [diaSource, dec]
+dec_err: [diaSource, decErr]
+filter: [diaSource, band]
+flux: [diaSource, psfFlux]
+flux_err: [diaSource, psfFluxErr]
+mag: null
+mag_err: null
+mag_zp: null
+mjd: [diaSource, midpointMjdTai]
+ra: [diaSource, ra]
+ra_err: [diaSource, raErr]
+snr: [diaSource, snr]

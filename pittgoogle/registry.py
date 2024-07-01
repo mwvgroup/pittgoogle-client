@@ -34,32 +34,71 @@ class ProjectIds:
 
 @define(frozen=True)
 class Schemas:
-    """Registry of schemas used by Pitt-Google."""
+    """Registry of schemas used by Pitt-Google.
 
-    @classmethod
-    def get(cls, schema_name: str) -> types_.Schema:
-        """Return the registered schema called `schema_name`.
+    Examples:
 
-        Raises
-        ------
-        :class:`pittgoogle.exceptions.SchemaNotFoundError`
-            if a schema called `schema_name` is not found
+        .. code-block:: python
+
+            # View list of registered schema names.
+            pittgoogle.Schemas.names
+
+            # View more information about the schemas.
+            pittgoogle.Schemas.manifest
+
+            # Load a schema (choose a name from above and substitute it below).
+            schema = pittgoogle.Schemas.get(schema_name="ztf")
+
+    **For Developers**: :doc:`/for-developers/add-new-schema`
+
+    ----
+    """
+
+    @staticmethod
+    def get(schema_name: str) -> types_.Schema:
+        """Return the schema with name matching `schema_name`.
+
+        Returns:
+            Schema:
+                Schema from the registry with name matching `schema_name`.
+
+        Raises:
+            SchemaNotFoundError:
+                If a schema with name matching `schema_name` is not found in the registry.
+            SchemaNotFoundError:
+                If a schema definition cannot be loaded but one will be required to read the alert bytes.
         """
-        for schema in SCHEMA_MANIFEST:
-            if schema["name"] != schema_name:
-                continue
+        # Return the schema with name == schema_name, if one exists.
+        for mft_schema in SCHEMA_MANIFEST:
+            if mft_schema["name"] == schema_name:
+                return types_.Schema._from_yaml(schema_dict=mft_schema)
 
-            return types_.Schema(
-                name=schema["name"],
-                description=schema["description"],
-                path=PACKAGE_DIR / schema["path"] if schema["path"] is not None else None,
-            )
+        # Return the schema with name ~= schema_name, if one exists.
+        for mft_schema in SCHEMA_MANIFEST:
+            # Case 1: Split by "." and check whether first and last parts match.
+            # Catches names like 'lsst.v<MAJOR>_<MINOR>.alert' where users replace '<..>' with custom values.
+            split_name, split_mft_name = schema_name.split("."), mft_schema["name"].split(".")
+            if all([split_mft_name[i] == split_name[i] for i in [0, -1]]):
+                return types_.Schema._from_yaml(schema_dict=mft_schema, name=schema_name)
 
+        # That's all we know how to check so far.
         raise SchemaNotFoundError(
-            f"{schema_name} not found. for a list of valid names, use `pittgoogle.Schemas.names()`."
+            f"{schema_name} not found. For valid names, see `pittgoogle.Schemas.names`."
         )
 
-    @classmethod
-    def names(cls) -> list[str]:
-        """Return the names of all registered schemas."""
+    @property
+    def names(self) -> list[str]:
+        """Names of all registered schemas.
+
+        A name from this list can be used with the :meth:`Schemas.get` method to load a schema.
+        Capital letters between angle brackets indicate that you should substitute your own
+        values. For example, to use the LSST schema listed here as ``"lsst.v<MAJOR>_<MINOR>.alert"``,
+        choose your own major and minor versions and use like ``pittgoogle.Schemas.get("lsst.v7_1.alert")``.
+        View available schema versions by following the `origin` link in :attr:`Schemas.manifest`.
+        """
         return [schema["name"] for schema in SCHEMA_MANIFEST]
+
+    @property
+    def manifest(self) -> list[dict]:
+        """List of dicts containing the registration information of all known schemas."""
+        return SCHEMA_MANIFEST

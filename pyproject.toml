@@ -30,13 +30,17 @@ classifiers = [
 # https://python-poetry.org/docs/dependency-specification/#git-dependencies
 python = "^3.9"
 attrs = ">=23.1"
-astropy = ">=5.3"
+astropy = ">=6.0"
 fastavro = ">=1.7.4"
 google-auth-oauthlib = ">=1.0"
 google-cloud-bigquery = ">=3.11.2"
 google-cloud-pubsub = ">=2.17.1"
 pandas = ">=1.5"  # v1.5.1 required by supernnova v3.0.1
 tabulate = ">=0.9"
+# lsst-alert-packet for the LSST schema helper.
+# The PyPI version of this looks out of date so install from a git tag instead.
+# [FIXME] This is pinned... is there a way to get the latest tag automatically?
+lsst-alert-packet = { git = "https://github.com/lsst/alert_packet.git", tag = "w.2024.26" }
 
 [tool.poetry.group.docs]
 optional = true

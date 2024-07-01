@@ -239,7 +239,7 @@ class Topic:
             avro_schema = None
         else:
             if alert.schema.survey in ["elasticc"]:
-                avro_schema = alert.schema.avsc
+                avro_schema = alert.schema.definition
             else:
                 avro_schema = None
 
@@ -296,8 +296,8 @@ class Subscription:
             # make sure the subscription exists and we can connect to it. create it if necessary
             subscription.touch()
 
-        Pull a small batch of alerts. Helpful for testing. (For long-runnining listeners, see
-        :class:`pittgoogle.Consumer`.)
+        Pull a small batch of alerts. Helpful for testing. (Not recommended for long-running listeners;
+        use :class:`pittgoogle.pubsub.Consumer` instead.)
 
         .. code-block:: python
 
@@ -382,8 +382,9 @@ class Subscription:
             )
             raise PubSubInvalid(msg)
 
-        # set the topic
-        self.topic = Topic.from_path(connected_topic_path)
+        # if the topic isn't already set, do it now
+        if self.topic is None:
+            self.topic = Topic.from_path(connected_topic_path)
         LOGGER.debug("topic validated")
 
     def delete(self) -> None:

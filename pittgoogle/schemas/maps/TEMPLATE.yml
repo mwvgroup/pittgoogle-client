@@ -1,0 +1,39 @@
+# To add a new schema map, make a copy of this template file and alter it.
+# See docs/source/for-developers/add-new-schema-map.md for more information.
+#
+# Survey name and schema origin.
+SURVEY: 'lsst'
+SCHEMA_ORIGIN: 'https://github.com/lsst/alert_packet/tree/main/python/lsst/alert/packet/schema'
+#
+# IDs.
+alertid: alertId  # str or int (typical type for the value of the field that both of these names represent)
+objectid: [diaObject, diaObjectId]  # str or int
+sourceid: [diaSource, diaSourceId]  # str or int
+#
+# Sources and Objects
+source: diaSource  # record
+object: diaObject  # record
+prv_forced_sources: prvDiaForcedSources  # array of records
+prv_sources: prvDiaSources  # array of records
+prv_nondetect_limits: prvDiaNondetectionLimits  # array of records
+ss_object: ssObject  # record
+#
+# Everything else.
+# [TODO] Currently can only use each key/value pair to get data from one place, but the same field
+# often exists in multiple places (e.g., source and prv_sources both have mjd data).
+# How to make this more flexible and use it to access both/all data with a given name?
+cutout_difference: cutoutDifference  # bytes (image stamp)
+cutout_science: cutoutScience  # bytes (image stamp)
+cutout_template: cutoutTemplate  # bytes (image stamp)
+dec: [diaSource, dec]  # float
+dec_err: [diaSource, decErr]  # float
+filter: [diaSource, filterName]  # int (`Schema.filter_map` often maps this to the filter's common name, like 2 -> 'r')
+flux: [diaSource, psFlux]  # float (typically PSF flux, not aperture)
+flux_err: [diaSource, psFluxErr]  # float
+mag: [diaSource, magpsf]  # float (typically PSF mag, not aperture)
+mag_err: [diaSource, sigmapsf]  # float
+mag_zp: [diaSource, magzpsci]  # float (magnitude zero point)
+mjd: [diaSource, midPointTai]  # float
+ra: [diaSource, ra]  # float
+ra_err: [diaSource, raErr]  # float
+snr: [diaSource, snr]  # float

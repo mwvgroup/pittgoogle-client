@@ -238,31 +238,9 @@ class Alert:
         if self._dict is not None:
             return self._dict
 
-        # [TODO] Add a `required` attribute to types_.Schema (whether the schema is required in order to deserialize the alerts).
-        # deserialize self.msg.data (avro or json bytestring) into a dict.
-        # if self.msg.data is either (1) json; or (2) avro that contains the schema in the header,
-        # self.schema is not required for deserialization, so we want to be lenient.
-        # if self.msg.data is schemaless avro, deserialization requires self.schema.avsc to exist.
-        # currently, there is a clean separation between surveys:
-        #     elasticc always requires self.schema.avsc; ztf never does.
-        # we'll check the survey name from self.schema.survey; but first we need to check whether
-        # the schema exists so we can try to continue without one instead of raising an error.
-        # we may want or need to handle this differently in the future.
-        try:
-            self.schema
-        except SchemaNotFoundError as exc:
-            LOGGER.warning(f"schema not found. attempting to deserialize without it. {exc}")
-            avro_schema = None
-        else:
-            if self.schema.survey in ["elasticc"]:
-                avro_schema = self.schema.avsc
-            else:
-                avro_schema = None
-
-        # if we have an avro schema, use it to deserialize and return
-        if avro_schema:
-            with io.BytesIO(self.msg.data) as fin:
-                self._dict = fastavro.schemaless_reader(fin, avro_schema)
+        if self.schema.schemaless_alert_bytes:
+            bytes_io = io.BytesIO(self.msg.data)
+            self._dict = fastavro.schemaless_reader(bytes_io, self.schema.definition)
             return self._dict
 
         # [TODO] this should be rewritten to catch specific errors
