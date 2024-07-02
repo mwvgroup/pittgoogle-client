@@ -12,8 +12,9 @@ import fastavro
 import google.cloud.pubsub_v1
 from attrs import define, field
 
-from . import registry, schema, types_, utils
+from . import registry, types_, utils
 from .exceptions import BadRequest, OpenAlertError, SchemaNotFoundError
+from .schema import Schema  # so the 'schema' module doesn't clobber 'Alert.schema' attribute
 
 if TYPE_CHECKING:
     import pandas as pd  # always lazy-load pandas. it hogs memory on cloud functions and run
@@ -56,7 +57,7 @@ class Alert:
     path: Path | None = field(default=None)
     # Use "Union" because " | " is throwing an error when combined with forward references.
     _dataframe: Union["pd.DataFrame", None] = field(default=None)
-    _schema: schema.Schema | None = field(default=None, init=False)
+    _schema: Schema | None = field(default=None, init=False)
 
     # ---- class methods ---- #
     @classmethod
@@ -307,7 +308,7 @@ class Alert:
         return self.get("sourceid")
 
     @property
-    def schema(self) -> schema.Schema:
+    def schema(self) -> Schema:
         """Return the schema from the :class:`pittgoogle.registry.Schemas` registry.
 
         Raises:
