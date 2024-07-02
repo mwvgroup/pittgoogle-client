@@ -27,26 +27,20 @@ class SchemaHelpers:
     For Developers:
 
         When a user requests a schema from the registry, the class method :meth:`Schema._from_yaml` is called.
-        The method will partially initialize the :class:`Schema` using the registry's `schemas.yml` file,
-        and then pass it to one of the :class:`SchemaHelpers` methods to finish the initialization.
+        The method will pass ``schema_name``'s dict entry from the registry's `schemas.yml` file to
+        one of these helper methods, which will then construct the :class:`Schema` object.
 
-        If you are adding support for a new schema, the value you enter for the ``helper`` field in the
-        `schemas.yml` file should be the name of the :class:`SchemaHelpers` method to be used to finish
-        initializing the new :class:`Schema`.
-
-        Methods in this class are expected to accept a partially initialized :class:`Schema`,
-        finish initializing it by (e.g.,) loading the schema definition into :attr:`Schema.definition`,
-        and then return the fully-initialized :class:`Schema`.
+        If you are adding support for a new schema, you will need to point to the appropriate helper
+        method for your schema using the ``helper`` field in the registry's `schemas.yml` file.
+        If an appropriate method does not exist in this class, you will need to add one.
 
     ----
     """
 
     @staticmethod
-    def default_schema_helper(schema: "Schema") -> "Schema":
+    def default_schema_helper(schema_dict: dict) -> "Schema":
         """Resolve `schema.path`. If it points to a valid ".avsc" file, load it into `schema.avsc`."""
-        # Serialization methods
-        schema.serialize = Serializers.serialize_default
-        schema.deserialize = Serializers.deserialize_default
+        schema = _DefaultSchema(**schema_dict)
 
         # Resolve the path. If it is not None, this helper expects it to be the path to
         # a ".avsc" file relative to the pittgoogle package directory.
@@ -64,10 +58,8 @@ class SchemaHelpers:
         return schema
 
     @staticmethod
-    def elasticc_schema_helper(schema: "Schema") -> "Schema":
-        # Serialization methods
-        schema.serialize = Serializers.serialize_schemaless_avro
-        schema.deserialize = Serializers.deserialize_schemaless_avro
+    def elasticc_schema_helper(schema_dict: dict) -> "Schema":
+        schema = _SchemalessAvroSchema(**schema_dict)
 
         # Resolve the path and load the schema
         schema.path = PACKAGE_DIR / schema.path
@@ -76,7 +68,7 @@ class SchemaHelpers:
         return schema
 
     @staticmethod
-    def lsst_schema_helper(schema: "Schema") -> "Schema":
+    def lsst_schema_helper(schema_dict: dict) -> "Schema":
         """Load the Avro schema definition using the ``lsst.alert.packet`` package.
 
         Raises:
@@ -87,11 +79,9 @@ class SchemaHelpers:
         """
         import lsst.alert.packet.schema
 
-        version_msg = f"For valid versions, see {schema.origin}."
+        schema = _ConfluentWireAvroSchema(**schema_dict)
 
-        # serialization methods
-        schema.serialize = Serializers.serialize_confluent_wire_avro
-        schema.deserialize = Serializers.deserialize_confluent_wire_avro
+        version_msg = f"For valid versions, see {schema.origin}."
 
         # Parse major and minor versions out of schema.name. Expecting syntax "lsst.v<MAJOR>_<MINOR>.alert".
         try:
@@ -129,48 +119,44 @@ class Schema:
     # String _under_ field definition will cause field to appear as a property in rendered docs.
     name: str = field()
     """Name of the schema."""
-    origin: str = field()
-    """Pointer to the schema's origin. Typically this is a URL to a repo maintained by the survey."""
     description: str = field()
     """A description of the schema."""
+    origin: str = field()
+    """Pointer to the schema's origin. Typically this is a URL to a repo maintained by the survey."""
     definition: dict | None = field(default=None)
     """The schema definition used to serialize and deserialize the alert bytes, if one is required."""
-    # schemaless_alert_bytes: bool = field(default=False, converter=converters.to_bool)
-    # """Whether the alert bytes are schemaless. If True, a valid `definition` is required to
-    # serialize or deserialize the alert packet bytes."""
     _helper: str = field(default="default_schema_helper")
     """Name of the method in :class:`SchemaHelpers` used to load this schema."""
     path: Path | None = field(default=None)
     """Path where the helper can find the schema, if needed."""
     filter_map: dict = field(factory=dict)
     """Mapping of the filter name as stored in the alert (often an int) to the common name (often a string)."""
-    serialize: Callable = field(default=None)
-    """A :class:`pittgoogle.schema.Serializers` method to serialize the alert dict."""
-    deserialize: Callable = field(default=None)
-    """A :class:`pittgoogle.schema.Serializers` method to deserialize the alert bytes."""
     # The rest don't need string descriptions because we will define them as explicit properties.
     _survey: str | None = field(default=None)
     # _map is important, but don't accept it as an init arg. We'll load it from a yaml file later.
     _map: dict | None = field(default=None, init=False)
 
     @classmethod
-    def _from_yaml(cls, schema_dict: dict, **evolve_schema_dict) -> "Schema":
+    def _from_yaml(cls, schema_dict: dict, **schema_dict_replacements) -> "Schema":
         """Create a :class:`Schema` object from an entry in the registry's `schemas.yml` file.
+
+        This method calls a helper method in :class:`SchemaHelpers` to finish the initialization.
 
         Args:
             schema_dict (dict):
                 A dictionary containing the schema information.
-            **evolve_schema_dict:
+            **schema_dict_replacements:
                 Additional keyword arguments that will override entries in ``schema_dict``.
 
         Returns:
             Schema:
                 The created `Schema` object.
         """
-        # initialize the class, then let the helper finish up
-        schema = evolve(cls(**schema_dict), **evolve_schema_dict)
-        helper = getattr(SchemaHelpers, schema._helper)
-        return helper(schema)
+        # Combine the args and kwargs then let the helper finish up the initialization.
+        my_schema_dict = schema_dict.copy()
+        my_schema_dict.update(schema_dict_replacements)
+        helper = getattr(SchemaHelpers, my_schema_dict["helper"])
+        return helper(my_schema_dict)
 
     @property
     def survey(self) -> str:
@@ -221,21 +207,22 @@ class _SchemalessAvroSchema(Schema):
     def serialize(self, alert_dict: dict) -> bytes:
         """Serialize `alert_dict` using the schemaless Avro format."""
         fout = io.BytesIO()
-        fastavro.schemaless_writer(fout, self.schema.definition, alert_dict)
+        fastavro.schemaless_writer(fout, self.definition, alert_dict)
         fout.seek(0)
         message = fout.getvalue()
         return message
 
     def deserialize(self, alert_bytes: bytes) -> dict:
         bytes_io = io.BytesIO(alert_bytes)
-        return fastavro.schemaless_reader(bytes_io, self.schema.definition)  # [FIXME]
+        return fastavro.schemaless_reader(bytes_io, self.definition)  # [FIXME]
 
 
 class _ConfluentWireAvroSchema(Schema):
-    """Schema to serialize and deserialize alert bytes in the schemaless Avro format."""
+    """Schema to serialize and deserialize alert bytes in the Avro Confluent Wire Format."""
 
     def serialize(self, alert_dict: dict) -> bytes:
-        pass
+        raise NotImplementedError("Confluent Wire Format not yet supported.")
 
     def deserialize(self, alert_bytes: bytes) -> dict:
-        pass
+        bytes_io = io.BytesIO(alert_bytes[5:])
+        return fastavro.schemaless_reader(bytes_io, self.definition)

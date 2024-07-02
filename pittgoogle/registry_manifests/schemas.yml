@@ -5,10 +5,9 @@
 # # TEMPLATE
 # - name: ''
 #   description: ''
+#   origin: 'https://...'
 #   helper: 'default_schema_helper'
 #   path: ''
-#   schemaless_alert_bytes: false  # options (true, false, 'confluent_wire_format') for below?
-#   confluent_wire_format: false  # [TODO] implement this or something like it
 #   filter_map:
 #     1: ''
 #     2: ''
@@ -17,17 +16,15 @@
 - name: 'elasticc.v0_9_1.alert'
   description: 'Avro schema of alerts published by ELAsTiCC.'
   origin: 'https://github.com/LSSTDESC/elasticc/tree/main/alert_schema'
-  helper: 'default_schema_helper'
+  helper: 'elasticc_schema_helper'
   path: 'schemas/elasticc/elasticc.v0_9_1.alert.avsc'
-  schemaless_alert_bytes: true
 #
 # ELASTICC classifications
 - name: 'elasticc.v0_9_1.brokerClassification'
   description: 'Avro schema of alerts to be sent to DESC containing classifications of ELAsTiCC alerts.'
   origin: 'https://github.com/LSSTDESC/elasticc/tree/main/alert_schema'
-  helper: 'default_schema_helper'
+  helper: 'elasticc_schema_helper'
   path: 'schemas/elasticc/elasticc.v0_9_1.brokerClassification.avsc'
-  schemaless_alert_bytes: true
 #
 # LSST alerts
 # - name: 'lsst.v7_1.alert'
@@ -35,7 +32,6 @@
   description: ''  # [TODO]
   origin: 'https://github.com/lsst/alert_packet/tree/main/python/lsst/alert/packet/schema'
   helper: 'lsst_schema_helper'
-  schemaless_alert_bytes: true
   # [FIXME] filter_map is probably int -> {u, g, r, i, z, y}. Check for sure and fill in below
   filter_map:
     1: ''
@@ -50,7 +46,6 @@
   description: 'ZTF schema. The ZTF survey publishes alerts in Avro format with the schema attached in the header. Pitt-Google publishes ZTF alerts in json format. This schema covers both cases.'
   origin: 'https://zwickytransientfacility.github.io/ztf-avro-alert/schema.html'
   helper: 'default_schema_helper'
-  schemaless_alert_bytes: false
   path: null
   filter_map:
     1: g

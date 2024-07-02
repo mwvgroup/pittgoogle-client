@@ -219,46 +219,48 @@ class Topic:
         If the `alert` has an elasticc schema, the payload will be serialized as schemaless Avro.
         Otherwise, json will be used.
         """
-        # we need to decide which format to use: json, avro with schema, or avro without schema
-        # the format that pitt-google currently (2023-09-23) uses to publish messages depends on the stream:
-        #     - consumer modules pass on the original alert data packet, as produced by the survey.
-        #       they do not need to use this method (in fact, the consumers do not even use python),
-        #       so we can ignore this case.
-        #     - all other broker pipeline modules (Pitt-Google-Broker repo) use json.
-        #     - modules in the pittgoogle-user repo publish classifications for elasticc, and thus
-        #       use schemaless avro.
-        # at some point, we should re-evaluate the broker pipeline in particular.
-        #
-        # for now, we will get close enough to the current behavior if we assume that:
-        #     - elasticc messages should be published as schemaless avro
-        #     - else, we should publish a json message
-        # this will match the current behavior in all cases except the elasticc broker pipeline modules.
-        # neither broker pipeline uses pittgoogle-client at this time (they use pgb-broker-utils),
-        # so we don't need to update or accommodate them yet.
-        #
-        # we'll get the survey name from self.schema.survey, but first we should check whether the
-        # schema exists so we can be lenient and just fall back to json instead of raising an error.
-        try:
-            alert.schema
-        except exceptions.SchemaError:
-            avro_schema = None
-        else:
-            if alert.schema.survey in ["elasticc"]:
-                avro_schema = alert.schema.definition
-            else:
-                avro_schema = None
+        # # we need to decide which format to use: json, avro with schema, or avro without schema
+        # # the format that pitt-google currently (2023-09-23) uses to publish messages depends on the stream:
+        # #     - consumer modules pass on the original alert data packet, as produced by the survey.
+        # #       they do not need to use this method (in fact, the consumers do not even use python),
+        # #       so we can ignore this case.
+        # #     - all other broker pipeline modules (Pitt-Google-Broker repo) use json.
+        # #     - modules in the pittgoogle-user repo publish classifications for elasticc, and thus
+        # #       use schemaless avro.
+        # # at some point, we should re-evaluate the broker pipeline in particular.
+        # #
+        # # for now, we will get close enough to the current behavior if we assume that:
+        # #     - elasticc messages should be published as schemaless avro
+        # #     - else, we should publish a json message
+        # # this will match the current behavior in all cases except the elasticc broker pipeline modules.
+        # # neither broker pipeline uses pittgoogle-client at this time (they use pgb-broker-utils),
+        # # so we don't need to update or accommodate them yet.
+        # #
+        # # we'll get the survey name from self.schema.survey, but first we should check whether the
+        # # schema exists so we can be lenient and just fall back to json instead of raising an error.
+        # try:
+        #     alert.schema
+        # except exceptions.SchemaError:
+        #     avro_schema = None
+        # else:
+        #     if alert.schema.survey in ["elasticc"]:
+        #         avro_schema = alert.schema.definition
+        #     else:
+        #         avro_schema = None
 
-        if not avro_schema:
-            # serialize using json
-            message = json.dumps(alert.dict).encode("utf-8")
-        else:
-            # serialize as schemaless avro
-            fout = io.BytesIO()
-            fastavro.schemaless_writer(fout, avro_schema, alert.dict)
-            fout.seek(0)
-            message = fout.getvalue()
+        # if not avro_schema:
+        #     # serialize using json
+        #     message = json.dumps(alert.dict).encode("utf-8")
+        # else:
+        #     # serialize as schemaless avro
+        #     fout = io.BytesIO()
+        #     fastavro.schemaless_writer(fout, avro_schema, alert.dict)
+        #     fout.seek(0)
+        #     message = fout.getvalue()
 
-        # attribute keys and values must be strings. let's sort the keys while we're at it
+        message = alert.schema.serialize(alert.dict)
+
+        # Pub/Sub requires attribute keys and values to be strings. Sort the keys while we're at it.
         attributes = {str(key): str(alert.attributes[key]) for key in sorted(alert.attributes)}
 
         future = self.client.publish(self.path, data=message, **attributes)

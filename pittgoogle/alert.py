@@ -236,24 +236,8 @@ class Alert:
             OpenAlertError:
                 If unable to deserialize the alert bytes.
         """
-        if self._dict is not None:
-            return self._dict
-
-        # [TODO] The schema should have a method that does this.
-        if self.schema.schemaless_alert_bytes:
-            bytes_io = io.BytesIO(self.msg.data)
-            self._dict = fastavro.schemaless_reader(bytes_io, self.schema.definition)
-            return self._dict
-
-        # [TODO] this should be rewritten to catch specific errors
-        # for now, just try avro then json, catching basically all errors in the process
-        try:
-            self._dict = utils.Cast.avro_to_dict(self.msg.data)
-        except Exception:
-            try:
-                self._dict = utils.Cast.json_to_dict(self.msg.data)
-            except Exception:
-                raise OpenAlertError("failed to deserialize the alert bytes")
+        if self._dict is None:
+            self._dict = self.schema.deserialize(self.msg.data)
         return self._dict
 
     @property
@@ -315,15 +299,8 @@ class Alert:
             SchemaError:
                 If the `schema_name` is not supplied or a schema with this name is not found.
         """
-        if self._schema is not None:
-            return self._schema
-
-        # need to load the schema. raise an error if no schema_name given
-        if self.schema_name is None:
-            raise SchemaError("a schema_name is required")
-
-        # this also may raise SchemaError
-        self._schema = registry.Schemas.get(self.schema_name)
+        if self._schema is None:
+            self._schema = registry.Schemas.get(self.schema_name)
         return self._schema
 
     # ---- methods ---- #
