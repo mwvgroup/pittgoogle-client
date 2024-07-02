@@ -16,46 +16,27 @@ PACKAGE_DIR = importlib.resources.files(__package__)
 
 
 @define(kw_only=True)
-class Schema:
-    """Class for an individual schema.
+class SchemaHelpers:
+    """Class to organize helper functions.
 
-    Do not call this class's constructor directly. Instead, load a schema using the registry
-    :class:`pittgoogle.registry.Schemas`.
+    This class is not intended to be used directly, except by developers adding support for a new schema.
+
+    For Developers:
+
+        When a user requests a schema from the registry, the class method :meth:`Schema._from_yaml` is called.
+        The method will partially initialize the :class:`Schema` using the registry's `schemas.yml` file,
+        and then pass it to one of the :class:`SchemaHelpers` methods to finish the initialization.
+
+        If you are adding support for a new schema, the value you enter for the ``helper`` field in the
+        `schemas.yml` file should be the name of the :class:`SchemaHelpers` method to be used to finish
+        initializing the new :class:`Schema`.
+
+        Methods in this class are expected to accept a partially initialized :class:`Schema`,
+        finish initializing it by (e.g.,) loading the schema definition into :attr:`Schema.definition`,
+        and then return the fully-initialized :class:`Schema`.
 
     ----
     """
-
-    # String _under_ field definition will cause field to appear as a property in rendered docs.
-    name: str = field()
-    """Name of the schema."""
-    origin: str = field()
-    """Pointer to the schema's origin. Typically this is a URL to a repo maintained by the survey."""
-    description: str = field()
-    """A description of the schema."""
-    definition: dict | None = field(default=None)
-    """The schema definition used to serialize and deserialize the alert bytes, if one is required."""
-    schemaless_alert_bytes: bool = field(default=False, converter=converters.to_bool)
-    """Whether the alert bytes are schemaless. If True, a valid `definition` is required to
-    serialize or deserialize the alert packet bytes."""
-    _helper: str = field(default="_local_schema_helper")
-    """Name of the helper method that should be used to load the schema definition."""
-    path: Path | None = field(default=None)
-    """Path where the helper can find the schema."""
-    filter_map: dict = field(factory=dict)
-    """Mapping of the filter name as stored in the alert (often an int) to the common name (often a string)."""
-    # The rest don't need string descriptions because we will define them as explicit properties.
-    _survey: str | None = field(default=None)
-    # _map is important, but don't accept it as an init arg. We'll load it from a yaml file later.
-    _map: dict | None = field(default=None, init=False)
-
-    @classmethod
-    def _from_yaml(cls, schema_dict: dict, **evolve_schema_dict) -> "Schema":
-        """Create a `Schema` from an entry in the registry's schemas.yml file."""
-        # initialize the class, then let the helper finish up
-        schema = evolve(cls(**schema_dict), **evolve_schema_dict)
-        helper = getattr(cls, schema._helper)
-        schema = helper(schema)
-        return schema
 
     @staticmethod
     def _local_schema_helper(schema: "Schema") -> "Schema":
@@ -110,6 +91,59 @@ class Schema:
             raise exceptions.SchemaNotFoundError(msg)
 
         return schema
+
+
+@define(kw_only=True)
+class Schema:
+    """Class for an individual schema.
+
+    Do not call this class's constructor directly. Instead, load a schema using the registry
+    :class:`pittgoogle.registry.Schemas`.
+
+    ----
+    """
+
+    # String _under_ field definition will cause field to appear as a property in rendered docs.
+    name: str = field()
+    """Name of the schema."""
+    origin: str = field()
+    """Pointer to the schema's origin. Typically this is a URL to a repo maintained by the survey."""
+    description: str = field()
+    """A description of the schema."""
+    definition: dict | None = field(default=None)
+    """The schema definition used to serialize and deserialize the alert bytes, if one is required."""
+    schemaless_alert_bytes: bool = field(default=False, converter=converters.to_bool)
+    """Whether the alert bytes are schemaless. If True, a valid `definition` is required to
+    serialize or deserialize the alert packet bytes."""
+    _helper: str = field(default="_local_schema_helper")
+    """Name of the helper method that should be used to load the schema definition."""
+    path: Path | None = field(default=None)
+    """Path where the helper can find the schema."""
+    filter_map: dict = field(factory=dict)
+    """Mapping of the filter name as stored in the alert (often an int) to the common name (often a string)."""
+    # The rest don't need string descriptions because we will define them as explicit properties.
+    _survey: str | None = field(default=None)
+    # _map is important, but don't accept it as an init arg. We'll load it from a yaml file later.
+    _map: dict | None = field(default=None, init=False)
+
+    @classmethod
+    def _from_yaml(cls, schema_dict: dict, **evolve_schema_dict) -> "Schema":
+        """Create a :class:`Schema` object from an entry in the registry's `schemas.yml` file.
+
+        Args:
+            schema_dict (dict):
+                A dictionary containing the schema information.
+            **evolve_schema_dict:
+                Additional keyword arguments that will override entries in ``schema_dict``.
+
+        Returns:
+            Schema:
+                The created `Schema` object.
+        """
+        # initialize the class, then let the helper finish up
+        schema = evolve(cls(**schema_dict), **evolve_schema_dict)
+        helper = getattr(SchemaHelpers, schema._helper)
+        return helper(schema)
 
     @property
     def survey(self) -> str:
