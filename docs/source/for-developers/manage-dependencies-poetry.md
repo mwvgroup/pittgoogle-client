@@ -1,6 +1,6 @@
 # Manage dependencies with Poetry
 
-This page contains instructions for managing the `pittgoogle` package dependencies using [Poetry](https://python-poetry.org/).
+This page contains instructions for managing the `pittgoogle-client` package dependencies using [Poetry](https://python-poetry.org/).
 Poetry was implemented in this repo in [pull #7](https://github.com/mwvgroup/pittgoogle-client/pull/7).
 
 ## Setup your environment
@@ -17,6 +17,19 @@ conda activate poetry-py311
 pip install poetry
 ```
 
+If you come back to this later you may need to reactivate your environment.
+
+```bash
+conda activate poetry-py311
+```
+
+If you want to start over with a fresh environment, deactivate the environment and remove it.
+
+```bash
+conda deactivate
+conda remove --name poetry-py311 --all
+```
+
 ## Install existing dependencies
 
 This repo already contains a poetry.lock file, so running `poetry install` will give you
@@ -26,6 +39,12 @@ If you would rather start over completely, skip ahead to the next section.
 
 ```bash
 poetry install
+```
+
+If you want to install the docs dependencies as well, use:
+
+```bash
+poetry install --extras=docs
 ```
 
 ## Update Dependency Versions

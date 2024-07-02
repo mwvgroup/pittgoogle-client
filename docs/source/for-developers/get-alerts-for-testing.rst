@@ -11,7 +11,7 @@ Setup
 Get alerts from a Pub/Sub subscription
 --------------------------------------
 
-If you need to create the subscription, follow the example in :class:`pittgoogle.Subscription`.
+If you need to create the subscription, follow the example in :class:`pittgoogle.pubsub.Subscription`.
 
 Here are examples that get an alert from each of our "loop" streams:
 

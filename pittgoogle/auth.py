@@ -67,6 +67,8 @@ class Auth:
             myauth.credentials
 
         It will first look for a service account key file, then fallback to OAuth2.
+
+    ----
     """
 
     # Strings _below_ the field will make these also show up as individual properties in rendered docs.
