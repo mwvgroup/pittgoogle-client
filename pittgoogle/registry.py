@@ -54,7 +54,7 @@ class Schemas:
     """
 
     @staticmethod
-    def get(schema_name: str) -> schema.Schema:
+    def get(schema_name: str | None) -> schema.Schema:
         """Return the schema with name matching `schema_name`.
 
         Returns:
@@ -67,6 +67,14 @@ class Schemas:
             SchemaError:
                 If a schema definition cannot be loaded but one will be required to read the alert bytes.
         """
+        # If no schema_name provided, return the default.
+        if schema_name is None:
+            LOGGER.warning("No schema name provided. Returning a default schema.")
+            mft_schema = [
+                schema for schema in SCHEMA_MANIFEST if schema["name"] == "default_schema"
+            ][0]
+            return schema.Schema._from_yaml(schema_dict=mft_schema)
+
         # Return the schema with name == schema_name, if one exists.
         for mft_schema in SCHEMA_MANIFEST:
             if mft_schema["name"] == schema_name:

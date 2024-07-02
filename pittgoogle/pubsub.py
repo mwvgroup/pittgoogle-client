@@ -325,7 +325,7 @@ class Subscription:
             attrs.validators.instance_of(google.cloud.pubsub_v1.SubscriberClient)
         ),
     )
-    schema_name: str = attrs.field(factory=str)
+    schema_name: str | None = attrs.field(default=None)
 
     @property
     def projectid(self) -> str:
