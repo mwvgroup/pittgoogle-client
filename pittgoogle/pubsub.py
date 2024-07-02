@@ -275,14 +275,18 @@ class Subscription:
 
         .. code-block:: python
 
-            # topic the subscription will be connected to
-            # only required if the subscription does not yet exist in Google Cloud
+            # We must provide the topic that the subscription should be connected to.
+            # If the topic is in your own project, you can just provide the name of the topic.
+            # Otherwise, you must also provide the topic's project ID.
             topic = pittgoogle.Topic(name="ztf-loop", projectid=pittgoogle.ProjectIds.pittgoogle)
+            topic.touch()  # make sure the topic exists and we can connect to it
 
-            # choose your own name for the subscription
+            # You can choose your own name for the subscription.
+            # It is common to name it the same as the topic, but here we'll be more verbose.
+            # You may also need to provide the schema name (see :attr:`pittgoogle.registry.Schemas.names`).
             subscription = pittgoogle.Subscription(name="my-ztf-loop-subscription", topic=topic, schema_name="ztf")
 
-            # make sure the subscription exists and we can connect to it. create it if necessary
+            # Create the subscription if it doesn't already exist.
             subscription.touch()
 
         Pull a small batch of alerts. Helpful for testing. (Not recommended for long-running listeners;
