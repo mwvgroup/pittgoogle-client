@@ -116,9 +116,9 @@ class Schema:
     """Whether the alert bytes are schemaless. If True, a valid `definition` is required to
     serialize or deserialize the alert packet bytes."""
     _helper: str = field(default="default_schema_helper")
-    """Name of the helper method that should be used to load the schema definition."""
+    """Name of the method in :class:`SchemaHelpers` used to load this schema."""
     path: Path | None = field(default=None)
-    """Path where the helper can find the schema."""
+    """Path where the helper can find the schema, if needed."""
     filter_map: dict = field(factory=dict)
     """Mapping of the filter name as stored in the alert (often an int) to the common name (often a string)."""
     # The rest don't need string descriptions because we will define them as explicit properties.
