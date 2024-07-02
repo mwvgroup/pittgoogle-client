@@ -13,7 +13,7 @@ import google.cloud.pubsub_v1
 from attrs import define, field
 
 from . import registry, types_, utils
-from .exceptions import BadRequest, OpenAlertError, SchemaNotFoundError
+from .exceptions import BadRequest, OpenAlertError, SchemaError
 from .schema import Schema  # so the 'schema' module doesn't clobber 'Alert.schema' attribute
 
 if TYPE_CHECKING:
@@ -312,7 +312,7 @@ class Alert:
         """Return the schema from the :class:`pittgoogle.registry.Schemas` registry.
 
         Raises:
-            SchemaNotFoundError:
+            SchemaError:
                 If the `schema_name` is not supplied or a schema with this name is not found.
         """
         if self._schema is not None:
@@ -320,9 +320,9 @@ class Alert:
 
         # need to load the schema. raise an error if no schema_name given
         if self.schema_name is None:
-            raise SchemaNotFoundError("a schema_name is required")
+            raise SchemaError("a schema_name is required")
 
-        # this also may raise SchemaNotFoundError
+        # this also may raise SchemaError
         self._schema = registry.Schemas.get(self.schema_name)
         return self._schema
 

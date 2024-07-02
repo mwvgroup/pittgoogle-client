@@ -240,7 +240,7 @@ class Topic:
         # schema exists so we can be lenient and just fall back to json instead of raising an error.
         try:
             alert.schema
-        except exceptions.SchemaNotFoundError:
+        except exceptions.SchemaError:
             avro_schema = None
         else:
             if alert.schema.survey in ["elasticc"]:

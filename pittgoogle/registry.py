@@ -8,7 +8,7 @@ import yaml
 from attrs import define
 
 from . import schema
-from .exceptions import SchemaNotFoundError
+from .exceptions import SchemaError
 
 LOGGER = logging.getLogger(__name__)
 PACKAGE_DIR = importlib.resources.files(__package__)
@@ -63,9 +63,9 @@ class Schemas:
                 Schema from the registry with name matching `schema_name`.
 
         Raises:
-            SchemaNotFoundError:
+            SchemaError:
                 If a schema with name matching `schema_name` is not found in the registry.
-            SchemaNotFoundError:
+            SchemaError:
                 If a schema definition cannot be loaded but one will be required to read the alert bytes.
         """
         # Return the schema with name == schema_name, if one exists.
@@ -82,7 +82,7 @@ class Schemas:
                 return schema.Schema._from_yaml(schema_dict=mft_schema, name=schema_name)
 
         # That's all we know how to check so far.
-        raise SchemaNotFoundError(
+        raise SchemaError(
             f"{schema_name} not found. For valid names, see `pittgoogle.Schemas.names`."
         )
 
