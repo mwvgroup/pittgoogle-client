@@ -230,7 +230,7 @@ class Alert:
                 The alert data as a dictionary.
 
         Raises:
-            OpenAlertError:
+            SchemaError:
                 If unable to deserialize the alert bytes.
         """
         if self._dict is None:

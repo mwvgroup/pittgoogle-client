@@ -197,7 +197,7 @@ class _DefaultSchema(Schema):
             try:
                 return utils.Cast.json_to_dict(alert_bytes)
             except Exception:
-                raise exceptions.OpenAlertError("failed to deserialize the alert bytes")
+                raise exceptions.SchemaError("Failed to deserialize the alert bytes")
 
 
 class _SchemalessAvroSchema(Schema):
