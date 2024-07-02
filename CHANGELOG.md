@@ -12,6 +12,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 (none)
 
+## \[v0.3.8\] - 2024-07-02
+
+### Changed
+
+- Loosen `astropy` version restriction to ">=5.3". `astropy` v<6.0.0 is required by `supernnova` v3.0.1
+  which is not a direct dependency of `pittgoogle-client` but is often used with it.
+
 ## \[v0.3.7\] - 2024-07-02
 
 ### Added
