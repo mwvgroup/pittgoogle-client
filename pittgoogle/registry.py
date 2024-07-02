@@ -4,18 +4,17 @@ import importlib.resources
 import logging
 from typing import Final
 
+import attrs
 import yaml
-from attrs import define
 
-from . import schema
-from .exceptions import SchemaError
+from . import exceptions, schema
 
 LOGGER = logging.getLogger(__name__)
 PACKAGE_DIR = importlib.resources.files(__package__)
 SCHEMA_MANIFEST = yaml.safe_load((PACKAGE_DIR / "registry_manifests/schemas.yml").read_text())
 
 
-@define(frozen=True)
+@attrs.define(frozen=True)
 class ProjectIds:
     """Registry of Google Cloud Project IDs."""
 
@@ -32,7 +31,7 @@ class ProjectIds:
     """Project running classifiers for ELAsTiCC alerts and reporting to DESC."""
 
 
-@define(frozen=True)
+@attrs.define(frozen=True)
 class Schemas:
     """Registry of schemas used by Pitt-Google.
 
@@ -82,7 +81,7 @@ class Schemas:
                 return schema.Schema._from_yaml(schema_dict=mft_schema, name=schema_name)
 
         # That's all we know how to check so far.
-        raise SchemaError(
+        raise exceptions.SchemaError(
             f"{schema_name} not found. For valid names, see `pittgoogle.Schemas.names`."
         )
 

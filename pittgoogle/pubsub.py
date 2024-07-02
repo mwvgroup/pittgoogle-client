@@ -7,23 +7,19 @@
     The examples given below assume the use of a :ref:`service account <service account>` and
     :ref:`environment variables <set env vars>`.
 """
+import concurrent.futures
 import datetime
 import importlib.resources
-import io
-import json
 import logging
 import queue
-from concurrent.futures import ThreadPoolExecutor
-from time import sleep
+import time
 from typing import Any, Callable, List, Optional, Union
 
-import fastavro
-import google.cloud.pubsub_v1 as pubsub_v1
-from attrs import define, field
-from attrs.validators import gt, instance_of, is_callable, optional
-from google.api_core.exceptions import NotFound
+import attrs
+import attrs.validators
+import google.api_core.exceptions
+import google.cloud.pubsub_v1
 
-# [FIXME] clean up these imports
 from . import exceptions
 from .alert import Alert
 from .auth import Auth
@@ -72,7 +68,7 @@ def pull_batch(
         response = subscription.client.pull(
             {"subscription": subscription.path, "max_messages": max_messages}
         )
-    except NotFound:
+    except google.api_core.exceptions.NotFound:
         msg = "Subscription not found. You may need to create one using `pittgoogle.Subscription.touch`."
         raise exceptions.CloudConnectionError(msg)
 
@@ -87,7 +83,7 @@ def pull_batch(
     return alerts
 
 
-@define
+@attrs.define
 class Topic:
     """Basic attributes of a Pub/Sub topic.
 
@@ -102,16 +98,21 @@ class Topic:
     auth : :class:`pittgoogle.auth.Auth`, optional
         Credentials for the Google Cloud project that owns this topic. If not provided,
         it will be created from environment variables when needed.
-    client : `pubsub_v1.PublisherClient`, optional
+    client : `google.cloud.pubsub_v1.PublisherClient`, optional
         Pub/Sub client that will be used to access the topic. If not provided, a new client will
         be created (using `auth`) the first time it is requested.
     """
 
-    name: str = field()
-    _projectid: str = field(default=None)
-    _auth: Auth = field(default=None, validator=optional(instance_of(Auth)))
-    _client: Optional[pubsub_v1.PublisherClient] = field(
-        default=None, validator=optional(instance_of(pubsub_v1.PublisherClient))
+    name: str = attrs.field()
+    _projectid: str = attrs.field(default=None)
+    _auth: Auth = attrs.field(
+        default=None, validator=attrs.validators.optional(attrs.validators.instance_of(Auth))
+    )
+    _client: Optional[google.cloud.pubsub_v1.PublisherClient] = attrs.field(
+        default=None,
+        validator=attrs.validators.optional(
+            attrs.validators.instance_of(google.cloud.pubsub_v1.PublisherClient)
+        ),
     )
 
     @classmethod
@@ -149,7 +150,7 @@ class Topic:
         # must accommodate False and "False" for consistency with the broker pipeline
         if testid and testid != "False":
             name = f"{name}-{testid}"
-        return cls(name, projectid=projectid, client=pubsub_v1.PublisherClient())
+        return cls(name, projectid=projectid, client=google.cloud.pubsub_v1.PublisherClient())
 
     @classmethod
     def from_path(cls, path) -> "Topic":
@@ -185,13 +186,15 @@ class Topic:
         return self._projectid
 
     @property
-    def client(self) -> pubsub_v1.PublisherClient:
+    def client(self) -> google.cloud.pubsub_v1.PublisherClient:
         """Pub/Sub client for topic access.
 
         Will be created using `self.auth.credentials` if necessary.
         """
         if self._client is None:
-            self._client = pubsub_v1.PublisherClient(credentials=self.auth.credentials)
+            self._client = google.cloud.pubsub_v1.PublisherClient(
+                credentials=self.auth.credentials
+            )
         return self._client
 
     def touch(self) -> None:
@@ -200,7 +203,7 @@ class Topic:
             self.client.get_topic(topic=self.path)
             LOGGER.info(f"topic exists: {self.path}")
 
-        except NotFound:
+        except google.api_core.exceptions.NotFound:
             self.client.create_topic(name=self.path)
             LOGGER.info(f"topic created: {self.path}")
 
@@ -208,7 +211,7 @@ class Topic:
         """Delete the topic."""
         try:
             self.client.delete_topic(topic=self.path)
-        except NotFound:
+        except google.api_core.exceptions.NotFound:
             LOGGER.info(f"nothing to delete. topic not found: {self.path}")
         else:
             LOGGER.info(f"deleted topic: {self.path}")
@@ -267,7 +270,7 @@ class Topic:
         return future.result()
 
 
-@define
+@attrs.define
 class Subscription:
     """Creates a Pub/Sub subscription and provides methods to manage it.
 
@@ -311,13 +314,18 @@ class Subscription:
             alerts = subscription.pull_batch(subscription, max_messages=4)
     """
 
-    name: str = field()
-    auth: Auth = field(factory=Auth, validator=instance_of(Auth))
-    topic: Optional[Topic] = field(default=None, validator=optional(instance_of(Topic)))
-    _client: Optional[pubsub_v1.SubscriberClient] = field(
-        default=None, validator=optional(instance_of(pubsub_v1.SubscriberClient))
+    name: str = attrs.field()
+    auth: Auth = attrs.field(factory=Auth, validator=attrs.validators.instance_of(Auth))
+    topic: Optional[Topic] = attrs.field(
+        default=None, validator=attrs.validators.optional(attrs.validators.instance_of(Topic))
     )
-    schema_name: str = field(factory=str)
+    _client: Optional[google.cloud.pubsub_v1.SubscriberClient] = attrs.field(
+        default=None,
+        validator=attrs.validators.optional(
+            attrs.validators.instance_of(google.cloud.pubsub_v1.SubscriberClient)
+        ),
+    )
+    schema_name: str = attrs.field(factory=str)
 
     @property
     def projectid(self) -> str:
@@ -330,12 +338,14 @@ class Subscription:
         return f"projects/{self.projectid}/subscriptions/{self.name}"
 
     @property
-    def client(self) -> pubsub_v1.SubscriberClient:
+    def client(self) -> google.cloud.pubsub_v1.SubscriberClient:
         """Pub/Sub client that will be used to access the subscription. If not provided, a new
         client will be created using `self.auth.credentials`.
         """
         if self._client is None:
-            self._client = pubsub_v1.SubscriberClient(credentials=self.auth.credentials)
+            self._client = google.cloud.pubsub_v1.SubscriberClient(
+                credentials=self.auth.credentials
+            )
         return self._client
 
     def touch(self) -> None:
@@ -359,13 +369,13 @@ class Subscription:
             subscrip = self.client.get_subscription(subscription=self.path)
             LOGGER.info(f"subscription exists: {self.path}")
 
-        except NotFound:
+        except google.api_core.exceptions.NotFound:
             subscrip = self._create()  # may raise TypeError or (topic) NotFound
             LOGGER.info(f"subscription created: {self.path}")
 
         self._set_topic(subscrip.topic)  # may raise CloudConnectionError
 
-    def _create(self) -> pubsub_v1.types.Subscription:
+    def _create(self) -> google.cloud.pubsub_v1.types.Subscription:
         if self.topic is None:
             raise TypeError("The subscription needs to be created but no topic was provided.")
 
@@ -373,9 +383,9 @@ class Subscription:
             return self.client.create_subscription(name=self.path, topic=self.topic.path)
 
         # this error message is not very clear. let's help.
-        except NotFound as excep:
+        except google.api_core.exceptions.NotFound as excep:
             msg = f"The subscription cannot be created because the topic does not exist: {self.topic.path}"
-            raise NotFound(msg) from excep
+            raise google.api_core.exceptions.NotFound(msg) from excep
 
     def _set_topic(self, connected_topic_path) -> None:
         # if the topic is invalid, raise an error
@@ -397,7 +407,7 @@ class Subscription:
         """Delete the subscription."""
         try:
             self.client.delete_subscription(subscription=self.path)
-        except NotFound:
+        except google.api_core.exceptions.NotFound:
             LOGGER.info(f"nothing to delete. subscription not found: {self.path}")
         else:
             LOGGER.info(f"deleted subscription: {self.path}")
@@ -434,7 +444,7 @@ class Subscription:
             )
 
 
-@define()
+@attrs.define
 class Consumer:
     """Consumer class to pull a Pub/Sub subscription and process messages.
 
@@ -491,21 +501,30 @@ class Consumer:
             consumer.stream()
     """
 
-    _subscription: Union[str, Subscription] = field(validator=instance_of((str, Subscription)))
-    msg_callback: Callable[["Alert"], "Response"] = field(validator=is_callable())
-    batch_callback: Optional[Callable[[list], None]] = field(
-        default=None, validator=optional(is_callable())
+    _subscription: Union[str, Subscription] = attrs.field(
+        validator=attrs.validators.instance_of((str, Subscription))
     )
-    batch_maxn: int = field(default=100, converter=int)
-    batch_max_wait_between_messages: int = field(default=30, converter=int)
-    max_backlog: int = field(default=1000, validator=gt(0))
-    max_workers: Optional[int] = field(default=None, validator=optional(instance_of(int)))
-    _executor: ThreadPoolExecutor = field(
-        default=None, validator=optional(instance_of(ThreadPoolExecutor))
+    msg_callback: Callable[["Alert"], "Response"] = attrs.field(
+        validator=attrs.validators.is_callable()
     )
-    _queue: queue.Queue = field(factory=queue.Queue, init=False)
-    streaming_pull_future: pubsub_v1.subscriber.futures.StreamingPullFuture = field(
-        default=None, init=False
+    batch_callback: Optional[Callable[[list], None]] = attrs.field(
+        default=None, validator=attrs.validators.optional(attrs.validators.is_callable())
+    )
+    batch_maxn: int = attrs.field(default=100, converter=int)
+    batch_max_wait_between_messages: int = attrs.field(default=30, converter=int)
+    max_backlog: int = attrs.field(default=1000, validator=attrs.validators.gt(0))
+    max_workers: Optional[int] = attrs.field(
+        default=None, validator=attrs.validators.optional(attrs.validators.instance_of(int))
+    )
+    _executor: concurrent.futures.ThreadPoolExecutor = attrs.field(
+        default=None,
+        validator=attrs.validators.optional(
+            attrs.validators.instance_of(concurrent.futures.ThreadPoolExecutor)
+        ),
+    )
+    _queue: queue.Queue = attrs.field(factory=queue.Queue, init=False)
+    streaming_pull_future: google.cloud.pubsub_v1.subscriber.futures.StreamingPullFuture = (
+        attrs.field(default=None, init=False)
     )
 
     @property
@@ -517,10 +536,10 @@ class Consumer:
         return self._subscription
 
     @property
-    def executor(self) -> ThreadPoolExecutor:
+    def executor(self) -> concurrent.futures.ThreadPoolExecutor:
         """Executor to be used by the Google API for a streaming pull."""
         if self._executor is None:
-            self._executor = ThreadPoolExecutor(self.max_workers)
+            self._executor = concurrent.futures.ThreadPoolExecutor(self.max_workers)
         return self._executor
 
     def stream(self, block: bool = True) -> None:
@@ -559,12 +578,14 @@ class Consumer:
         self.streaming_pull_future = self.subscription.client.subscribe(
             self.subscription.path,
             self._callback,
-            flow_control=pubsub_v1.types.FlowControl(max_messages=self.max_backlog),
-            scheduler=pubsub_v1.subscriber.scheduler.ThreadScheduler(executor=self.executor),
+            flow_control=google.cloud.pubsub_v1.types.FlowControl(max_messages=self.max_backlog),
+            scheduler=google.cloud.pubsub_v1.subscriber.scheduler.ThreadScheduler(
+                executor=self.executor
+            ),
             await_callbacks_on_shutdown=True,
         )
 
-    def _callback(self, message: pubsub_v1.types.PubsubMessage) -> None:
+    def _callback(self, message: google.cloud.pubsub_v1.types.PubsubMessage) -> None:
         """Unpack the message, run the :attr:`~Consumer.msg_callback` and handle the response."""
         # LOGGER.info("callback started")
         response = self.msg_callback(Alert(msg=message))  # Response
@@ -586,7 +607,7 @@ class Consumer:
         # if there's no batch_callback there's nothing to do except wait until the process is killed
         if self.batch_callback is None:
             while True:
-                sleep(60)
+                time.sleep(60)
 
         batch, count = [], 0
         while True:
@@ -634,7 +655,7 @@ class Consumer:
         return self.subscription.pull_batch(max_messages=max_messages)
 
 
-@define(kw_only=True, frozen=True)
+@attrs.define(kw_only=True, frozen=True)
 class Response:
     """Container for a response, to be returned by a :meth:`pittgoogle.pubsub.Consumer.msg_callback`.
 
@@ -652,5 +673,5 @@ class Response:
         If there is no batch callback the results will be lost.
     """
 
-    ack: bool = field(default=True, converter=bool)
-    result: Any = field(default=None)
+    ack: bool = attrs.field(default=True, converter=bool)
+    result: Any = attrs.field(default=None)

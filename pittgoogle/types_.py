@@ -4,13 +4,13 @@ import datetime
 import importlib.resources
 import logging
 
-from attrs import define, field
+import attrs
 
 LOGGER = logging.getLogger(__name__)
 PACKAGE_DIR = importlib.resources.files(__package__)
 
 
-@define(frozen=True)
+@attrs.define(frozen=True)
 class PubsubMessageLike:
     """Container for an incoming alert.
 
@@ -28,13 +28,13 @@ class PubsubMessageLike:
     ----
     """
 
-    data: bytes = field()
+    data: bytes = attrs.field()
     """Alert data as bytes. This is also known as the message "payload"."""
-    attributes: dict = field(factory=dict)
+    attributes: dict = attrs.field(factory=dict)
     """Alert attributes. This is custom metadata attached to the Pub/Sub message."""
-    message_id: str | None = field(default=None)
+    message_id: str | None = attrs.field(default=None)
     """Pub/Sub ID of the published message."""
-    publish_time: datetime.datetime | None = field(default=None)
+    publish_time: datetime.datetime | None = attrs.field(default=None)
     """Timestamp of the published message."""
-    ordering_key: str | None = field(default=None)
+    ordering_key: str | None = attrs.field(default=None)
     """Pub/Sub ordering key of the published message."""

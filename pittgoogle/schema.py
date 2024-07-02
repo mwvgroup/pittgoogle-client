@@ -6,11 +6,10 @@ import json
 import logging
 import re
 from pathlib import Path
-from typing import Callable
 
+import attrs
 import fastavro
 import yaml
-from attrs import define, evolve, field
 
 from . import exceptions, utils
 
@@ -18,7 +17,7 @@ LOGGER = logging.getLogger(__name__)
 PACKAGE_DIR = importlib.resources.files(__package__)
 
 
-@define(kw_only=True)
+@attrs.define(kw_only=True)
 class SchemaHelpers:
     """Class to organize helper functions.
 
@@ -106,7 +105,7 @@ class SchemaHelpers:
         return schema
 
 
-@define(kw_only=True)
+@attrs.define(kw_only=True)
 class Schema:
     """Class for an individual schema.
 
@@ -117,24 +116,24 @@ class Schema:
     """
 
     # String _under_ field definition will cause field to appear as a property in rendered docs.
-    name: str = field()
+    name: str = attrs.field()
     """Name of the schema."""
-    description: str = field()
+    description: str = attrs.field()
     """A description of the schema."""
-    origin: str = field()
+    origin: str = attrs.field()
     """Pointer to the schema's origin. Typically this is a URL to a repo maintained by the survey."""
-    definition: dict | None = field(default=None)
+    definition: dict | None = attrs.field(default=None)
     """The schema definition used to serialize and deserialize the alert bytes, if one is required."""
-    _helper: str = field(default="default_schema_helper")
+    _helper: str = attrs.field(default="default_schema_helper")
     """Name of the method in :class:`SchemaHelpers` used to load this schema."""
-    path: Path | None = field(default=None)
+    path: Path | None = attrs.field(default=None)
     """Path where the helper can find the schema, if needed."""
-    filter_map: dict = field(factory=dict)
+    filter_map: dict = attrs.field(factory=dict)
     """Mapping of the filter name as stored in the alert (often an int) to the common name (often a string)."""
     # The rest don't need string descriptions because we will define them as explicit properties.
-    _survey: str | None = field(default=None)
+    _survey: str | None = attrs.field(default=None)
     # _map is important, but don't accept it as an init arg. We'll load it from a yaml file later.
-    _map: dict | None = field(default=None, init=False)
+    _map: dict | None = attrs.field(default=None, init=False)
 
     @classmethod
     def _from_yaml(cls, schema_dict: dict, **schema_dict_replacements) -> "Schema":

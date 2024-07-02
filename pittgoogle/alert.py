@@ -1,20 +1,17 @@
 # -*- coding: UTF-8 -*-
 """Classes for working with astronomical alerts."""
 import base64
+import datetime
 import importlib.resources
-import io
 import logging
-from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Mapping, Union
 
-import fastavro
+import attrs
 import google.cloud.pubsub_v1
-from attrs import define, field
 
-from . import registry, types_, utils
-from .exceptions import BadRequest, OpenAlertError, SchemaError
-from .schema import Schema  # so the 'schema' module doesn't clobber 'Alert.schema' attribute
+from . import registry, types_, exceptions
+from .schema import Schema  # so 'schema' module doesn't clobber 'Alert.schema' attribute
 
 if TYPE_CHECKING:
     import pandas as pd  # always lazy-load pandas. it hogs memory on cloud functions and run
@@ -23,7 +20,7 @@ LOGGER = logging.getLogger(__name__)
 PACKAGE_DIR = importlib.resources.files(__package__)
 
 
-@define(kw_only=True)
+@attrs.define(kw_only=True)
 class Alert:
     """Container for an astronomical alert.
 
@@ -48,16 +45,16 @@ class Alert:
     ----
     """
 
-    _dict: Mapping | None = field(default=None)
-    _attributes: Mapping[str, str] | None = field(default=None)
-    schema_name: str | None = field(default=None)
-    msg: google.cloud.pubsub_v1.types.PubsubMessage | types_.PubsubMessageLike | None = field(
-        default=None
+    _dict: Mapping | None = attrs.field(default=None)
+    _attributes: Mapping[str, str] | None = attrs.field(default=None)
+    schema_name: str | None = attrs.field(default=None)
+    msg: google.cloud.pubsub_v1.types.PubsubMessage | types_.PubsubMessageLike | None = (
+        attrs.field(default=None)
     )
-    path: Path | None = field(default=None)
+    path: Path | None = attrs.field(default=None)
     # Use "Union" because " | " is throwing an error when combined with forward references.
-    _dataframe: Union["pd.DataFrame", None] = field(default=None)
-    _schema: Schema | None = field(default=None, init=False)
+    _dataframe: Union["pd.DataFrame", None] = attrs.field(default=None)
+    _schema: Schema | None = attrs.field(default=None, init=False)
 
     # ---- class methods ---- #
     @classmethod
@@ -110,17 +107,17 @@ class Alert:
         """
         # check whether received message is valid, as suggested by Cloud Run docs
         if not envelope:
-            raise BadRequest("Bad Request: no Pub/Sub message received")
+            raise exceptions.BadRequest("Bad Request: no Pub/Sub message received")
         if not isinstance(envelope, dict) or "message" not in envelope:
-            raise BadRequest("Bad Request: invalid Pub/Sub message format")
+            raise exceptions.BadRequest("Bad Request: invalid Pub/Sub message format")
 
         # convert the message publish_time string -> datetime
         # occasionally the string doesn't include microseconds so we need a try/except
         publish_time = envelope["message"]["publish_time"].replace("Z", "+00:00")
         try:
-            publish_time = datetime.strptime(publish_time, "%Y-%m-%dT%H:%M:%S.%f%z")
+            publish_time = datetime.datetime.strptime(publish_time, "%Y-%m-%dT%H:%M:%S.%f%z")
         except ValueError:
-            publish_time = datetime.strptime(publish_time, "%Y-%m-%dT%H:%M:%S%z")
+            publish_time = datetime.datetime.strptime(publish_time, "%Y-%m-%dT%H:%M:%S%z")
 
         return cls(
             msg=types_.PubsubMessageLike(
