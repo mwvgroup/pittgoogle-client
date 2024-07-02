@@ -32,6 +32,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Removed
 
 - Removed `exceptions.OpenAlertError`. Use `exceptions.SchemaError` instead.
+- Removed dependency on `lsst-alert-packet` package. We cannot install this from a git repo and also
+  publish our package to PyPI. Need to figure out how to fix this. Without it,
+  'schema.SchemaHelper.lsst_auto_schema_helper' will not work.
 
 ## \[v0.3.5\] - 2024-07-01
 
