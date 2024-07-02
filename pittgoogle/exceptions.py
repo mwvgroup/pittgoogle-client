@@ -7,9 +7,5 @@ class CloudConnectionError(Exception):
     """Raised when a problem is encountered while trying to a Google Cloud resource."""
 
 
-class OpenAlertError(Exception):
-    """Raised when unable to deserialize a Pub/Sub message payload."""
-
-
-class SchemaNotFoundError(Exception):
+class SchemaError(Exception):
     """Raised when a schema with a given name is not found in the registry."""

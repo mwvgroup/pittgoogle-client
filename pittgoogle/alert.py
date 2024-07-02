@@ -1,19 +1,17 @@
 # -*- coding: UTF-8 -*-
 """Classes for working with astronomical alerts."""
 import base64
+import datetime
 import importlib.resources
-import io
 import logging
-from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Mapping, Union
 
-import fastavro
+import attrs
 import google.cloud.pubsub_v1
-from attrs import define, field
 
-from . import registry, types_, utils
-from .exceptions import BadRequest, OpenAlertError, SchemaNotFoundError
+from . import registry, types_, exceptions
+from .schema import Schema  # so 'schema' module doesn't clobber 'Alert.schema' attribute
 
 if TYPE_CHECKING:
     import pandas as pd  # always lazy-load pandas. it hogs memory on cloud functions and run
@@ -22,7 +20,7 @@ LOGGER = logging.getLogger(__name__)
 PACKAGE_DIR = importlib.resources.files(__package__)
 
 
-@define(kw_only=True)
+@attrs.define(kw_only=True)
 class Alert:
     """Container for an astronomical alert.
 
@@ -47,16 +45,16 @@ class Alert:
     ----
     """
 
-    _dict: Mapping | None = field(default=None)
-    _attributes: Mapping[str, str] | None = field(default=None)
-    schema_name: str | None = field(default=None)
-    msg: google.cloud.pubsub_v1.types.PubsubMessage | types_.PubsubMessageLike | None = field(
-        default=None
+    _dict: Mapping | None = attrs.field(default=None)
+    _attributes: Mapping[str, str] | None = attrs.field(default=None)
+    schema_name: str | None = attrs.field(default=None)
+    msg: google.cloud.pubsub_v1.types.PubsubMessage | types_.PubsubMessageLike | None = (
+        attrs.field(default=None)
     )
-    path: Path | None = field(default=None)
+    path: Path | None = attrs.field(default=None)
     # Use "Union" because " | " is throwing an error when combined with forward references.
-    _dataframe: Union["pd.DataFrame", None] = field(default=None)
-    _schema: types_.Schema | None = field(default=None, init=False)
+    _dataframe: Union["pd.DataFrame", None] = attrs.field(default=None)
+    _schema: Schema | None = attrs.field(default=None, init=False)
 
     # ---- class methods ---- #
     @classmethod
@@ -109,17 +107,17 @@ class Alert:
         """
         # check whether received message is valid, as suggested by Cloud Run docs
         if not envelope:
-            raise BadRequest("Bad Request: no Pub/Sub message received")
+            raise exceptions.BadRequest("Bad Request: no Pub/Sub message received")
         if not isinstance(envelope, dict) or "message" not in envelope:
-            raise BadRequest("Bad Request: invalid Pub/Sub message format")
+            raise exceptions.BadRequest("Bad Request: invalid Pub/Sub message format")
 
         # convert the message publish_time string -> datetime
         # occasionally the string doesn't include microseconds so we need a try/except
         publish_time = envelope["message"]["publish_time"].replace("Z", "+00:00")
         try:
-            publish_time = datetime.strptime(publish_time, "%Y-%m-%dT%H:%M:%S.%f%z")
+            publish_time = datetime.datetime.strptime(publish_time, "%Y-%m-%dT%H:%M:%S.%f%z")
         except ValueError:
-            publish_time = datetime.strptime(publish_time, "%Y-%m-%dT%H:%M:%S%z")
+            publish_time = datetime.datetime.strptime(publish_time, "%Y-%m-%dT%H:%M:%S%z")
 
         return cls(
             msg=types_.PubsubMessageLike(
@@ -232,26 +230,11 @@ class Alert:
                 The alert data as a dictionary.
 
         Raises:
-            OpenAlertError:
+            SchemaError:
                 If unable to deserialize the alert bytes.
         """
-        if self._dict is not None:
-            return self._dict
-
-        if self.schema.schemaless_alert_bytes:
-            bytes_io = io.BytesIO(self.msg.data)
-            self._dict = fastavro.schemaless_reader(bytes_io, self.schema.definition)
-            return self._dict
-
-        # [TODO] this should be rewritten to catch specific errors
-        # for now, just try avro then json, catching basically all errors in the process
-        try:
-            self._dict = utils.Cast.avro_to_dict(self.msg.data)
-        except Exception:
-            try:
-                self._dict = utils.Cast.json_to_dict(self.msg.data)
-            except Exception:
-                raise OpenAlertError("failed to deserialize the alert bytes")
+        if self._dict is None:
+            self._dict = self.schema.deserialize(self.msg.data)
         return self._dict
 
     @property
@@ -306,22 +289,15 @@ class Alert:
         return self.get("sourceid")
 
     @property
-    def schema(self) -> types_.Schema:
-        """Return the schema from the :class:`pittgoogle.Schemas` registry.
+    def schema(self) -> Schema:
+        """Return the schema from the :class:`pittgoogle.registry.Schemas` registry.
 
         Raises:
-            pittgoogle.exceptions.SchemaNotFoundError:
+            SchemaError:
                 If the `schema_name` is not supplied or a schema with this name is not found.
         """
-        if self._schema is not None:
-            return self._schema
-
-        # need to load the schema. raise an error if no schema_name given
-        if self.schema_name is None:
-            raise SchemaNotFoundError("a schema_name is required")
-
-        # this also may raise SchemaNotFoundError
-        self._schema = registry.Schemas.get(self.schema_name)
+        if self._schema is None:
+            self._schema = registry.Schemas.get(self.schema_name)
         return self._schema
 
     # ---- methods ---- #

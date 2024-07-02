@@ -1,10 +1,10 @@
 # -*- coding: UTF-8 -*-
 """Classes and functions to support working with alerts and related data."""
 import base64
+import collections
+import io
 import json
 import logging
-from collections import OrderedDict
-from io import BytesIO
 
 import astropy.table
 import astropy.time
@@ -76,7 +76,7 @@ class Cast:
                 The unpacked dictionary from the ``bytes_data``.
         """
         if bytes_data is not None:
-            with BytesIO(bytes_data) as fin:
+            with io.BytesIO(bytes_data) as fin:
                 alert_dicts = list(fastavro.reader(fin))  # list with single dict
             if len(alert_dicts) != 1:
                 LOGGER.warning(f"Expected 1 Avro record. Found {len(alert_dicts)}.")
@@ -111,7 +111,7 @@ class Cast:
 
         """
         # collect rows for the table
-        candidate = OrderedDict(alert_dict["candidate"])
+        candidate = collections.OrderedDict(alert_dict["candidate"])
         rows = [candidate]
         for prv_cand in alert_dict["prv_candidates"]:
             # astropy 3.2.1 cannot handle dicts with different keys (fixed by 4.1)

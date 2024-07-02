@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-"""Classes to facilitate connections to Pub/Sub streams.
+"""Classes to facilitate connections to Google Cloud Pub/Sub streams.
 
 .. note::
 
@@ -7,23 +7,19 @@
     The examples given below assume the use of a :ref:`service account <service account>` and
     :ref:`environment variables <set env vars>`.
 """
+import concurrent.futures
 import datetime
 import importlib.resources
-import io
-import json
 import logging
 import queue
-from concurrent.futures import ThreadPoolExecutor
-from time import sleep
+import time
 from typing import Any, Callable, List, Optional, Union
 
-import fastavro
-import google.cloud.pubsub_v1 as pubsub_v1
-from attrs import define, field
-from attrs.validators import gt, instance_of, is_callable, optional
-from google.api_core.exceptions import NotFound
+import attrs
+import attrs.validators
+import google.api_core.exceptions
+import google.cloud.pubsub_v1
 
-# [FIXME] clean up these imports
 from . import exceptions
 from .alert import Alert
 from .auth import Auth
@@ -49,21 +45,23 @@ def pull_batch(
     schema_name: str = str(),
     **subscription_kwargs,
 ) -> List["Alert"]:
-    """Pull a single batch of messages from the `subscription`.
+    """Pulls a single batch of messages from the specified subscription.
 
-    Parameters
-    ----------
-    subscription : `str` or :class:`pittgoogle.pubsub.Subscription`
-        Subscription to be pulled. If `str`, the name of the subscription.
-    max_messages : `int`
-        Maximum number of messages to be pulled.
-    schema_name : `str`
-        One of "ztf", "ztf.lite", "elasticc.v0_9_1.alert", "elasticc.v0_9_1.brokerClassification".
-        Schema name of the alerts in the subscription. Passed to :class:`pittgoogle.pubsub.Alert`
-        for unpacking. If not provided, some properties of the `Alert` may not be available.
-    subscription_kwargs
-        Keyword arguments sent to :class:`pittgoogle.pubsub.Subscription`.
-        Ignored if `subscription` is a :class:`pittgoogle.pubsub.Subscription`.
+    Args:
+        subscription (str or Subscription):
+            The subscription to be pulled. If str, the name of the subscription.
+        max_messages (int):
+            The maximum number of messages to be pulled.
+        schema_name (str):
+            The schema name of the alerts in the subscription. See :meth:`pittgoogle.registry.Schemas.names`
+            for the list of options. Passed to Alert for unpacking. If not provided, some properties of
+            the Alert may not be available.
+        **subscription_kwargs:
+            Keyword arguments used to create the :class:`pittgoogle.pubsub.Subscription` object, if needed.
+
+    Returns:
+        list[Alert]:
+            A list of Alert objects representing the pulled messages.
     """
     if isinstance(subscription, str):
         subscription = Subscription(subscription, **subscription_kwargs)
@@ -72,7 +70,7 @@ def pull_batch(
         response = subscription.client.pull(
             {"subscription": subscription.path, "max_messages": max_messages}
         )
-    except NotFound:
+    except google.api_core.exceptions.NotFound:
         msg = "Subscription not found. You may need to create one using `pittgoogle.Subscription.touch`."
         raise exceptions.CloudConnectionError(msg)
 
@@ -87,31 +85,58 @@ def pull_batch(
     return alerts
 
 
-@define
+@attrs.define
 class Topic:
-    """Basic attributes of a Pub/Sub topic.
+    """Class to manage a Google Cloud Pub/Sub topic.
 
-    Parameters
-    ------------
-    name : `str`
-        Name of the Pub/Sub topic.
-    projectid : `str`, optional
-        The topic owner's Google Cloud project ID. Either this or `auth` is required. Use this
-        if you are connecting to a subscription owned by a different project than this topic. Note:
-        :attr:`pittgoogle.utils.ProjectIds` is a registry containing Pitt-Google's project IDs.
-    auth : :class:`pittgoogle.auth.Auth`, optional
-        Credentials for the Google Cloud project that owns this topic. If not provided,
-        it will be created from environment variables when needed.
-    client : `pubsub_v1.PublisherClient`, optional
-        Pub/Sub client that will be used to access the topic. If not provided, a new client will
-        be created (using `auth`) the first time it is requested.
+    Args:
+        name (str):
+            Name of the Pub/Sub topic.
+        projectid (str, optional):
+            The topic owner's Google Cloud project ID. Either this or `auth` is required. Use this
+            if you are connecting to a subscription owned by a different project than this topic. Note:
+            :class:`pittgoogle.registry.ProjectIds` is a registry containing Pitt-Google's project IDs.
+        auth (Auth, optional):
+            Credentials for the Google Cloud project that owns this topic. If not provided,
+            it will be created from environment variables when needed.
+        client (google.cloud.pubsub_v1.PublisherClient, optional):
+            Pub/Sub client that will be used to access the topic. If not provided,
+            a new client will be created the first time it is requested.
+
+    Example:
+
+        .. code-block:: python
+
+            import pittgoogle
+
+            # Create a new topic in your project
+            my_topic = pittgoogle.Topic(name="my-new-topic")
+            my_topic.touch()
+
+            # Create a dummy message to publish
+            my_alert = pittgoogle.Alert(
+                dict={"message": "Hello, World!"},  # the message payload
+                attributes={"custom_key": "custom_value"}  # custom attributes for the message
+            )
+
+            # Publish the message to the topic
+            my_topic.publish(my_alert)  # returns the ID of the published message
+
+        To pull the message back from the topic, use a :class:`Subscription`.
+
+    ----
     """
 
-    name: str = field()
-    _projectid: str = field(default=None)
-    _auth: Auth = field(default=None, validator=optional(instance_of(Auth)))
-    _client: Optional[pubsub_v1.PublisherClient] = field(
-        default=None, validator=optional(instance_of(pubsub_v1.PublisherClient))
+    name: str = attrs.field()
+    _projectid: str = attrs.field(default=None)
+    _auth: Auth = attrs.field(
+        default=None, validator=attrs.validators.optional(attrs.validators.instance_of(Auth))
+    )
+    _client: Optional[google.cloud.pubsub_v1.PublisherClient] = attrs.field(
+        default=None,
+        validator=attrs.validators.optional(
+            attrs.validators.instance_of(google.cloud.pubsub_v1.PublisherClient)
+        ),
     )
 
     @classmethod
@@ -123,25 +148,24 @@ class Topic:
         survey: Optional[str] = None,
         testid: Optional[str] = None,
     ):
-        """Create a `Topic` with a `client` using implicit credentials (no explicit `auth`).
+        """Creates a `Topic` with a `client` using implicit credentials (no explicit `auth`).
 
-        Parameters
-        ----------
-        name : `str`
-            Name of the topic. If `survey` and/or `testid` are provided, they will be added to this
-            name following the Pitt-Google naming syntax.
-        projectid : `str`
-            Project ID of the Goodle Cloud project that owns this resource. Project IDs used by
-            Pitt-Google are listed in the registry for convenience (:class:`pittgoogle.registry.ProjectIds`).
-            Required because it cannot be retrieved from the `client` and there is no explicit `auth`.
-        survey : `str`, optional
-            Name of the survey. If provided, it will be prepended to `name` following the
-            Pitt-Google naming syntax.
-        testid : `str`, optional
-            Pipeline identifier. If this is not `None`, `False`, or `"False"` it will be appended to
-            the `name` following the Pitt-Google naming syntax. This used to allow pipeline modules
-            to find the correct resources without interfering with other pipelines that may have
-            deployed resources with the same base names (e.g., for development and testing purposes).
+        Args:
+            name (str):
+                Name of the topic. If `survey` and/or `testid` are provided, they will be added to this
+                name following the Pitt-Google naming syntax.
+            projectid (str):
+                Project ID of the Google Cloud project that owns this resource. Project IDs used by
+                Pitt-Google are listed in the registry for convenience (:class:`pittgoogle.registry.ProjectIds`).
+                Required because it cannot be retrieved from the `client` and there is no explicit `auth`.
+            survey (str, optional):
+                Name of the survey. If provided, it will be prepended to `name` following the
+                Pitt-Google naming syntax.
+            testid (str, optional):
+                Pipeline identifier. If this is not `None`, `False`, or `"False"`, it will be appended to
+                the `name` following the Pitt-Google naming syntax. This is used to allow pipeline modules
+                to find the correct resources without interfering with other pipelines that may have
+                deployed resources with the same base names (e.g., for development and testing purposes).
         """
         # if survey and/or testid passed in, use them to construct full name using the pitt-google naming syntax
         if survey is not None:
@@ -149,7 +173,7 @@ class Topic:
         # must accommodate False and "False" for consistency with the broker pipeline
         if testid and testid != "False":
             name = f"{name}-{testid}"
-        return cls(name, projectid=projectid, client=pubsub_v1.PublisherClient())
+        return cls(name, projectid=projectid, client=google.cloud.pubsub_v1.PublisherClient())
 
     @classmethod
     def from_path(cls, path) -> "Topic":
@@ -161,7 +185,7 @@ class Topic:
     def auth(self) -> Auth:
         """Credentials for the Google Cloud project that owns this topic.
 
-        This will be created from environment variables if `self._auth` is None.
+        This will be created from environment variables if needed.
         """
         if self._auth is None:
             self._auth = Auth()
@@ -185,13 +209,15 @@ class Topic:
         return self._projectid
 
     @property
-    def client(self) -> pubsub_v1.PublisherClient:
+    def client(self) -> google.cloud.pubsub_v1.PublisherClient:
         """Pub/Sub client for topic access.
 
-        Will be created using `self.auth.credentials` if necessary.
+        Will be created using :attr:`Topic.auth.credentials` if necessary.
         """
         if self._client is None:
-            self._client = pubsub_v1.PublisherClient(credentials=self.auth.credentials)
+            self._client = google.cloud.pubsub_v1.PublisherClient(
+                credentials=self.auth.credentials
+            )
         return self._client
 
     def touch(self) -> None:
@@ -200,7 +226,7 @@ class Topic:
             self.client.get_topic(topic=self.path)
             LOGGER.info(f"topic exists: {self.path}")
 
-        except NotFound:
+        except google.api_core.exceptions.NotFound:
             self.client.create_topic(name=self.path)
             LOGGER.info(f"topic created: {self.path}")
 
@@ -208,82 +234,40 @@ class Topic:
         """Delete the topic."""
         try:
             self.client.delete_topic(topic=self.path)
-        except NotFound:
+        except google.api_core.exceptions.NotFound:
             LOGGER.info(f"nothing to delete. topic not found: {self.path}")
         else:
             LOGGER.info(f"deleted topic: {self.path}")
 
     def publish(self, alert: "Alert") -> int:
-        """Publish a message with `alert.dict` as the payload and `alert.attributes` as the attributes.
-
-        If the `alert` has an elasticc schema, the payload will be serialized as schemaless Avro.
-        Otherwise, json will be used.
-        """
-        # we need to decide which format to use: json, avro with schema, or avro without schema
-        # the format that pitt-google currently (2023-09-23) uses to publish messages depends on the stream:
-        #     - consumer modules pass on the original alert data packet, as produced by the survey.
-        #       they do not need to use this method (in fact, the consumers do not even use python),
-        #       so we can ignore this case.
-        #     - all other broker pipeline modules (Pitt-Google-Broker repo) use json.
-        #     - modules in the pittgoogle-user repo publish classifications for elasticc, and thus
-        #       use schemaless avro.
-        # at some point, we should re-evaluate the broker pipeline in particular.
-        #
-        # for now, we will get close enough to the current behavior if we assume that:
-        #     - elasticc messages should be published as schemaless avro
-        #     - else, we should publish a json message
-        # this will match the current behavior in all cases except the elasticc broker pipeline modules.
-        # neither broker pipeline uses pittgoogle-client at this time (they use pgb-broker-utils),
-        # so we don't need to update or accommodate them yet.
-        #
-        # we'll get the survey name from self.schema.survey, but first we should check whether the
-        # schema exists so we can be lenient and just fall back to json instead of raising an error.
-        try:
-            alert.schema
-        except exceptions.SchemaNotFoundError:
-            avro_schema = None
-        else:
-            if alert.schema.survey in ["elasticc"]:
-                avro_schema = alert.schema.definition
-            else:
-                avro_schema = None
-
-        if not avro_schema:
-            # serialize using json
-            message = json.dumps(alert.dict).encode("utf-8")
-        else:
-            # serialize as schemaless avro
-            fout = io.BytesIO()
-            fastavro.schemaless_writer(fout, avro_schema, alert.dict)
-            fout.seek(0)
-            message = fout.getvalue()
-
-        # attribute keys and values must be strings. let's sort the keys while we're at it
+        """Publish a message with ``alert.dict`` as the payload and ``alert.attributes`` as the attributes."""
+        # Pub/Sub requires attribute keys and values to be strings. Sort the keys while we're at it.
         attributes = {str(key): str(alert.attributes[key]) for key in sorted(alert.attributes)}
+        message = alert.schema.serialize(alert.dict)
 
         future = self.client.publish(self.path, data=message, **attributes)
         return future.result()
 
 
-@define
+@attrs.define
 class Subscription:
-    """Creates a Pub/Sub subscription and provides methods to manage it.
+    """Class to manage a Google Cloud Pub/Sub subscription.
 
     Args:
         name (str):
             Name of the Pub/Sub subscription.
-        auth (pittgoogle.auth.Auth, optional):
+        auth (Auth, optional):
             Credentials for the Google Cloud project that owns this subscription. If not provided, it will be created
             from environment variables.
-        topic (pittgoogle.pubsub.Topic, optional):
+        topic (Topic, optional):
             Topic this subscription should be attached to. Required only when the subscription needs to be created.
         client (google.cloud.pubsub_v1.SubscriberClient, optional):
             Pub/Sub client that will be used to access the subscription. This kwarg is useful if you want to
             reuse a client. If None, a new client will be created.
         schema_name (str):
-            Schema name of the alerts in the subscription. Passed to :class:`pittgoogle.Alert` for unpacking.
+            Schema name of the alerts in the subscription. Passed to :class:`pittgoogle.alert.Alert` for unpacking.
             If not provided, some properties of the Alert may not be available. For a list of schema names, see
-            :meth:`pittgoogle.Schemas.names`.
+            :meth:`pittgoogle.registry.Schemas.names`.
 
     Example:
 
@@ -291,14 +275,18 @@ class Subscription:
 
         .. code-block:: python
 
-            # topic the subscription will be connected to
-            # only required if the subscription does not yet exist in Google Cloud
+            # We must provide the topic that the subscription should be connected to.
+            # If the topic is in your own project, you can just provide the name of the topic.
+            # Otherwise, you must also provide the topic's project ID.
             topic = pittgoogle.Topic(name="ztf-loop", projectid=pittgoogle.ProjectIds.pittgoogle)
+            topic.touch()  # make sure the topic exists and we can connect to it
 
-            # choose your own name for the subscription
+            # You can choose your own name for the subscription.
+            # It is common to name it the same as the topic, but here we'll be more verbose.
+            # You may also need to provide the schema name (see :attr:`pittgoogle.registry.Schemas.names`).
             subscription = pittgoogle.Subscription(name="my-ztf-loop-subscription", topic=topic, schema_name="ztf")
 
-            # make sure the subscription exists and we can connect to it. create it if necessary
+            # Create the subscription if it doesn't already exist.
             subscription.touch()
 
         Pull a small batch of alerts. Helpful for testing. (Not recommended for long-running listeners;
@@ -306,16 +294,21 @@ class Subscription:
 
         .. code-block:: python
 
-            alerts = subscription.pull_batch(subscription, max_messages=4)
+            alerts = subscription.pull_batch(subscription, max_messages=4)  # list of pittgoogle.Alert objects
     """
 
-    name: str = field()
-    auth: Auth = field(factory=Auth, validator=instance_of(Auth))
-    topic: Optional[Topic] = field(default=None, validator=optional(instance_of(Topic)))
-    _client: Optional[pubsub_v1.SubscriberClient] = field(
-        default=None, validator=optional(instance_of(pubsub_v1.SubscriberClient))
+    name: str = attrs.field()
+    auth: Auth = attrs.field(factory=Auth, validator=attrs.validators.instance_of(Auth))
+    topic: Optional[Topic] = attrs.field(
+        default=None, validator=attrs.validators.optional(attrs.validators.instance_of(Topic))
     )
-    schema_name: str = field(factory=str)
+    _client: Optional[google.cloud.pubsub_v1.SubscriberClient] = attrs.field(
+        default=None,
+        validator=attrs.validators.optional(
+            attrs.validators.instance_of(google.cloud.pubsub_v1.SubscriberClient)
+        ),
+    )
+    schema_name: str | None = attrs.field(default=None)
 
     @property
     def projectid(self) -> str:
@@ -328,12 +321,15 @@ class Subscription:
         return f"projects/{self.projectid}/subscriptions/{self.name}"
 
     @property
-    def client(self) -> pubsub_v1.SubscriberClient:
-        """Pub/Sub client that will be used to access the subscription. If not provided, a new
-        client will be created using `self.auth.credentials`.
+    def client(self) -> google.cloud.pubsub_v1.SubscriberClient:
+        """Pub/Sub client that will be used to access the subscription.
+
+        If not provided, a new client will be created using :attr:`Subscription.auth`.
         """
         if self._client is None:
-            self._client = pubsub_v1.SubscriberClient(credentials=self.auth.credentials)
+            self._client = google.cloud.pubsub_v1.SubscriberClient(
+                credentials=self.auth.credentials
+            )
         return self._client
 
     def touch(self) -> None:
@@ -342,28 +338,27 @@ class Subscription:
         Note that messages published to the topic before the subscription was created are
         not available to the subscription.
 
-        Raises
-        ------
-        `TypeError`
-            if the subscription needs to be created but no topic was provided.
+        Raises:
+            TypeError:
+                if the subscription needs to be created but no topic was provided.
 
-        `google.api_core.exceptions.NotFound`
-            if the subscription needs to be created but the topic does not exist in Google Cloud.
+            google.api_core.exceptions.NotFound:
+                if the subscription needs to be created but the topic does not exist in Google Cloud.
 
-        `pittgoogle.exceptions.CloudConnectionError`
-            if the subscription exists but it is not attached to self.topic and self.topic is not None.
+            CloudConnectionError:
+                if the subscription exists but it is not attached to self.topic and self.topic is not None.
         """
         try:
             subscrip = self.client.get_subscription(subscription=self.path)
             LOGGER.info(f"subscription exists: {self.path}")
 
-        except NotFound:
+        except google.api_core.exceptions.NotFound:
             subscrip = self._create()  # may raise TypeError or (topic) NotFound
             LOGGER.info(f"subscription created: {self.path}")
 
         self._set_topic(subscrip.topic)  # may raise CloudConnectionError
 
-    def _create(self) -> pubsub_v1.types.Subscription:
+    def _create(self) -> google.cloud.pubsub_v1.types.Subscription:
         if self.topic is None:
             raise TypeError("The subscription needs to be created but no topic was provided.")
 
@@ -371,9 +366,9 @@ class Subscription:
             return self.client.create_subscription(name=self.path, topic=self.topic.path)
 
         # this error message is not very clear. let's help.
-        except NotFound as excep:
+        except google.api_core.exceptions.NotFound as excep:
             msg = f"The subscription cannot be created because the topic does not exist: {self.topic.path}"
-            raise NotFound(msg) from excep
+            raise google.api_core.exceptions.NotFound(msg) from excep
 
     def _set_topic(self, connected_topic_path) -> None:
         # if the topic is invalid, raise an error
@@ -395,7 +390,7 @@ class Subscription:
         """Delete the subscription."""
         try:
             self.client.delete_subscription(subscription=self.path)
-        except NotFound:
+        except google.api_core.exceptions.NotFound:
             LOGGER.info(f"nothing to delete. subscription not found: {self.path}")
         else:
             LOGGER.info(f"deleted subscription: {self.path}")
@@ -409,10 +404,13 @@ class Subscription:
         This method is *not* recommended for long-running listeners as it is likely to be unstable
         -- use :meth:`~Consumer.stream` instead.
 
-        Parameters
-        ----------
-        max_messages : `int`
-            Maximum number of messages to be pulled.
+        Args:
+            max_messages (int):
+                Maximum number of messages to be pulled.
+
+        Returns:
+            list[Alert]:
+                A list of Alert objects representing the pulled messages.
         """
         # Wrapping the module-level function
         return pull_batch(self, max_messages=max_messages, schema_name=self.schema_name)
@@ -432,7 +430,7 @@ class Subscription:
             )
 
 
-@define()
+@attrs.define
 class Consumer:
     """Consumer class to pull a Pub/Sub subscription and process messages.
 
@@ -489,21 +487,30 @@ class Consumer:
             consumer.stream()
     """
 
-    _subscription: Union[str, Subscription] = field(validator=instance_of((str, Subscription)))
-    msg_callback: Callable[["Alert"], "Response"] = field(validator=is_callable())
-    batch_callback: Optional[Callable[[list], None]] = field(
-        default=None, validator=optional(is_callable())
+    _subscription: Union[str, Subscription] = attrs.field(
+        validator=attrs.validators.instance_of((str, Subscription))
     )
-    batch_maxn: int = field(default=100, converter=int)
-    batch_max_wait_between_messages: int = field(default=30, converter=int)
-    max_backlog: int = field(default=1000, validator=gt(0))
-    max_workers: Optional[int] = field(default=None, validator=optional(instance_of(int)))
-    _executor: ThreadPoolExecutor = field(
-        default=None, validator=optional(instance_of(ThreadPoolExecutor))
+    msg_callback: Callable[["Alert"], "Response"] = attrs.field(
+        validator=attrs.validators.is_callable()
     )
-    _queue: queue.Queue = field(factory=queue.Queue, init=False)
-    streaming_pull_future: pubsub_v1.subscriber.futures.StreamingPullFuture = field(
-        default=None, init=False
+    batch_callback: Optional[Callable[[list], None]] = attrs.field(
+        default=None, validator=attrs.validators.optional(attrs.validators.is_callable())
+    )
+    batch_maxn: int = attrs.field(default=100, converter=int)
+    batch_max_wait_between_messages: int = attrs.field(default=30, converter=int)
+    max_backlog: int = attrs.field(default=1000, validator=attrs.validators.gt(0))
+    max_workers: Optional[int] = attrs.field(
+        default=None, validator=attrs.validators.optional(attrs.validators.instance_of(int))
+    )
+    _executor: concurrent.futures.ThreadPoolExecutor = attrs.field(
+        default=None,
+        validator=attrs.validators.optional(
+            attrs.validators.instance_of(concurrent.futures.ThreadPoolExecutor)
+        ),
+    )
+    _queue: queue.Queue = attrs.field(factory=queue.Queue, init=False)
+    streaming_pull_future: google.cloud.pubsub_v1.subscriber.futures.StreamingPullFuture = (
+        attrs.field(default=None, init=False)
     )
 
     @property
@@ -515,10 +522,10 @@ class Consumer:
         return self._subscription
 
     @property
-    def executor(self) -> ThreadPoolExecutor:
+    def executor(self) -> concurrent.futures.ThreadPoolExecutor:
         """Executor to be used by the Google API for a streaming pull."""
         if self._executor is None:
-            self._executor = ThreadPoolExecutor(self.max_workers)
+            self._executor = concurrent.futures.ThreadPoolExecutor(self.max_workers)
         return self._executor
 
     def stream(self, block: bool = True) -> None:
@@ -526,13 +533,12 @@ class Consumer:
 
         Recommended for long-running listeners.
 
-        Parameters
-        ----------
-        block : `bool`
-            Whether to block the main thread while the stream is open. If `True`, block
-            indefinitely (use `Ctrl-C` to close the stream and unblock). If `False`, open the
-            stream and then return (use :meth:`~Consumer.stop()` to close the stream).
-            This must be `True` in order to use a `batch_callback`.
+        Args:
+            block (bool):
+                Whether to block the main thread while the stream is open. If `True`, block
+                indefinitely (use `Ctrl-C` to close the stream and unblock). If `False`, open the
+                stream and then return (use :meth:`~Consumer.stop()` to close the stream).
+                This must be `True` in order to use a `batch_callback`.
         """
         # open a streaming-pull and process messages through the callback, in the background
         self._open_stream()
@@ -557,12 +563,14 @@ class Consumer:
         self.streaming_pull_future = self.subscription.client.subscribe(
             self.subscription.path,
             self._callback,
-            flow_control=pubsub_v1.types.FlowControl(max_messages=self.max_backlog),
-            scheduler=pubsub_v1.subscriber.scheduler.ThreadScheduler(executor=self.executor),
+            flow_control=google.cloud.pubsub_v1.types.FlowControl(max_messages=self.max_backlog),
+            scheduler=google.cloud.pubsub_v1.subscriber.scheduler.ThreadScheduler(
+                executor=self.executor
+            ),
             await_callbacks_on_shutdown=True,
         )
 
-    def _callback(self, message: pubsub_v1.types.PubsubMessage) -> None:
+    def _callback(self, message: google.cloud.pubsub_v1.types.PubsubMessage) -> None:
         """Unpack the message, run the :attr:`~Consumer.msg_callback` and handle the response."""
         # LOGGER.info("callback started")
         response = self.msg_callback(Alert(msg=message))  # Response
@@ -584,7 +592,7 @@ class Consumer:
         # if there's no batch_callback there's nothing to do except wait until the process is killed
         if self.batch_callback is None:
             while True:
-                sleep(60)
+                time.sleep(60)
 
         batch, count = [], 0
         while True:
@@ -624,31 +632,33 @@ class Consumer:
         Recommended for testing. Not recommended for long-running listeners (use the
         :meth:`~Consumer.stream` method instead).
 
-        Parameters
-        ----------
-        max_messages : `int`
-            Maximum number of messages to be pulled.
+        Args:
+            max_messages (int):
+                Maximum number of messages to be pulled.
+
+        Returns:
+            list[Alert]:
+                A list of Alert objects representing the pulled messages.
         """
         return self.subscription.pull_batch(max_messages=max_messages)
 
 
-@define(kw_only=True, frozen=True)
+@attrs.define(kw_only=True, frozen=True)
 class Response:
     """Container for a response, to be returned by a :meth:`pittgoogle.pubsub.Consumer.msg_callback`.
 
-    Parameters
-    ------------
-    ack : `bool`
-        Whether to acknowledge the message. Use `True` if the message was processed successfully,
-        `False` if an error was encountered and you would like Pub/Sub to redeliver the message at
-        a later time. Note that once a message is acknowledged to Pub/Sub it is permanently deleted
-        (unless the subscription has been explicitly configured to retain acknowledged messages).
+    Args:
+        ack (bool):
+            Whether to acknowledge the message. Use `True` if the message was processed successfully,
+            `False` if an error was encountered and you would like Pub/Sub to redeliver the message at
+            a later time. Note that once a message is acknowledged to Pub/Sub it is permanently deleted
+            (unless the subscription has been explicitly configured to retain acknowledged messages).
 
-    result : `Any`
-        Anything the user wishes to return. If not `None`, the Consumer will collect the results
-        in a list and pass the list to the user's batch callback for further processing.
-        If there is no batch callback the results will be lost.
+        result (Any):
+            Anything the user wishes to return. If not `None`, the Consumer will collect the results
+            in a list and pass the list to the user's batch callback for further processing.
+            If there is no batch callback the results will be lost.
     """
 
-    ack: bool = field(default=True, converter=bool)
-    result: Any = field(default=None)
+    ack: bool = attrs.field(default=True, converter=bool)
+    result: Any = attrs.field(default=None)

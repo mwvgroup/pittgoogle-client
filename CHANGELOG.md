@@ -12,6 +12,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 (none)
 
+## \[v0.3.7\] - 2024-07-02
+
+### Added
+
+- A default schema to be used when no schema is provided.
+- Child classes for `schema.Schema` that are specific to different serialization formats.
+
+### Fixed
+
+- Support for the latest LSST schema version (lsst.v7_1.alert). Note that this is the only LSST schema
+  version currently supported.
+
+### Changed
+
+- Renamed `exceptions.SchemaNotFoundError` -> `exceptions.SchemaError`, repurposed for more general use.
+- Updates to documentation.
+
+### Removed
+
+- Removed `exceptions.OpenAlertError`. Use `exceptions.SchemaError` instead.
+- Removed dependency on `lsst-alert-packet` package. We cannot install this from a git repo and also
+  publish our package to PyPI. Need to figure out how to fix this. Without it,
+  'schema.SchemaHelper.lsst_auto_schema_helper' will not work.
+
 ## \[v0.3.6\] - 2024-07-01
 
 ### Changed

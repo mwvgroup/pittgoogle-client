@@ -5,36 +5,42 @@
 # # TEMPLATE
 # - name: ''
 #   description: ''
-#   helper: '_local_schema_helper'
+#   origin: 'https://...'
+#   helper: 'default_schema_helper'
 #   path: ''
-#   schemaless_alert_bytes: false
 #   filter_map:
 #     1: ''
 #     2: ''
+#
+# DEFAULT
+- name: 'default_schema'
+  description: 'Default schema used when no other schema is specified.'
+  origin: '(null)'
+  helper: 'default_schema_helper'
 #
 # ELASTICC alerts
 - name: 'elasticc.v0_9_1.alert'
   description: 'Avro schema of alerts published by ELAsTiCC.'
   origin: 'https://github.com/LSSTDESC/elasticc/tree/main/alert_schema'
-  helper: '_local_schema_helper'
+  helper: 'elasticc_schema_helper'
   path: 'schemas/elasticc/elasticc.v0_9_1.alert.avsc'
-  schemaless_alert_bytes: true
 #
 # ELASTICC classifications
 - name: 'elasticc.v0_9_1.brokerClassification'
   description: 'Avro schema of alerts to be sent to DESC containing classifications of ELAsTiCC alerts.'
   origin: 'https://github.com/LSSTDESC/elasticc/tree/main/alert_schema'
-  helper: '_local_schema_helper'
+  helper: 'elasticc_schema_helper'
   path: 'schemas/elasticc/elasticc.v0_9_1.brokerClassification.avsc'
-  schemaless_alert_bytes: true
 #
 # LSST alerts
-# - name: 'lsst.v7_1.alert'
-- name: 'lsst.v<MAJOR>_<MINOR>.alert'
-  description: ''  # [TODO]
+# [FIXME] Hacking in v7.1 for now. Need to figure out install lsst-alert-packet to use lsst_auto_schema_helper
+# - name: 'lsst.v<MAJOR>_<MINOR>.alert'
+  # helper: 'lsst_auto_schema_helper'
+- name: 'lsst.v7_1.alert'
+  path: 'schemas/lsst/7/1/lsst.v7_1.alert.avsc'
+  description: 'Schema for LSST alerts.'
   origin: 'https://github.com/lsst/alert_packet/tree/main/python/lsst/alert/packet/schema'
-  helper: '_lsst_schema_helper'
-  schemaless_alert_bytes: true
+  helper: 'lsst_schema_helper'
   # [FIXME] filter_map is probably int -> {u, g, r, i, z, y}. Check for sure and fill in below
   filter_map:
     1: ''
@@ -48,8 +54,7 @@
 - name: 'ztf'
   description: 'ZTF schema. The ZTF survey publishes alerts in Avro format with the schema attached in the header. Pitt-Google publishes ZTF alerts in json format. This schema covers both cases.'
   origin: 'https://zwickytransientfacility.github.io/ztf-avro-alert/schema.html'
-  helper: '_local_schema_helper'
-  schemaless_alert_bytes: false
+  helper: 'default_schema_helper'
   path: null
   filter_map:
     1: g
