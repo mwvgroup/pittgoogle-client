@@ -21,13 +21,16 @@ By following these instructions, you will:
     - Under "Write", paste in the relevant section of CHANGELOG.md describing the release.
     - Click "Publish release".
 
-Completing step 3 will:
+Completing step 3 will (or should):
 
 - Tag a new version on GitHub.
 - Publish the documentation to GitHub pages.
 - Publish the package to PyPI.org.
 
-You will now be able to install the new version using:
+View the [GitHub Actions](https://github.com/mwvgroup/pittgoogle-client/actions) page to see the
+status of the release process.
+
+If all went well, you will now be able to install the new version using:
 
 ```bash
 pip install --upgrade pittgoogle-client
