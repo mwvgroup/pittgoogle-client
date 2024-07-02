@@ -33,9 +33,12 @@
   path: 'schemas/elasticc/elasticc.v0_9_1.brokerClassification.avsc'
 #
 # LSST alerts
-# - name: 'lsst.v7_1.alert'
-- name: 'lsst.v<MAJOR>_<MINOR>.alert'
-  description: ''  # [TODO]
+# [FIXME] Hacking in v7.1 for now. Need to figure out install lsst-alert-packet to use lsst_auto_schema_helper
+# - name: 'lsst.v<MAJOR>_<MINOR>.alert'
+  # helper: 'lsst_auto_schema_helper'
+- name: 'lsst.v7_1.alert'
+  path: 'schemas/lsst/7/1/lsst.v7_1.alert.avsc'
+  description: 'Schema for LSST alerts.'
   origin: 'https://github.com/lsst/alert_packet/tree/main/python/lsst/alert/packet/schema'
   helper: 'lsst_schema_helper'
   # [FIXME] filter_map is probably int -> {u, g, r, i, z, y}. Check for sure and fill in below
