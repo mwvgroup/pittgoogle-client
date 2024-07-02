@@ -1,6 +1,9 @@
 Add a new schema to the registry
 ================================
 
+[FIXME] This information is old. It needs to be updated to describe to the SchemaHelpers and Schema
+child classes.
+
 This page contains instructions for adding a new schema to the registry so that it can be loaded
 using :meth:`pittgoogle.Schemas.get` and used to serialize and deserialize the alert bytes.
 
@@ -24,12 +27,14 @@ Add a new section to the manifest following the template provided there. The fie
 those of a :class:`pittgoogle.schema.Schema`. The ``helper`` field must point to code that can find and load
 the new schema definition; more information below.
 
+[FIXME]
+
 Case 1: The schema definition is not needed in order to deserialize the alert bytes. This is true for
-all Json, and the Avro streams which attach the schema in the data header. Set
-``schemaless_alert_bytes='false'``. Leave ``helper`` and ``path`` as defaults.
+all Json, and the Avro streams which attach the schema in the data header. You should be able to use the
+default helper (see below).
 
 The rest of the cases assume the schema definition is required. This is true for "schemaless" Avro streams
-which do not attach the schema to the data packet. Set ``schemaless_alert_bytes='true'``
+which do not attach the schema to the data packet.
 
 Case 2: You can write some code that will get the schema definition from an external repository. You will
 probably need to write your own ``helper`` method (more below). Follow ``lsst`` as an example. This is

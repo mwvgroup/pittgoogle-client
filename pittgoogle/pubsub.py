@@ -295,6 +295,8 @@ class Subscription:
         .. code-block:: python
 
             alerts = subscription.pull_batch(subscription, max_messages=4)  # list of pittgoogle.Alert objects
+
+    ----
     """
 
     name: str = attrs.field()
@@ -485,6 +487,8 @@ class Consumer:
             # open the stream in the background and process messages through the callbacks
             # this blocks indefinitely. use `Ctrl-C` to close the stream and unblock
             consumer.stream()
+
+    ----
     """
 
     _subscription: Union[str, Subscription] = attrs.field(
@@ -658,6 +662,8 @@ class Response:
             Anything the user wishes to return. If not `None`, the Consumer will collect the results
             in a list and pass the list to the user's batch callback for further processing.
             If there is no batch callback the results will be lost.
+
+    ----
     """
 
     ack: bool = attrs.field(default=True, converter=bool)

@@ -40,13 +40,13 @@ class Schemas:
         .. code-block:: python
 
             # View list of registered schema names.
-            pittgoogle.Schemas.names
-
-            # View more information about the schemas.
-            pittgoogle.Schemas.manifest
+            pittgoogle.Schemas().names
 
             # Load a schema (choose a name from above and substitute it below).
-            schema = pittgoogle.Schemas.get(schema_name="ztf")
+            schema = pittgoogle.Schemas().get(schema_name="ztf")
+
+            # View more information about all the schemas.
+            pittgoogle.Schemas().manifest
 
     **For Developers**: :doc:`/for-developers/add-new-schema`
 
@@ -90,7 +90,7 @@ class Schemas:
 
         # That's all we know how to check so far.
         raise exceptions.SchemaError(
-            f"{schema_name} not found. For valid names, see `pittgoogle.Schemas.names`."
+            f"{schema_name} not found. For valid names, see `pittgoogle.Schemas().names`."
         )
 
     @property
