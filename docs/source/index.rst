@@ -33,5 +33,6 @@ If you run into trouble, please
     api-reference/exceptions
     api-reference/pubsub
     api-reference/registry
+    api-reference/schema
     api-reference/types_
     api-reference/utils

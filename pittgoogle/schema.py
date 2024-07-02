@@ -1,5 +1,5 @@
 # -*- coding: UTF-8 -*-
-"""Classes defining new types."""
+"""Classes to manage alert schemas."""
 import importlib.resources
 import logging
 import re

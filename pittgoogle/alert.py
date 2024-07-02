@@ -308,10 +308,10 @@ class Alert:
 
     @property
     def schema(self) -> schema.Schema:
-        """Return the schema from the :class:`pittgoogle.Schemas` registry.
+        """Return the schema from the :class:`pittgoogle.registry.Schemas` registry.
 
         Raises:
-            pittgoogle.exceptions.SchemaNotFoundError:
+            SchemaNotFoundError:
                 If the `schema_name` is not supplied or a schema with this name is not found.
         """
         if self._schema is not None:
