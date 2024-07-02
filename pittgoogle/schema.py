@@ -39,7 +39,7 @@ class SchemaHelpers:
     """
 
     @staticmethod
-    def _local_schema_helper(schema: "Schema") -> "Schema":
+    def default_schema_helper(schema: "Schema") -> "Schema":
         """Resolve `schema.path`. If it points to a valid ".avsc" file, load it into `schema.avsc`."""
         # Resolve the path. If it is not None, this helper expects it to be the path to
         # a ".avsc" file relative to the pittgoogle package directory.
@@ -57,7 +57,7 @@ class SchemaHelpers:
         return schema
 
     @staticmethod
-    def _lsst_schema_helper(schema: "Schema") -> "Schema":
+    def lsst_schema_helper(schema: "Schema") -> "Schema":
         """Load the Avro schema definition using the ``lsst.alert.packet`` package.
 
         Raises:
@@ -115,7 +115,7 @@ class Schema:
     schemaless_alert_bytes: bool = field(default=False, converter=converters.to_bool)
     """Whether the alert bytes are schemaless. If True, a valid `definition` is required to
     serialize or deserialize the alert packet bytes."""
-    _helper: str = field(default="_local_schema_helper")
+    _helper: str = field(default="default_schema_helper")
     """Name of the helper method that should be used to load the schema definition."""
     path: Path | None = field(default=None)
     """Path where the helper can find the schema."""

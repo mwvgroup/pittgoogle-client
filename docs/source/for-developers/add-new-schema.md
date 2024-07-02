@@ -52,7 +52,7 @@ this file (skip to the next section).
 A "helper" method must exist in :class:`pittgoogle.types_.Schema` that can find and load your new schema
 definition. The ``helper`` field in the yaml manifest (above) must be set to the name of this method. If a
 suitable helper method does not already already exist for your schema, add one to this file by following
-existing helpers like :meth:`pittgoogle.types_.Schema._local_schema_helper` as examples. **If your helper
+existing helpers like :meth:`pittgoogle.types_.Schema.default_schema_helper` as examples. **If your helper
 method requires a new dependency, be sure to add it following
 :doc:`/main/for-developers/manage-dependencies-poetry`.**
 
