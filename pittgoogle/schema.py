@@ -180,14 +180,32 @@ class _DefaultSchema(Schema):
     """Default schema to serialize and deserialize alert bytes."""
 
     def serialize(self, alert_dict: dict) -> bytes:
-        """Serialize `alert_dict` using the JSON format."""
+        """Serialize `alert_dict` using the JSON format.
+
+        Args:
+            alert_dict (dict):
+                The dictionary to be serialized.
+
+        Returns:
+            bytes:
+                The serialized data in bytes.
+        """
         return json.dumps(alert_dict).encode("utf-8")
 
     def deserialize(self, alert_bytes: bytes) -> dict:
         """Deserialize `alert_bytes`.
 
-        Alert `alert_bytes` is expected to be serialized in one of two formats:
-        JSON, or Avro with the schema attached in the header.
+        Args:
+            alert_bytes (bytes):
+                The bytes to be deserialized. This is expected to be serialized as either
+                Avro with the schema attached in the header or JSON.
+
+        Returns:
+            A dictionary representing the deserialized ``alert_bytes``.
+
+        Raises:
+            SchemaError:
+                If the deserialization fails after trying both JSON and Avro.
         """
         # [FIXME] This should be redesigned.
         # For now, just try avro then json, catching basically all errors in the process.
