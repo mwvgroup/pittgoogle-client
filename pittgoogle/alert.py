@@ -12,7 +12,7 @@ import fastavro
 import google.cloud.pubsub_v1
 from attrs import define, field
 
-from . import registry, types_, utils
+from . import registry, schema, types_, utils
 from .exceptions import BadRequest, OpenAlertError, SchemaNotFoundError
 
 if TYPE_CHECKING:
@@ -56,7 +56,7 @@ class Alert:
     path: Path | None = field(default=None)
     # Use "Union" because " | " is throwing an error when combined with forward references.
     _dataframe: Union["pd.DataFrame", None] = field(default=None)
-    _schema: types_.Schema | None = field(default=None, init=False)
+    _schema: schema.Schema | None = field(default=None, init=False)
 
     # ---- class methods ---- #
     @classmethod
@@ -238,6 +238,7 @@ class Alert:
         if self._dict is not None:
             return self._dict
 
+        # [TODO] The schema should have a method that does this.
         if self.schema.schemaless_alert_bytes:
             bytes_io = io.BytesIO(self.msg.data)
             self._dict = fastavro.schemaless_reader(bytes_io, self.schema.definition)
@@ -306,7 +307,7 @@ class Alert:
         return self.get("sourceid")
 
     @property
-    def schema(self) -> types_.Schema:
+    def schema(self) -> schema.Schema:
         """Return the schema from the :class:`pittgoogle.Schemas` registry.
 
         Raises:

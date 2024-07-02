@@ -7,7 +7,7 @@ from typing import Final
 import yaml
 from attrs import define
 
-from . import types_
+from . import schema
 from .exceptions import SchemaNotFoundError
 
 LOGGER = logging.getLogger(__name__)
@@ -55,7 +55,7 @@ class Schemas:
     """
 
     @staticmethod
-    def get(schema_name: str) -> types_.Schema:
+    def get(schema_name: str) -> schema.Schema:
         """Return the schema with name matching `schema_name`.
 
         Returns:
@@ -71,7 +71,7 @@ class Schemas:
         # Return the schema with name == schema_name, if one exists.
         for mft_schema in SCHEMA_MANIFEST:
             if mft_schema["name"] == schema_name:
-                return types_.Schema._from_yaml(schema_dict=mft_schema)
+                return schema.Schema._from_yaml(schema_dict=mft_schema)
 
         # Return the schema with name ~= schema_name, if one exists.
         for mft_schema in SCHEMA_MANIFEST:
@@ -79,7 +79,7 @@ class Schemas:
             # Catches names like 'lsst.v<MAJOR>_<MINOR>.alert' where users replace '<..>' with custom values.
             split_name, split_mft_name = schema_name.split("."), mft_schema["name"].split(".")
             if all([split_mft_name[i] == split_name[i] for i in [0, -1]]):
-                return types_.Schema._from_yaml(schema_dict=mft_schema, name=schema_name)
+                return schema.Schema._from_yaml(schema_dict=mft_schema, name=schema_name)
 
         # That's all we know how to check so far.
         raise SchemaNotFoundError(
