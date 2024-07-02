@@ -1,4 +1,5 @@
-# Add a schema map
+Add a schema map
+================
 
 This page contains instructions for adding a new schema map.
 
@@ -7,18 +8,20 @@ Pitt-Google defines this set of generic field names so that we can write code th
 different surveys without having to worry that one survey might call the (e.g.,) time field "MJD" while
 another calls it "midPointTai". This map is what makes the :meth:`pittgoogle.alert.Alert.get` method work.
 
-Currently, we define schema maps on a per-survey basis. :meth:`pittgoogle.types_.Schema.map` will load
-the yaml file for the survey :meth:`pittgoogle.types_.Schema.survey` and return it as a dictionary.
+Currently, we define schema maps on a per-survey basis. :meth:`pittgoogle.schema.Schema.map` will load
+the yaml file for the survey :meth:`pittgoogle.schema.Schema.survey` and return it as a dictionary.
 If you need something different, a more significant refactor will be required (left as an exercise
 for the reader).
 
-## Add a schema map for a new survey
+Add a schema map for a new survey
+---------------------------------
 
 *pittgoogle/schemas/maps* is the directory containing the schema maps as yaml files.
 
 To add a schema map, make a copy of the file *pittgoogle/schemas/maps/TEMPLATE.yml* and alter it.
 
-### How to use the TEMPLATE.yml file
+How to use the TEMPLATE.yml file
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 *pittgoogle/schemas/maps/TEMPLATE.yml* : Make a copy of this file and name it using the syntax
 *<survey_name>.yml*.
@@ -39,7 +42,8 @@ Alter the new file, keeping these important things to keep in mind:
   to help guide your decisions.
 - Try to make decisions that result in schema maps that are conceptually consistent across surveys.
 
-### Excluding or adding field names (keys) from the set of Pitt-Google generics
+Excluding or adding field names (keys) from the set of Pitt-Google generics
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Excluding fields : If your survey/schema does not need a particular key, that key does does not need to
 be included in your new schema map's yaml file. There's not much code in ``pittgoogle-client`` itself

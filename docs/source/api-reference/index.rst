@@ -1,15 +1,14 @@
 pittgoogle
 ==========
 
-.. These are from the ___init__.py file. Would be nice to find a way to pull them in automatically
-.. and also to make them hyperlinks.
+.. Listing the subset of class the user will interact with most.
+.. Is this what we want the package index page to look like? # [TODO]
 
 .. autosummary::
 
     .. autosummary::
 
         pittgoogle.alert.Alert
-        pittgoogle.auth.Auth
         pittgoogle.bigquery.Table
         pittgoogle.pubsub.Consumer
         pittgoogle.pubsub.Subscription

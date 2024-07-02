@@ -9,7 +9,7 @@ try:
 except ImportError:  # for Python<3.8
     import importlib_metadata as metadata
 
-from . import alert, auth, bigquery, exceptions, pubsub, registry, types_, utils
+from . import alert, auth, bigquery, exceptions, pubsub, registry, schema, types_, utils
 from .alert import Alert
 from .auth import Auth
 from .bigquery import Table
