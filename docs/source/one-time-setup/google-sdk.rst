@@ -10,20 +10,20 @@ Google Cloud SDK
     is helpful for some use cases. If you don't know whether you need this,
     skip it for now.
 
-The Google Cloud command-line tools include: gcloud, bq, and gsutil (see
-`default components <https://cloud.google.com/sdk/docs/components#default_components>`__
-).
+The Google Cloud command-line tools include
+`default components <https://cloud.google.com/sdk/docs/components#default_components>`__:
+``gcloud``, ``bq``, and ``gsutil``.
 
-To install on Windows, use the
-`installer <https://cloud.google.com/sdk/docs/downloads-interactive#windows>`__.
-For Linux and Mac, use:
+For complete install instructions, see `Install the gcloud CLI  <https://cloud.google.com/sdk/docs/install>`__
+Windows users will need to use the installer found at that link.
+For Linux and Mac, the basic command is:
 
 .. code-block:: bash
 
     curl https://sdk.cloud.google.com | bash
 
 In either case, follow the instructions to complete the installation.
-Then open a new terminal or restart your shell.
+Then, open a new terminal or restart your shell.
 Make sure your :ref:`environment variables <set env vars>` are set, reset them if needed.
 Then initialize gcloud using:
 
@@ -32,6 +32,7 @@ Then initialize gcloud using:
     gcloud init
 
 and follow the directions.
+You will likely need to authenticate using the Gmail address (or similar) that is registered with your Google Cloud project.
 Note that this may open a browser and ask you to complete the setup there.
 
 The remaining steps are recommended but optional.
