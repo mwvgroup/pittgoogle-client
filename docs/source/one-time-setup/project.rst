@@ -8,7 +8,7 @@ Google Cloud Projects
     :local:
 
 You will need to be authenticated to a Google Cloud project in order to access data served by Pitt-Google Broker.
-Projects are free.
+Projects are free and a credit card is not required.
 They are easy to create and delete.
 One user can have many projects, and users can share projects.
 Access is usually managed through the Google Console using a Gmail account, as shown below.
@@ -24,7 +24,7 @@ Setup a Google Cloud project
 
 -   Go to the
     `Cloud Resource Manager <https://console.cloud.google.com/cloud-resource-manager>`__
-    and login with a Google or Gmail account (go
+    and login with a Gmail or other Google account (go
     `here <https://accounts.google.com/signup>`__ if you need to create one).
 
 -   Click "Create Project" (A, in the screenshot below).

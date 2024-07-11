@@ -253,9 +253,13 @@ class _SchemalessAvroSchema(Schema):
 
 
 class _ConfluentWireAvroSchema(Schema):
-    """Schema to serialize and deserialize alert bytes in the Avro Confluent Wire Format."""
+    """Schema to serialize and deserialize alert bytes in the Avro Confluent Wire Format.
+
+    https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format
+    """
 
     def serialize(self, alert_dict: dict) -> bytes:
+        # [TODO]
         raise NotImplementedError("Confluent Wire Format not yet supported.")
 
     def deserialize(self, alert_bytes: bytes) -> dict:

@@ -1,6 +1,8 @@
 Get alerts for testing
 ======================
 
+[FIXME] Everyone needs this, not just developers. Move this page to the user-demos repo.
+
 Setup
 -----
 
