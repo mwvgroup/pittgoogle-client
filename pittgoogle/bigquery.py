@@ -1,12 +1,16 @@
 # -*- coding: UTF-8 -*-
 """Classes to facilitate connections to BigQuery datasets and tables."""
 import logging
+from typing import TYPE_CHECKING, Optional
 
 import attrs
 import google.cloud.bigquery
 
 from .alert import Alert
 from .auth import Auth
+
+if TYPE_CHECKING:
+    import pandas as pd  # always lazy-load pandas. it hogs memory on cloud functions and run
 
 LOGGER = logging.getLogger(__name__)
 
@@ -50,6 +54,7 @@ class Table:
         ),
     )
     _table: google.cloud.bigquery.Table | None = attrs.field(default=None, init=False)
+    _schema: Optional["pd.DataFrame"] = attrs.field(default=None, init=False)
 
     @classmethod
     def from_cloud(
@@ -176,3 +181,24 @@ class Table:
         if len(errors) > 0:
             LOGGER.warning(f"BigQuery insert error: {errors}")
         return errors
+
+    @property
+    def schema(self) -> "pd.DataFrame":
+        """Schema of the BigQuery table."""
+        if self._schema is None:
+            # [TODO] Wondering, should we avoid pandas here? Maybe make this a dict instead?
+            import pandas as pd  # always lazy-load pandas. it hogs memory on cloud functions and run
+
+            fields = []
+            for field in self.table.schema:
+                fld = field.to_api_repr()  # dict
+
+                child_fields = fld.pop("fields", [])
+                # Append parent field name so that the child field name has the syntax 'parent_name.child_name'.
+                # This is the syntax that should be used in SQL queries and also the one shown on BigQuery Console page.
+                [cfld.update(name=f"{fld['name']}.{cfld['name']}") for cfld in child_fields]
+
+                fields.extend([fld] + child_fields)
+            self._schema = pd.DataFrame(fields)
+
+        return self._schema
