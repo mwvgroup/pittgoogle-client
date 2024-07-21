@@ -3,11 +3,14 @@
 Data Listings
 =============
 
-This page contains a listing of all data products served by Pitt-Google Alert Broker along with the connection information needed for access.
-The listings are organized by survey, then data product and format.
+This page contains a listing of all data products served by Pitt-Google Alert Broker and includes the connection information needed for access.
 
-All data is served through Pitt-Google's public data repositories in Google Cloud.
-Pitt-Google's Google Cloud project ID, which will be needed to access the data stores listed below, is:
+.. contents:: Jump to:
+    :depth: 1
+    :local:
+
+All data is served through public data repositories in Google Cloud.
+Pitt-Google's Google Cloud project ID, which will be needed for access, is:
 
 .. code-block::
 
@@ -16,67 +19,70 @@ Pitt-Google's Google Cloud project ID, which will be needed to access the data s
 
 For examples of how to use the information on this page, please see our :ref:`API Reference <api reference>` and `User Demos <https://github.com/mwvgroup/pittgoogle-user-demos/>`__ repo.
 
+-------------------------
+
+..
+    Tables below use ':class: tight-table' so that longer blocks of text will wrap
+    instead of rendering as a single line per row with a horizontal scroll bar.
+    The class is defined in docs/source/_static/css/custom.css.
+
 .. _data ztf:
 
-Zwicky Transient Facility (:ref:`ZTF <survey ztf>`)
----------------------------------------------------
+Zwicky Transient Facility (ZTF)
+-------------------------------
 
-ZTF is a wide-field, optical survey in three bands: r, g, and i.
-It produces an alert stream of transients detected by difference imaging at a rate of 10^5 - 10^6 alerts per night.
-It scans the entire Northern sky every two days.
+:ref:`ZTF <survey ztf>` is a wide-field, optical survey producing an alert stream at a rate of 10^5 - 10^6 per night.
 
+Pub/Sub Alert Streams
+^^^^^^^^^^^^^^^^^^^^^
 
-
-ZTF Mission resources:
-
-- `ZTF Homepage <https://www.ztf.caltech.edu/>`__
-- `ZTF Science Data System Explanatory Supplement <https://irsa.ipac.caltech.edu/data/ZTF/docs/ztf_explanatory_supplement.pdf>`__
-
-Pitt-Google Broker serves the ZTF alert data in the formats listed below.
-
-Pub/Sub Message Streams
-^^^^^^^^^^^^^^^^^^^^^^^
-
-.. list-table:: Pitt-Google's ZTF Streams
+.. list-table::
     :class: tight-table
     :widths: 25 75
     :header-rows: 1
 
-    * - Topic Name
+    * - Topic
       - Description
 
-    * - **ztf-loop**
-      - Use this stream for testing. Recent ZTF alerts are published to this topic
-        at a roughly constant rate of 1 per second.
+    * - .. centered:: *Data Streams*
+      -
 
     * - ztf-alerts
-      - Full ZTF alert stream
+      - ZTF alert stream in Pub/Sub, cleaned of duplicate alerts.
+        Messages contain the original alert bytes and metadata.
 
     * - ztf-lite
-      - Lite version of ztf-alerts (every alert, subset of fields)
+      - Lite version of ztf-alerts (every alert, subset of fields).
 
     * - ztf-tagged
-      - ztf-lite with basic categorizations such as “is pure” and “is likely extragalactic
-        transient” added to the message metadata.
+      - ztf-lite with basic categorizations such as "is pure" and “is likely extragalactic
+        transient” added to the message metadata to aid filtering.
 
     * - ztf-SuperNNova
       - ztf-tagged plus SuperNNova classification results (Ia vs non-Ia).
 
+    * - .. centered:: *Notification Streams*
+      -
+
     * - ztf-alert_avros
-      - Notification stream from the ztf-alert_avros Cloud Storage bucket indicating
-        that a new alert packet is in file storage.
-        These messages contain no data, only attributes.
-        The file name is in the attribute "objectId",
-        and the bucket name is in the attribute "bucketId".
+      - One message per alert indicating that the Avro file is available in a Cloud Storage bucket.
+        The file and bucket names are in the message attributes. Messages contain no data.
 
     * - ztf-BigQuery
-      - Notification stream indicating that alert data is available in BigQuery tables.
+      - One message per alert indicating that the alert data is available in a BigQuery table.
+        Table names are in the message attributes. Messages contain no data.
 
+    * - .. centered:: *Testing Stream*
+      -
+
+    * - ztf-loop
+      - Recent messages from the ztf-alerts stream, published at a rate of 1 per second.
+        This stream is intended for testing and development use cases.
 
 BigQuery Tables
 ^^^^^^^^^^^^^^^
 
-.. list-table:: Pitt-Google's ZTF Datasets and Tables
+.. list-table::
     :class: tight-table
     :widths: 15 15 70
     :header-rows: 1
@@ -85,40 +91,37 @@ BigQuery Tables
       - Table
       - Description
 
-    * - ztf_alerts
-      - alerts
-      - Complete alert packet, excluding image cutouts.
-        Same schema as the original alert, including nested and repeated fields.
+    * - ztf
+      - alerts_v4_02
+      - Alert data for ZTF schema version 4.02. This table is an archive of the ztf-alerts Pub/Sub stream,
+        excluding image cutouts and metadata.
+        It has the same schema as the original alert bytes (except cutouts), including nested and repeated fields.
+        Equivalent tables exist for previous schema versions: alerts_v3_3,  alerts_v3_1,  alerts_v3_0,  alerts_v1_8.
 
-    * - ztf_alerts
+    * - ztf
       - DIASource
-      - Alert packet data for the triggering source only. Including the object ID and a
-        list of source IDs for the previous sources included in the alert,
-        excluding cutouts and data for previous sources.
-        Flat schema.
+      - ZTF alert data of the DIA source that triggered the alert. Includes the object ID and a
+        list of source IDs for the previous sources included in the alert, excluding cutouts and
+        data for previous sources. The schema is flat.
 
-    * - ztf_alerts
+    * - ztf
       - SuperNNova
       - Results from a SuperNNova (Möller \& de Boissière, 2019)
         Type Ia supernova classification (binary).
 
-    * - ztf_alerts
-      - metadata
-      - Information recording Pitt-Google processing (e.g., message publish times,
-        bucket name and filename, etc.).
+Cloud Storage Buckets
+^^^^^^^^^^^^^^^^^^^^^
 
-
-Cloud Storage Files
-^^^^^^^^^^^^^^^^^^^
-
-.. list-table:: Pitt-Google's ZTF Buckets
+.. list-table::
     :class: tight-table
     :widths: 40 60
     :header-rows: 1
 
-    * - Bucket Name
+    * - Bucket
       - Description
 
-    * - ardent-cycling-243415-ztf-alert_avros
-      - Contains the complete, original alert packets as Avro files.
-        Filename syntax is: `<ztf_topic>/<objectId>/<candid>.avro`
+    * - ardent-cycling-243415-ztf_alerts_v4_02
+      - Alert data for ZTF schema version 4.02. This bucket is an Avro file archive of the ztf-alerts Pub/Sub stream,
+        including image cutouts and metadata. Each alert is stored as a separate Avro file.
+        The filename syntax is: `<ztf_topic>/<objectId>/<candid>.avro`.
+        Equivalent buckets exist for previous schema versions: v3_3,  v3_1,  v3_0,  v1_8.
