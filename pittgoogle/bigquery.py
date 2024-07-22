@@ -112,7 +112,7 @@ class Client:
 
 @attrs.define
 class Table:
-    """Methods and properties for a BigQuery table.
+    """Methods and properties for interacting with a Google BigQuery table.
 
     Args:
         name (str):
@@ -239,14 +239,17 @@ class Table:
 
     @property
     def projectid(self) -> str:
-        """The table owner's Google Cloud project ID."""
+        """The table owner's Google Cloud project ID.
+
+        Defaults to :attr:`Table.auth.GOOGLE_CLOUD_PROJECT`.
+        """
         if self._projectid is None:
             self._projectid = self.auth.GOOGLE_CLOUD_PROJECT
         return self._projectid
 
     @property
     def table(self) -> google.cloud.bigquery.Table:
-        """Google Cloud BigQuery Table object that is connected to the Cloud resource.
+        """Google Cloud BigQuery Table object.
 
         Makes a `get_table` request if necessary.
 
@@ -272,24 +275,6 @@ class Table:
             self._client = Client(auth=self.auth)
         return self._client
 
-    def insert_rows(self, rows: list[dict | Alert]) -> list[dict]:
-        """Inserts the rows into the BigQuery table.
-
-        Args:
-            rows (list[dict or Alert]):
-                The rows to be inserted. Can be a list of dictionaries or a list of Alert objects.
-
-        Returns:
-            list[dict]:
-                A list of errors encountered.
-        """
-        # if elements of rows are Alerts, need to extract the dicts
-        myrows = [row.dict if isinstance(row, Alert) else row for row in rows]
-        errors = self.client.insert_rows(self.table, myrows)
-        if len(errors) > 0:
-            LOGGER.warning(f"BigQuery insert error: {errors}")
-        return errors
-
     @property
     def schema(self) -> "pd.DataFrame":
         """Schema of the BigQuery table."""
@@ -310,6 +295,24 @@ class Table:
             self._schema = pd.DataFrame(fields)
 
         return self._schema
+
+    def insert_rows(self, rows: list[dict | Alert]) -> list[dict]:
+        """Inserts the rows into the BigQuery table.
+
+        Args:
+            rows (list[dict or Alert]):
+                The rows to be inserted. Can be a list of dictionaries or a list of Alert objects.
+
+        Returns:
+            list[dict]:
+                A list of errors encountered.
+        """
+        # if elements of rows are Alerts, need to extract the dicts
+        myrows = [row.dict if isinstance(row, Alert) else row for row in rows]
+        errors = self.client.insert_rows(self.table, myrows)
+        if len(errors) > 0:
+            LOGGER.warning(f"BigQuery insert error: {errors}")
+        return errors
 
     def query(
         self,
