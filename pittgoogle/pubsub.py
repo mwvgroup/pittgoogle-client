@@ -1,12 +1,5 @@
 # -*- coding: UTF-8 -*-
-"""Classes to facilitate connections to Google Cloud Pub/Sub streams.
-
-.. note::
-
-    This module relies on :mod:`pittgoogle.auth` to authenticate API calls.
-    The examples given below assume the use of a :ref:`service account <service account>` and
-    :ref:`environment variables <set env vars>`.
-"""
+"""Classes to facilitate connections to Google Cloud Pub/Sub streams."""
 import concurrent.futures
 import datetime
 import importlib.resources
@@ -49,7 +42,8 @@ def pull_batch(
 
     Args:
         subscription (str or Subscription):
-            The subscription to be pulled. If str, the name of the subscription.
+            The subscription to be pulled. If str, the name of the subscription. The subscription is
+            expected to exist in Google Cloud.
         max_messages (int):
             The maximum number of messages to be pulled.
         schema_name (str):
@@ -57,7 +51,7 @@ def pull_batch(
             for the list of options. Passed to Alert for unpacking. If not provided, some properties of
             the Alert may not be available.
         **subscription_kwargs:
-            Keyword arguments used to create the :class:`pittgoogle.pubsub.Subscription` object, if needed.
+            Keyword arguments used to create the :class:`Subscription` object, if needed.
 
     Returns:
         list[Alert]:
@@ -93,8 +87,8 @@ class Topic:
         name (str):
             Name of the Pub/Sub topic.
         projectid (str, optional):
-            The topic owner's Google Cloud project ID. Either this or `auth` is required. Use this
-            if you are connecting to a subscription owned by a different project than this topic. Note:
+            The topic owner's Google Cloud project ID. Either this or ``auth`` is required. Use this
+            if you are connecting to a subscription owned by a different project than this topic.
             :class:`pittgoogle.registry.ProjectIds` is a registry containing Pitt-Google's project IDs.
         auth (Auth, optional):
             Credentials for the Google Cloud project that owns this topic. If not provided,
@@ -106,8 +100,6 @@ class Topic:
     Example:
 
         .. code-block:: python
-
-            import pittgoogle
 
             # Create a new topic in your project
             my_topic = pittgoogle.Topic(name="my-new-topic")
@@ -148,11 +140,11 @@ class Topic:
         survey: Optional[str] = None,
         testid: Optional[str] = None,
     ):
-        """Creates a `Topic` with a `client` using implicit credentials (no explicit `auth`).
+        """Creates a :class:`Topic` with a :attr:`Topic.client` that uses implicit credentials.
 
         Args:
             name (str):
-                Name of the topic. If `survey` and/or `testid` are provided, they will be added to this
+                Name of the topic. If ``survey`` and/or ``testid`` are provided, they will be added to this
                 name following the Pitt-Google naming syntax.
             projectid (str):
                 Project ID of the Google Cloud project that owns this resource. Project IDs used by
@@ -162,8 +154,8 @@ class Topic:
                 Name of the survey. If provided, it will be prepended to `name` following the
                 Pitt-Google naming syntax.
             testid (str, optional):
-                Pipeline identifier. If this is not `None`, `False`, or `"False"`, it will be appended to
-                the `name` following the Pitt-Google naming syntax. This is used to allow pipeline modules
+                Pipeline identifier. If this is not None, False, or "False", it will be appended to
+                the ``name`` following the Pitt-Google naming syntax. This is used to allow pipeline modules
                 to find the correct resources without interfering with other pipelines that may have
                 deployed resources with the same base names (e.g., for development and testing purposes).
         """
@@ -177,7 +169,7 @@ class Topic:
 
     @classmethod
     def from_path(cls, path) -> "Topic":
-        """Parse the `path` and return a new `Topic`."""
+        """Parse the ``path`` and return a new :class:`Topic`."""
         _, projectid, _, name = path.split("/")
         return cls(name, projectid)
 
@@ -254,9 +246,9 @@ class Topic:
             # [TODO] Maybe users should just be allowed to get the topic?
             msg = (
                 f"PermissionDenied: The provided `pittgoogle.Auth` cannot get topic {self.path}. "
-                "Either the provided Auth has a different project_id, or your credentials just don't "
+                "Either the provided Auth has a different project ID, or your credentials just don't "
                 "have appropriate IAM permissions. \nNote that if you are a user trying to connect to "
-                "a Pitt-Google topic, your Auth is _expected_ to have a different project_id and you "
+                "a Pitt-Google topic, your Auth is _expected_ to have a different project ID and you "
                 "can safely ignore this error (and avoid running `Topic.touch` in the future). "
                 "It does not impact your ability to attach a subscription and pull messages."
             )
@@ -272,7 +264,8 @@ class Topic:
             LOGGER.info(f"deleted topic: {self.path}")
 
     def publish(self, alert: "Alert") -> int:
-        """Publish a message with ``alert.dict`` as the payload and ``alert.attributes`` as the attributes."""
+        """Publish a message with :attr:`pittgoogle.Alert.dict` as the payload and
+        :attr:`pittgoogle.Alert.attributes` as the attributes."""
         # Pub/Sub requires attribute keys and values to be strings. Sort the keys while we're at it.
         attributes = {str(key): str(alert.attributes[key]) for key in sorted(alert.attributes)}
         message = alert.schema.serialize(alert.dict)
@@ -289,13 +282,13 @@ class Subscription:
         name (str):
             Name of the Pub/Sub subscription.
         auth (Auth, optional):
-            Credentials for the Google Cloud project that owns this subscription. If not provided, it will be created
-            from environment variables.
+            Credentials for the Google Cloud project that will be used to connect to the subscription.
+            If not provided, it will be created from environment variables.
         topic (Topic, optional):
             Topic this subscription should be attached to. Required only when the subscription needs to be created.
         client (google.cloud.pubsub_v1.SubscriberClient, optional):
-            Pub/Sub client that will be used to access the subscription. This kwarg is useful if you want to
-            reuse a client. If None, a new client will be created.
+            Pub/Sub client that will be used to access the subscription.
+            If not provided, a new client will be created the first time it is needed.
         schema_name (str):
             Schema name of the alerts in the subscription. Passed to :class:`pittgoogle.alert.Alert` for unpacking.
             If not provided, some properties of the Alert may not be available. For a list of schema names, see
@@ -303,30 +296,21 @@ class Subscription:
 
     Example:
 
-        Create a subscription to the "ztf-loop" topic:
+        Create a subscription to Pitt-Google's 'ztf-loop' topic and pull messages:
 
         .. code-block:: python
 
-            # We must provide the topic that the subscription should be connected to.
-            # If the topic is in your own project, you can just provide the name of the topic.
-            # Otherwise, you must also provide the topic's project ID.
-            topic = pittgoogle.Topic(name="ztf-loop", projectid=pittgoogle.ProjectIds.pittgoogle)
-            topic.touch()  # make sure the topic exists and we can connect to it
+            # Topic that the subscription should be connected to
+            topic = pittgoogle.Topic(name="ztf-loop", projectid=pittgoogle.ProjectIds().pittgoogle)
 
-            # You can choose your own name for the subscription.
-            # It is common to name it the same as the topic, but here we'll be more verbose.
-            # You may also need to provide the schema name (see :attr:`pittgoogle.registry.Schemas.names`).
-            subscription = pittgoogle.Subscription(name="my-ztf-loop-subscription", topic=topic, schema_name="ztf")
-
-            # Create the subscription if it doesn't already exist.
+            # Create the subscription
+            subscription = pittgoogle.Subscription(
+                name="my-ztf-loop-subscription", topic=topic, schema_name="ztf"
+            )
             subscription.touch()
 
-        Pull a small batch of alerts. Helpful for testing. (Not recommended for long-running listeners;
-        use :class:`pittgoogle.pubsub.Consumer` instead.)
-
-        .. code-block:: python
-
-            alerts = subscription.pull_batch(subscription, max_messages=4)  # list of pittgoogle.Alert objects
+            # Pull a small batch of alerts
+            alerts = subscription.pull_batch(subscription, max_messages=4)
 
     ----
     """
@@ -436,7 +420,7 @@ class Subscription:
         often for testing and development.
 
         This method is *not* recommended for long-running listeners as it is likely to be unstable.
-        Use :meth:`~Consumer.stream` instead. This is Google's recommendation about how to use the
+        Use :meth:`Consumer.stream` instead. This is Google's recommendation about how to use the
         Google API that underpins these pittgoogle methods.
 
         Args:
@@ -682,7 +666,7 @@ class Consumer:
 
 @attrs.define(kw_only=True, frozen=True)
 class Response:
-    """Container for a response, to be returned by a :meth:`pittgoogle.pubsub.Consumer.msg_callback`.
+    """Container for a response, to be returned by a :meth:`Consumer.msg_callback`.
 
     Args:
         ack (bool):
