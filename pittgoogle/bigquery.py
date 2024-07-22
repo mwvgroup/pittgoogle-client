@@ -297,3 +297,30 @@ class Table:
             self._schema = pd.DataFrame(fields)
 
         return self._schema
+
+    def query(
+        self,
+        *,
+        columns: list[str] | None = None,
+        where: str | None = None,
+        limit: int | str | None = None,
+        to_dataframe: bool = True,
+        dry_run: bool = False,
+        sql_only: bool = False,
+    ):
+        # We could use parameterized queries, but accounting for all input possibilities would take a good amount of
+        # work which should not be necessary. This query will be executed with the user's credentials/permissions.
+        # No special access is added here. The user can already submit arbitrary SQL queries using 'Table.client.query',
+        # so there's no point in trying to protect against SQL injection here.
+
+        # Construct the SQL statement
+        sql = f"SELECT {', '.join(columns) if columns else '*'}"
+        sql += f" FROM `{self.table.full_table_id.replace(':', '.')}`"
+        if where is not None:
+            sql += f" WHERE {where}"
+        if limit is not None:
+            sql += f" LIMIT {limit}"
+        if sql_only:
+            return sql
+
+        return self.client.query(query=sql, dry_run=dry_run, to_dataframe=to_dataframe)
