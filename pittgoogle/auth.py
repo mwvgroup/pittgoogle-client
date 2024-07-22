@@ -7,6 +7,13 @@
     :doc:`/one-time-setup/authentication`. The recommendation is to use a
     :ref:`service account <service account>` and :ref:`set environment variables <set env vars>`.
     In that case, you will not need to call this module directly.
+
+
+.. autosummary::
+
+    Auth
+
+----
 """
 import logging
 import os

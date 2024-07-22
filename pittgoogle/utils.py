@@ -1,5 +1,12 @@
 # -*- coding: UTF-8 -*-
-"""Classes and functions to support working with alerts and related data."""
+"""Classes and functions to support working with alerts and related data.
+
+.. autosummary::
+
+    Cast
+
+----
+"""
 import base64
 import collections
 import io
