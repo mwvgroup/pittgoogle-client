@@ -20,6 +20,7 @@ If you run into trouble, please
     listings
     one-time-setup/index
     faq/index
+    surveys/index
     for-developers/index
 
 .. toctree::

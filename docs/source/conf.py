@@ -21,7 +21,7 @@ from pittgoogle import __version__ as version
 # -- Project information -----------------------------------------------------
 
 project = "pittgoogle-client"
-copyright = "2021, The Pitt-Google Broker Team"
+copyright = "2021, The Pitt-Google Alert Broker Team"
 author = "Troy Raen"
 
 # The full version, including alpha/beta/rc tags
