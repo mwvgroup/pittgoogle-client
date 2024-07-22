@@ -204,6 +204,19 @@ class Table:
         _ = table.table
         return table
 
+    def __getattr__(self, attr):
+        """If ``attr`` doesn't exist in this class, try getting it from the underlying ``google.cloud.bigquery.Table``.
+
+        Raises:
+            AttributeError:
+                if ``attr`` doesn't exist in either the pittgoogle or google.cloud API.
+        """
+        try:
+            return getattr(self.table, attr)
+        except AttributeError as excep:
+            msg = f"Neither 'pittgoogle.bigquery.Table' nor 'google.cloud.bigquery.Table' has attribute '{attr}'"
+            raise AttributeError(msg) from excep
+
     @property
     def auth(self) -> Auth:
         """Credentials for the Google Cloud project that owns this table.
