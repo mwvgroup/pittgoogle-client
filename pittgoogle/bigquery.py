@@ -16,6 +16,101 @@ LOGGER = logging.getLogger(__name__)
 
 
 @attrs.define
+class Client:
+    """A client for interacting with Google BigQuery.
+
+    It handles authentication and provides methods for executing queries and managing datasets and tables.
+
+    All attributes of the underlying Google API class ``google.cloud.bigquery.Client`` that are not
+    explicitly implemented here are accessible using ``pittgoogle.bigquery.Client().<attribute>``,
+    which is a shortcut for ``pittgoogle.bigquery.Client().client.<attribute>``.
+
+    Args:
+        auth (Auth):
+            The authentication credentials for the Google Cloud project.
+
+    Example:
+
+        The google.cloud
+
+    ----
+    """
+
+    _auth: Auth = attrs.field(
+        default=None, validator=attrs.validators.optional(attrs.validators.instance_of(Auth))
+    )
+    _client: google.cloud.bigquery.Client | None = attrs.field(default=None, init=False)
+
+    def __getattr__(self, attr):
+        """If ``attr`` doesn't exist in this class, try getting it from the underlying ``google.cloud.bigquery.Client``.
+
+        Raises:
+            AttributeError:
+                if ``attr`` doesn't exist in either the pittgoogle or google.cloud API.
+        """
+        try:
+            return getattr(self.client, attr)
+        except AttributeError as excep:
+            msg = f"Neither 'pittgoogle.bigquery.Client' nor 'google.cloud.bigquery.Client' has attribute '{attr}'"
+            raise AttributeError(msg) from excep
+
+    @property
+    def auth(self) -> Auth:
+        """Credentials for the Google Cloud project that this client will be connected to.
+
+        This will be created using environment variables if necessary.
+        """
+        if self._auth is None:
+            self._auth = Auth()
+        return self._auth
+
+    @property
+    def client(self) -> google.cloud.bigquery.Client:
+        if self._client is None:
+            self._client = google.cloud.bigquery.Client(credentials=self.auth.credentials)
+        return self._client
+
+    def query(self, query: str, to_dataframe: bool = True, **job_config_kwargs):
+        # Submit
+        job_config = google.cloud.bigquery.QueryJobConfig(**job_config_kwargs)
+        query_job = self.client.query(query, job_config=job_config)
+
+        # Return
+        if job_config.dry_run:
+            print(f"This query will process {query_job.total_bytes_processed:,} bytes")
+            return query_job
+
+        if to_dataframe:
+            # Use the storage API if it's installed, else use REST. Google's default for this variable is 'True'.
+            create_bqstorage_client = self._bigquery_storage_is_installed()
+            # The default (True) will always work, Google will just raise a warning and fall back to REST
+            # if the library isn't installed. But, we'll avoid the warning since this is a convenience
+            # wrapper that is expected to just work. We don't ever instruct users to install the storage API,
+            # so the warning can be confusing here.
+            return query_job.to_dataframe(create_bqstorage_client=create_bqstorage_client)
+
+        return query_job
+
+    def list_table_names(self, dataset: str, project_id: str | None = None) -> list[str]:
+        project = project_id or self.auth.GOOGLE_CLOUD_PROJECT
+        return [tbl.table_id for tbl in self.client.list_tables(f"{project}.{dataset}")]
+
+    @staticmethod
+    def _bigquery_storage_is_installed() -> bool:
+        """Check whether ``google.cloud.bigquery_storage`` is installed by trying to import it.
+
+        Returns:
+            bool:
+                False if the import causes ModuleNotFoundError, else True.
+        """
+        try:
+            import google.cloud.bigquery_storage
+        except ModuleNotFoundError:
+            return False
+        return True
+
+
+@attrs.define
 class Table:
     """Methods and properties for a BigQuery table.
 
@@ -47,10 +142,10 @@ class Table:
     _auth: Auth = attrs.field(
         default=None, validator=attrs.validators.optional(attrs.validators.instance_of(Auth))
     )
-    _client: google.cloud.bigquery.Client | None = attrs.field(
+    _client: Client | google.cloud.bigquery.Client | None = attrs.field(
         default=None,
         validator=attrs.validators.optional(
-            attrs.validators.instance_of(google.cloud.bigquery.Client)
+            attrs.validators.instance_of((Client, google.cloud.bigquery.Client))
         ),
     )
     _table: google.cloud.bigquery.Table | None = attrs.field(default=None, init=False)
@@ -151,17 +246,17 @@ class Table:
         return self._table
 
     @property
-    def client(self) -> google.cloud.bigquery.Client:
-        """Google Cloud BigQuery Client used to access the table.
+    def client(self) -> Client | google.cloud.bigquery.Client:
+        """BigQuery Client used to access the table.
 
         This will be created using :attr:`Table.auth` if necessary.
 
         Returns:
-            google.cloud.bigquery.Client:
+            Client or google.cloud.bigquery.Client:
                 The BigQuery client instance.
         """
         if self._client is None:
-            self._client = google.cloud.bigquery.Client(credentials=self.auth.credentials)
+            self._client = Client(auth=self.auth)
         return self._client
 
     def insert_rows(self, rows: list[dict | Alert]) -> list[dict]:

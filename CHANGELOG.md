@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Added
 
+- Add `bigquery.Client` class.
 - Add `Table.schema` property.
 
 ## \[v0.3.9\] - 2024-07-02
