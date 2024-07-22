@@ -31,6 +31,7 @@ classifiers = [
 python = "^3.9"
 attrs = ">=23.1"
 astropy = ">=5.3"  # v<6.0.0 required by supernnova 3.0.1
+db-dtypes = "^1.2.0"  # Needed by google-cloud-bigquery. Poetry added this as "^"; leaving for now.
 fastavro = ">=1.7.4"
 google-auth-oauthlib = ">=1.0"
 google-cloud-bigquery = ">=3.11.2"

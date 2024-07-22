@@ -10,7 +10,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
-(none)
+### Added
+
+- Add `bigquery.Client` class.
+- Add class attributes `Table.query`, `Table.schema`.
+- Add dependency on 'db-dtypes' to support BigQuery -> Pandas.
+
+### Changed
+
+- Remove `Table.auth` and simplify `Table.client`. This functionality is now managed by
+  `bigquery.Client`.
+- In `Table` and `Topic`, the project ID is no longer changed away from what the user provided.
+  It was more confusing and dangerous than it was helpful.
+
+### Removed
+
+- `Table.auth`
 
 ## \[v0.3.9\] - 2024-07-02
 

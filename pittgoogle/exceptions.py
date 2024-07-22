@@ -4,8 +4,8 @@ class BadRequest(Exception):
 
 
 class CloudConnectionError(Exception):
-    """Raised when a problem is encountered while trying to a Google Cloud resource."""
+    """Raised when a problem is encountered while trying to connect to a Google Cloud resource."""
 
 
 class SchemaError(Exception):
-    """Raised when a schema with a given name is not found in the registry."""
+    """Raised when the schema cannot be found in the registry or is incompatible with the data."""
