@@ -45,7 +45,7 @@ extensions = [
     "sphinx_copybutton",
     # [FIXME] do we really need these?
     # "sphinx_autodoc_typehints",  # causes error can't resolve forward reference
-    "sphinx.ext.autosectionlabel",
+    # "sphinx.ext.autosectionlabel",  # does not allow duplicate headings on listings.rst
     "sphinx.ext.mathjax",
 ]
 
@@ -53,7 +53,7 @@ set_type_checking_flag = True  # set typing.TYPE_CHECKING = True
 typehints_defaults = "braces"  # adds (default: ...) after the type
 
 # Make sure the target is unique
-autosectionlabel_prefix_document = True
+# autosectionlabel_prefix_document = True
 # now can reference pages with :ref:`{path/to/page}:{title-of-section}`
 # but can't use this with custom labels, so
 # autosectionlabel_prefix_document = False
