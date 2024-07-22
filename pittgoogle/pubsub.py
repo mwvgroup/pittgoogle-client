@@ -310,7 +310,7 @@ class Subscription:
             subscription.touch()
 
             # Pull a small batch of alerts
-            alerts = subscription.pull_batch(subscription, max_messages=4)
+            alerts = subscription.pull_batch(max_messages=4)
 
     ----
     """
