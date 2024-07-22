@@ -29,12 +29,12 @@ Google's structure is "pay-as-you-go" with a monthly billing cycle, cancel at an
       - Price beyond Free Tier
     * - BigQuery
       - querying data
-      - 1 TB per month
-      - $5.00 per TB
+      - 1 TiB per month
+      - $6.25 per TB
     * - Pub/Sub
       - message delivery
-      - 10 GB per month
-      - $40 per TB
+      - 10 GiB per month
+      - $40 per TiB
 
 Here are links that might be useful:
 
