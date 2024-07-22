@@ -235,10 +235,10 @@ class Topic:
                 # Assume this is a simple IAM problem rather than the user being confused about when
                 # to call this method (as can happen below).
                 msg = (
-                    f"PermissionDenied: You seem to have appropriate IAM permissions to get topics "
+                    "PermissionDenied: You seem to have appropriate IAM permissions to get topics "
                     "in this project but not to create them."
                 )
-            raise exceptions.CloudConnectionError(msg) from excep
+                raise exceptions.CloudConnectionError(msg) from excep
 
         except google.api_core.exceptions.PermissionDenied as excep:
             # User does not have permission to get this topic.

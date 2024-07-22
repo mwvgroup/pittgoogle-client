@@ -166,7 +166,7 @@ class Client:
             return user_value
 
         try:
-            import google.cloud.bigquery_storage
+            import google.cloud.bigquery_storage  # noqa: W0611
         except ModuleNotFoundError:
             return False
         return True
@@ -308,7 +308,8 @@ class Table:
                 child_fields = fld.pop("fields", [])
                 # Append parent field name so that the child field name has the syntax 'parent_name.child_name'.
                 # This is the syntax that should be used in SQL queries and also the one shown on BigQuery Console page.
-                [cfld.update(name=f"{fld['name']}.{cfld['name']}") for cfld in child_fields]
+                # The dicts update in place.
+                _ = [cfld.update(name=f"{fld['name']}.{cfld['name']}") for cfld in child_fields]
 
                 fields.extend([fld] + child_fields)
             self._schema = pd.DataFrame(fields)
