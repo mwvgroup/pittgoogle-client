@@ -1,8 +1,6 @@
 Get alerts for testing
 ======================
 
-[FIXME] Everyone needs this, not just developers. Move this page to the user-demos repo.
-
 Setup
 -----
 
@@ -26,7 +24,7 @@ Here are examples that get an alert from each of our "loop" streams:
 
     loop_sub.touch()
 
-    alert = loop.pull_batch(max_messages=1)[0]
+    alert = loop_sub.pull_batch(max_messages=1)[0]
 
 Get alerts from a file on disk
 -------------------------------

@@ -1,5 +1,13 @@
 # -*- coding: UTF-8 -*-
-"""Classes to manage alert schemas."""
+"""Classes to manage alert schemas.
+
+.. autosummary::
+
+    Schema
+    SchemaHelpers
+
+----
+"""
 import importlib.resources
 import io
 import json
@@ -68,11 +76,10 @@ class SchemaHelpers:
 
     @staticmethod
     def lsst_schema_helper(schema_dict: dict) -> "Schema":
-        """Load the Avro schema definition for lsst.v7_1.alert.
+        """Load the Avro schema definition for lsst.v7_1.alert."""
+        # [FIXME] This is hack to get the latest schema version into pittgoogle-client
+        # until we can get :meth:`SchemaHelpers.lsst_auto_schema_helper` working.
 
-        [FIXME] This is hack to get the latest schema version into pittgoogle-client
-        until we can get :meth:`SchemaHelpers.lsst_auto_schema_helper` working.
-        """
         if not schema_dict["name"] == "lsst.v7_1.alert":
             raise NotImplementedError("Only 'lsst.v7_1.alert' is supported for LSST.")
 

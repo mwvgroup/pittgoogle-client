@@ -1,5 +1,12 @@
 # -*- coding: UTF-8 -*-
-"""Classes defining new types."""
+"""Classes defining new types.
+
+.. autosummary::
+
+    PubsubMessageLike
+
+----
+"""
 import datetime
 import importlib.resources
 import logging

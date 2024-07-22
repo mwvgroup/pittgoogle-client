@@ -1,5 +1,13 @@
 # -*- coding: UTF-8 -*-
-"""Pitt-Google registries."""
+"""Pitt-Google registries.
+
+.. autosummary::
+
+    ProjectIds
+    Schemas
+
+----
+"""
 import importlib.resources
 import logging
 from typing import Final

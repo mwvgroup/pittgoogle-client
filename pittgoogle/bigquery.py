@@ -1,5 +1,13 @@
 # -*- coding: UTF-8 -*-
-"""Classes to facilitate connections to BigQuery datasets and tables."""
+"""Classes to facilitate connections to BigQuery datasets and tables.
+
+.. autosummary::
+
+    Client
+    Table
+
+----
+"""
 import logging
 from typing import TYPE_CHECKING, Optional
 

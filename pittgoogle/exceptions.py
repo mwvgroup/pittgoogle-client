@@ -1,4 +1,14 @@
 # -*- coding: UTF-8 -*-
+"""Exceptions.
+
+.. autosummary::
+
+    BadRequest
+    CloudConnectionError
+    SchemaError
+
+----
+"""
 class BadRequest(Exception):
     """Raised when a Flask request json envelope (e.g., from Cloud Run) is invalid."""
 

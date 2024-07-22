@@ -1,5 +1,12 @@
 # -*- coding: UTF-8 -*-
-"""Classes for working with astronomical alerts."""
+"""Classes for working with astronomical alerts.
+
+.. autosummary::
+
+    Alert
+
+----
+"""
 import base64
 import datetime
 import importlib.resources

@@ -1,5 +1,15 @@
 # -*- coding: UTF-8 -*-
-"""Classes to facilitate connections to Google Cloud Pub/Sub streams."""
+"""Classes to facilitate connections to Google Cloud Pub/Sub streams.
+
+.. autosummary::
+
+    Consumer
+    Response
+    Subscription
+    Topic
+
+----
+"""
 import concurrent.futures
 import datetime
 import importlib.resources
