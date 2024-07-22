@@ -54,4 +54,5 @@ Instruct gcloud to authenticate using your key file containing
 
 You may want to `create a configuration <https://cloud.google.com/sdk/docs/configurations>`__ if you use multiple projects or want to control settings like the default region.
 
-# [TODO] give instructions to add the ``gcloud auth`` command to the conda activation file and/or to create a configuration and activate it with the conda env.
+..
+    # [TODO] give instructions to add the ``gcloud auth`` command to the conda activation file and/or to create a configuration and activate it with the conda env.
