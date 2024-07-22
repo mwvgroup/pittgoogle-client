@@ -9,3 +9,4 @@ Note that data products may be served in multiple formats -- a complete listing 
     :maxdepth: 1
 
     ztf
+    lvk

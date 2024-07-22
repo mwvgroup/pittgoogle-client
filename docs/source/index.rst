@@ -18,9 +18,9 @@ If you run into trouble, please
     :maxdepth: 1
 
     listings
+    surveys/index
     one-time-setup/index
     faq/index
-    surveys/index
     for-developers/index
 
 .. toctree::
