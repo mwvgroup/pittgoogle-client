@@ -189,11 +189,6 @@ class Topic:
         """
         if self._auth is None:
             self._auth = Auth()
-
-        if (self._projectid != self._auth.GOOGLE_CLOUD_PROJECT) and (self._projectid is not None):
-            LOGGER.warning(f"setting projectid to match auth: {self._auth.GOOGLE_CLOUD_PROJECT}")
-            self._projectid = self._auth.GOOGLE_CLOUD_PROJECT
-
         return self._auth
 
     @property
