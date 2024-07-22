@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
+(none)
+
+## \[v0.3.11\] - 2024-07-22
+
 ### Added
 
 - Add 'Surveys' documentation section with pages for ZTF and LVK.
@@ -20,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Reorganize and update data listings.
 - Add FAQ content.
 - Clean up docs. Remove 'TODO's. Add autosummary to module pages.
+- Update Google pricing on FAQ Costs.
 
 ## \[v0.3.10\] - 2024-07-22
 
