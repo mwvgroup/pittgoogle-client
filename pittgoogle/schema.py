@@ -103,22 +103,22 @@ class SchemaHelpers:
         # Parse major and minor versions out of schema.name. Expecting syntax "lsst.v<MAJOR>_<MINOR>.alert".
         try:
             major, minor = map(int, re.findall(r"\d+", schema.name))
-        except ValueError:
+        except ValueError as excep:
             msg = (
                 f"Unable to identify major and minor version. Please use the syntax "
                 "'lsst.v<MAJOR>_<MINOR>.alert', replacing '<MAJOR>' and '<MINOR>' with integers. "
                 f"{version_msg}"
             )
-            raise exceptions.SchemaError(msg)
+            raise exceptions.SchemaError(msg) from excep
 
         schema_dir = Path(lsst.alert.packet.schema.get_schema_path(major, minor))
         schema.path = schema_dir / f"{schema.name}.avsc"
 
         try:
             schema.definition = lsst.alert.packet.schema.Schema.from_file(schema.path).definition
-        except fastavro.repository.SchemaRepositoryError:
+        except fastavro.repository.SchemaRepositoryError as excep:
             msg = f"Unable to load the schema. {version_msg}"
-            raise exceptions.SchemaError(msg)
+            raise exceptions.SchemaError(msg) from excep
 
         return schema
 
@@ -232,8 +232,8 @@ class _DefaultSchema(Schema):
         except Exception:
             try:
                 return utils.Cast.json_to_dict(alert_bytes)
-            except Exception:
-                raise exceptions.SchemaError("Failed to deserialize the alert bytes")
+            except Exception as excep:
+                raise exceptions.SchemaError("Failed to deserialize the alert bytes") from excep
 
 
 class _SchemalessAvroSchema(Schema):

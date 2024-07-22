@@ -70,9 +70,9 @@ def pull_batch(
         response = subscription.client.pull(
             {"subscription": subscription.path, "max_messages": max_messages}
         )
-    except google.api_core.exceptions.NotFound:
-        msg = "Subscription not found. You may need to create one using `pittgoogle.Subscription.touch`."
-        raise exceptions.CloudConnectionError(msg)
+    except google.api_core.exceptions.NotFound as excep:
+        msg = f"NotFound: {subscription.path}. You may need to create the subscription using `pittgoogle.Subscription.touch`."
+        raise exceptions.CloudConnectionError(msg) from excep
 
     alerts = [
         Alert.from_msg(msg.message, schema_name=schema_name) for msg in response.received_messages
@@ -216,14 +216,51 @@ class Topic:
         return self._client
 
     def touch(self) -> None:
-        """Test the connection to the topic, creating it if necessary."""
+        """Test the connection to the topic, creating it if necessary.
+
+        .. tip: This is only necessary if you need to interact with the topic directly to do things like
+            *publish* messages. In particular, this is *not* necessary if you are trying to *pull* messages.
+            All users can create a subscription to a Pitt-Google topic and pull messages from it, even
+            if they can't actually touch the topic.
+
+        Raises:
+            CloudConnectionError:
+                'PermissionDenied' if :attr:`Topic.auth` does not have permission to get or create the table.
+        """
         try:
+            # Check if topic exists and we can connect.
             self.client.get_topic(topic=self.path)
             LOGGER.info(f"topic exists: {self.path}")
 
         except google.api_core.exceptions.NotFound:
-            self.client.create_topic(name=self.path)
-            LOGGER.info(f"topic created: {self.path}")
+            try:
+                # Try to create a new topic.
+                self.client.create_topic(name=self.path)
+                LOGGER.info(f"topic created: {self.path}")
+
+            except google.api_core.exceptions.PermissionDenied as excep:
+                # User has access to this topic's project but insufficient permissions to create a new topic.
+                # Assume this is a simple IAM problem rather than the user being confused about when
+                # to call this method (as can happen below).
+                msg = (
+                    f"PermissionDenied: You seem to have appropriate IAM permissions to get topics "
+                    "in this project but not to create them."
+                )
+            raise exceptions.CloudConnectionError(msg) from excep
+
+        except google.api_core.exceptions.PermissionDenied as excep:
+            # User does not have permission to get this topic.
+            # This is not a problem if they only want to subscribe, but can be confusing.
+            # [TODO] Maybe users should just be allowed to get the topic?
+            msg = (
+                f"PermissionDenied: The provided `pittgoogle.Auth` cannot get topic {self.path}. "
+                "Either the provided Auth has a different project_id, or your credentials just don't "
+                "have appropriate IAM permissions. \nNote that if you are a user trying to connect to "
+                "a Pitt-Google topic, your Auth is _expected_ to have a different project_id and you "
+                "can safely ignore this error (and avoid running `Topic.touch` in the future). "
+                "It does not impact your ability to attach a subscription and pull messages."
+            )
+            raise exceptions.CloudConnectionError(msg) from excep
 
     def delete(self) -> None:
         """Delete the topic."""
@@ -339,18 +376,18 @@ class Subscription:
             TypeError:
                 if the subscription needs to be created but no topic was provided.
 
-            google.api_core.exceptions.NotFound:
-                if the subscription needs to be created but the topic does not exist in Google Cloud.
-
             CloudConnectionError:
-                if the subscription exists but it is not attached to self.topic and self.topic is not None.
+
+                - 'NotFound` if the subscription needs to be created but the topic does not exist in Google Cloud.
+                - 'InvalidTopic' if the subscription exists but the user explicitly provided a topic that
+                   this subscription is not actually attached to.
         """
         try:
             subscrip = self.client.get_subscription(subscription=self.path)
             LOGGER.info(f"subscription exists: {self.path}")
 
         except google.api_core.exceptions.NotFound:
-            subscrip = self._create()  # may raise TypeError or (topic) NotFound
+            subscrip = self._create()  # may raise TypeError or CloudConnectionError
             LOGGER.info(f"subscription created: {self.path}")
 
         self._set_topic(subscrip.topic)  # may raise CloudConnectionError
@@ -364,17 +401,17 @@ class Subscription:
 
         # this error message is not very clear. let's help.
         except google.api_core.exceptions.NotFound as excep:
-            msg = f"The subscription cannot be created because the topic does not exist: {self.topic.path}"
-            raise google.api_core.exceptions.NotFound(msg) from excep
+            msg = f"NotFound: The subscription cannot be created because the topic does not exist: {self.topic.path}"
+            raise exceptions.CloudConnectionError(msg) from excep
 
     def _set_topic(self, connected_topic_path) -> None:
         # if the topic is invalid, raise an error
         if (self.topic is not None) and (connected_topic_path != self.topic.path):
             msg = (
-                "The subscription exists but is attached to a different topic.\n"
+                "InvalidTopic: The subscription exists but is attached to a different topic.\n"
                 f"\tFound topic: {connected_topic_path}\n"
                 f"\tExpected topic: {self.topic.path}\n"
-                "Either point to the found topic or delete the existing subscription and try again."
+                "Either use the found topic or delete the existing subscription and try again."
             )
             raise exceptions.CloudConnectionError(msg)
 
@@ -398,8 +435,9 @@ class Subscription:
         This method is recommended for use cases that need a small number of alerts on-demand,
         often for testing and development.
 
-        This method is *not* recommended for long-running listeners as it is likely to be unstable
-        -- use :meth:`~Consumer.stream` instead.
+        This method is *not* recommended for long-running listeners as it is likely to be unstable.
+        Use :meth:`~Consumer.stream` instead. This is Google's recommendation about how to use the
+        Google API that underpins these pittgoogle methods.
 
         Args:
             max_messages (int):
