@@ -19,27 +19,13 @@ LOGGER = logging.getLogger(__name__)
 class Client:
     """A client for interacting with Google BigQuery.
 
-    It handles authentication and provides methods for executing queries and managing datasets and tables.
-
-    All attributes of the underlying Google API class ``google.cloud.bigquery.Client`` that are not
-    explicitly implemented here are accessible using ``pittgoogle.bigquery.Client().<attribute>``,
-    which is a shortcut for ``pittgoogle.bigquery.Client().client.<attribute>``.
-
-    Args:
-        auth (Auth):
-            The authentication credentials for the Google Cloud project.
-
-    Example:
-
-        The google.cloud
-
     ----
     """
 
     _auth: Auth = attrs.field(
         default=None, validator=attrs.validators.optional(attrs.validators.instance_of(Auth))
     )
-    _client: google.cloud.bigquery.Client | None = attrs.field(default=None, init=False)
+    _client: google.cloud.bigquery.Client | None = attrs.field(default=None)
 
     def __getattr__(self, attr):
         """If ``attr`` doesn't exist in this class, try getting it from the underlying ``google.cloud.bigquery.Client``.
@@ -66,11 +52,89 @@ class Client:
 
     @property
     def client(self) -> google.cloud.bigquery.Client:
+        """Google Cloud BigQuery client.
+
+        If the client has not been initialized yet, it will be created using :attr:`Client.auth`.
+
+        Returns:
+            google.cloud.bigquery.Client:
+                An instance of the Google Cloud BigQuery client.
+        """
         if self._client is None:
             self._client = google.cloud.bigquery.Client(credentials=self.auth.credentials)
         return self._client
 
-    def query(self, query: str, to_dataframe: bool = True, **job_config_kwargs):
+    def list_table_names(self, dataset: str, projectid: str | None = None) -> list[str]:
+        """Get the names of the tables in the dataset.
+
+        Args:
+            dataset (str):
+                The name of the dataset.
+            projectid (str, optional):
+                The dataset owner's Google Cloud project ID. If None,
+                :attr:`Client.client.project` will be used.
+
+        Returns:
+            list[str]:
+                A list of table names in the dataset.
+
+        Example:
+
+            .. code-block:: python
+
+                bqclient = pittgoogle.bigquery.Client()
+                bqclient.list_table_names(dataset="ztf", projectid=pittgoogle.ProjectIds().pittgoogle)
+        """
+        project = projectid or self.client.project
+        return sorted([tbl.table_id for tbl in self.client.list_tables(f"{project}.{dataset}")])
+
+    def query(
+        self, query: str, to_dataframe: bool = True, to_dataframe_kwargs: dict | None = None, **job_config_kwargs
+    ):
+        """Submit a BigQuery query job.
+
+        Args:
+            query (str):
+                The SQL query to execute.
+            to_dataframe (bool, optional):
+                Whether to fetch the results and return them as a pandas DataFrame (True, default) or
+                just return the query job (False).
+            to_dataframe_kwargs (dict, optional):
+                Keyword arguments to be passed to ``google.cloud.bigquery.QueryJob.to_dataframe``.
+                Notable options: ``dtypes`` (dict), ``max_results`` (int), ``create_bqstorage_client`` (bool).
+                This is ignored unless ``to_dataframe`` is True.
+                ``create_bqstorage_client`` controls whether to use `google.cloud.bigquery_storage` (True)
+                or `google.cloud.bigquery` (False). `bigquery_storage` can be faster but is not necessary.
+                If you do not specify this parameter, pittgoogle will set it to True if the `bigquery_storage`
+                library is installed, else False.
+            **job_config_kwargs:
+                Keyword arguments to pass to the `google.cloud.bigquery.QueryJobConfig` constructor.
+                Notable option: ``dry_run`` (bool).
+
+        Returns:
+            pandas.DataFrame if ``to_dataframe`` is True, else google.cloud.bigquery.QueryJob
+
+        Example:
+
+            Query two tables (ztf.alerts_v4_02 and ztf.alerts_v3_3) for data on one object (ZTF19acfixfe).
+
+            .. code-block:: python
+
+                bqclient = pittgoogle.bigquery.Client()
+                pittgoogle_project = pittgoogle.ProjectIds().pittgoogle
+
+                sql = f\"\"\"
+                    SELECT objectId, candid, candidate.jd, candidate.fid, candidate.magpsf
+                    FROM `{pittgoogle_project}.ztf.alerts_v3_3`
+                    WHERE objectId = 'ZTF19acfixfe'
+                    UNION ALL
+                    SELECT objectId, candid, candidate.jd, candidate.fid, candidate.magpsf
+                    FROM `{pittgoogle_project}.ztf.alerts_v4_02`
+                    WHERE objectId = 'ZTF19acfixfe'
+                \"\"\"
+
+                diaobject_df = bqclient.query(query=sql)
+        """
         # Submit
         job_config = google.cloud.bigquery.QueryJobConfig(**job_config_kwargs)
         query_job = self.client.query(query, job_config=job_config)
@@ -81,28 +145,26 @@ class Client:
             return query_job
 
         if to_dataframe:
-            # Use the storage API if it's installed, else use REST. Google's default for this variable is 'True'.
-            create_bqstorage_client = self._bigquery_storage_is_installed()
-            # The default (True) will always work, Google will just raise a warning and fall back to REST
-            # if the library isn't installed. But, we'll avoid the warning since this is a convenience
-            # wrapper that is expected to just work. We don't ever instruct users to install the storage API,
-            # so the warning can be confusing here.
-            return query_job.to_dataframe(create_bqstorage_client=create_bqstorage_client)
+            kwargs = to_dataframe_kwargs.copy() if to_dataframe_kwargs else {}
+            # Google sets 'create_bqstorage_client' to True by default and then raises a warning if the
+            # 'bigquery_storage' library is not installed. Most pittgoogle users are not likely to have
+            # this installed or even know what it is. Let's avoid the warning and just quietly check for it.
+            create_bqstorage_client = self._check_bqstorage_client(kwargs.pop("create_bqstorage_client", None))
+            return query_job.to_dataframe(create_bqstorage_client=create_bqstorage_client, **kwargs)
 
         return query_job
 
-    def list_table_names(self, dataset: str, project_id: str | None = None) -> list[str]:
-        project = project_id or self.auth.GOOGLE_CLOUD_PROJECT
-        return [tbl.table_id for tbl in self.client.list_tables(f"{project}.{dataset}")]
-
     @staticmethod
-    def _bigquery_storage_is_installed() -> bool:
-        """Check whether ``google.cloud.bigquery_storage`` is installed by trying to import it.
+    def _check_bqstorage_client(user_value: bool | None) -> bool:
+        """If ``user_value`` is None, check whether ``google.cloud.bigquery_storage`` is installed by trying to import it.
 
         Returns:
             bool:
-                False if the import causes ModuleNotFoundError, else True.
+                ``user_value`` if it is not None. Else, True (False) if the import is (is not) successful.
         """
+        if user_value is not None:
+            return user_value
+
         try:
             import google.cloud.bigquery_storage
         except ModuleNotFoundError:
@@ -149,9 +211,9 @@ class Table:
         survey: str | None = None,
         testid: str | None = None,
     ):
-        """Create a `Table` object using a `client` with implicit credentials.
+        """Create a :class:`Table` object using a BigQuery client with implicit credentials.
 
-        Use this method when creating a `Table` object in code running in Google Cloud (e.g.,
+        Use this method when creating a :class:`Table` object in code running in Google Cloud (e.g.,
         in a Cloud Run module). The underlying Google APIs will automatically find your credentials.
 
         The table resource in Google BigQuery is expected to already exist.
@@ -177,10 +239,6 @@ class Table:
         Returns:
             Table:
                 The `Table` object.
-
-        Raises:
-            NotFound:
-                # [TODO] Track down specific error raised when table doesn't exist; update this docstring.
         """
         if dataset is None:
             dataset = survey
@@ -209,7 +267,7 @@ class Table:
 
     @property
     def id(self) -> str:
-        """Fully qualified table ID with syntax 'projectid.dataset_name.table_name'."""
+        """Fully qualified table ID with syntax 'projectid.dataset.name'."""
         return f"{self.projectid}.{self.dataset}.{self.name}"
 
     @property
@@ -258,7 +316,7 @@ class Table:
         return self._schema
 
     def insert_rows(self, rows: list[dict | Alert]) -> list[dict]:
-        """Inserts the rows into the BigQuery table.
+        """Insert rows into the BigQuery table.
 
         Args:
             rows (list[dict or Alert]):
@@ -283,8 +341,45 @@ class Table:
         limit: int | str | None = None,
         to_dataframe: bool = True,
         dry_run: bool = False,
-        sql_only: bool = False,
+        return_sql: bool = False,
     ):
+        """Submit a BigQuery query job. Against this table.
+
+        This method supports basic queries against this table. For more complex queries or queries
+        against multiple tables, use :attr:`Client.query`.
+
+        Args:
+            columns (list[str], optional):
+                List of columns to select. If None, all columns are selected.
+            where (str, optional):
+                SQL WHERE clause.
+            limit (int or str, optional):
+                Maximum number of rows to return.
+            to_dataframe (bool, optional):
+                Whether to fetch the results and return them as a pandas DataFrame (True, default) or
+                just return the query job (False).
+            dry_run (bool, optional):
+                Whether to do a dry-run only to check whether the query is valid and estimate costs.
+            return_sql (bool, optional):
+                If True, the SQL query string will be returned. The query job will not be submitted.
+
+        Returns:
+            pandas.DataFrame, google.cloud.bigquery.QueryJob, or str:
+                The SQL query string if ``return_sql`` is True. Otherwise, the results in a DataFrame
+                if ``to_dataframe`` is True, else the query job.
+
+        Example:
+
+            .. code-block:: python
+
+                alerts_tbl = pittgoogle.Table(
+                    name="alerts_v4_02", dataset="ztf", projectid=pittgoogle.ProjectIds().pittgoogle
+                )
+                columns = ["objectId", "candid", "candidate.jd", "candidate.fid", "candidate.magpsf"]
+                where = "objectId IN ('ZTF18aarunfu', 'ZTF24aavyicb', 'ZTF24aavzkuf')"
+
+                diaobjects_df = alerts_tbl.query(columns=columns, where=where)
+        """
         # We could use parameterized queries, but accounting for all input possibilities would take a good amount of
         # work which should not be necessary. This query will be executed with the user's credentials/permissions.
         # No special access is added here. The user can already submit arbitrary SQL queries using 'Table.client.query',
@@ -297,7 +392,8 @@ class Table:
             sql += f" WHERE {where}"
         if limit is not None:
             sql += f" LIMIT {limit}"
-        if sql_only:
+        if return_sql:
             return sql
 
+        # Do the query
         return self.client.query(query=sql, dry_run=dry_run, to_dataframe=to_dataframe)
