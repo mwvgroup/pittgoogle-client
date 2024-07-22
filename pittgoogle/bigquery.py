@@ -120,11 +120,7 @@ class Table:
         dataset (str):
             Name of the BigQuery dataset this table belongs to.
         projectid (str, optional):
-            The table owner's Google Cloud project ID. Either this or `auth` is required. Note:
-            :attr:`pittgoogle.utils.ProjectIds` is a registry containing Pitt-Google's project IDs.
-        auth (Auth, optional):
-            Credentials for the Google Cloud project that owns this table.
-            If not provided, it will be created from environment variables when needed.
+            The table owner's Google Cloud project ID. If not provided, the client's project ID will be used.
         client (google.cloud.bigquery.Client, optional):
             BigQuery client that will be used to access the table.
             If not provided, a new client will be created the first time it is requested.
@@ -137,17 +133,10 @@ class Table:
     """Name of the BigQuery table."""
     dataset: str = attrs.field()
     """Name of the BigQuery dataset this table belongs to."""
+    client: Client | None = attrs.field(factory=Client)
+    """BigQuery client used to access the table."""
     # The rest don't need string descriptions because they are explicitly defined as properties below.
     _projectid: str = attrs.field(default=None)
-    _auth: Auth = attrs.field(
-        default=None, validator=attrs.validators.optional(attrs.validators.instance_of(Auth))
-    )
-    _client: Client | google.cloud.bigquery.Client | None = attrs.field(
-        default=None,
-        validator=attrs.validators.optional(
-            attrs.validators.instance_of((Client, google.cloud.bigquery.Client))
-        ),
-    )
     _table: google.cloud.bigquery.Table | None = attrs.field(default=None, init=False)
     _schema: Optional["pd.DataFrame"] = attrs.field(default=None, init=False)
 
@@ -198,9 +187,10 @@ class Table:
         # if testid is not False, "False", or None, append it to the dataset
         if testid and testid != "False":
             dataset = f"{dataset}_{testid}"
-        client = google.cloud.bigquery.Client()
-        table = cls(name, dataset=dataset, projectid=client.project, client=client)
-        # make the get request now to create a connection to the table
+        # create a client with implicit credentials
+        client = Client(client=google.cloud.bigquery.Client())
+        table = cls(name=name, dataset=dataset, projectid=client.project, client=client)
+        # make the get request now to fail early if there's a problem
         _ = table.table
         return table
 
@@ -218,16 +208,6 @@ class Table:
             raise AttributeError(msg) from excep
 
     @property
-    def auth(self) -> Auth:
-        """Credentials for the Google Cloud project that owns this table.
-
-        This will be created using environment variables if necessary.
-        """
-        if self._auth is None:
-            self._auth = Auth()
-        return self._auth
-
-    @property
     def id(self) -> str:
         """Fully qualified table ID with syntax 'projectid.dataset_name.table_name'."""
         return f"{self.projectid}.{self.dataset}.{self.name}"
@@ -236,10 +216,10 @@ class Table:
     def projectid(self) -> str:
         """The table owner's Google Cloud project ID.
 
-        Defaults to :attr:`Table.auth.GOOGLE_CLOUD_PROJECT`.
+        Defaults to :attr:`Table.client.client.project`.
         """
         if self._projectid is None:
-            self._projectid = self.auth.GOOGLE_CLOUD_PROJECT
+            self._projectid = self.client.client.project
         return self._projectid
 
     @property
@@ -255,20 +235,6 @@ class Table:
         if self._table is None:
             self._table = self.client.get_table(self.id)
         return self._table
-
-    @property
-    def client(self) -> Client | google.cloud.bigquery.Client:
-        """BigQuery Client used to access the table.
-
-        This will be created using :attr:`Table.auth` if necessary.
-
-        Returns:
-            Client or google.cloud.bigquery.Client:
-                The BigQuery client instance.
-        """
-        if self._client is None:
-            self._client = Client(auth=self.auth)
-        return self._client
 
     @property
     def schema(self) -> "pd.DataFrame":
