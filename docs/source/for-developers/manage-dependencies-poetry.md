@@ -17,25 +17,10 @@ conda activate poetry-py311
 pip install poetry
 ```
 
-If you come back to this later you may need to reactivate your environment.
-
-```bash
-conda activate poetry-py311
-```
-
-If you want to start over with a fresh environment, deactivate the environment and remove it.
-
-```bash
-conda deactivate
-conda remove --name poetry-py311 --all
-```
-
 ## Install existing dependencies
 
 This repo already contains a poetry.lock file, so running `poetry install` will give you
 the exact versions specified there ([Poetry install dependencies](https://python-poetry.org/docs/basic-usage/#installing-dependencies)).
-
-If you would rather start over completely, skip ahead to the next section.
 
 ```bash
 poetry install
@@ -45,6 +30,20 @@ If you want to install the docs dependencies as well, use:
 
 ```bash
 poetry install --extras=docs
+```
+
+## Add a Dependency
+
+Here are two examples
+([Poetry add dependencies](https://python-poetry.org/docs/managing-dependencies/#adding-a-dependency-to-a-group),
+see also: [Poetry version-constraint syntax](https://python-poetry.org/docs/dependency-specification/)):
+
+```bash
+# This example adds pandas to the main dependencies.
+poetry add pandas
+
+# This example adds sphinx to the docs dependencies.
+poetry add sphinx --group docs.dependencies
 ```
 
 ## Update Dependency Versions
@@ -62,17 +61,3 @@ poetry update
 ```
 
 Now commit the updated poetry.lock file to the repo.
-
-## Add a Dependency
-
-Here are two examples
-([Poetry add dependencies](https://python-poetry.org/docs/managing-dependencies/#adding-a-dependency-to-a-group),
-see also: [Poetry version-constraint syntax](https://python-poetry.org/docs/dependency-specification/)):
-
-```bash
-# This example adds pandas to the main dependencies.
-poetry add pandas
-
-# This example adds sphinx to the docs dependencies.
-poetry add sphinx --group docs.dependencies
-```
