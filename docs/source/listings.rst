@@ -125,3 +125,49 @@ Cloud Storage Buckets
         including image cutouts and metadata. Each alert is stored as a separate Avro file.
         The filename syntax is: `<ztf_topic>/<objectId>/<candid>.avro`.
         Equivalent buckets exist for previous schema versions: v3_3,  v3_1,  v3_0,  v1_8.
+
+.. _data lvk:
+
+LIGO-Virgo-KAGRA (LVK)
+-------------------------------
+
+:ref:`LVK <survey lvk>` is a gravitational wave collaboration producing an alert stream at a rate of 50 - 100 per day.
+
+Pub/Sub Alert Streams
+^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+    :class: tight-table
+    :widths: 25 75
+    :header-rows: 1
+
+    * - Topic
+      - Description
+
+    * - .. centered:: *Data Streams*
+      -
+
+    * - lvk-alerts
+      - LVK alert stream in Pub/Sub.
+        Messages contain the original alert bytes and metadata.
+
+    * - lvk-BigQuery
+      - One message per alert indicating that the alert data is available in a BigQuery table.
+        Table names and alert metadata are in the message attributes. Messages contain no data.
+
+BigQuery Tables
+^^^^^^^^^^^^^^^
+
+.. list-table::
+    :class: tight-table
+    :widths: 15 15 70
+    :header-rows: 1
+
+    * - Dataset
+      - Table
+      - Description
+
+    * - lvk
+      - alerts_O4
+      - Alert data from the LVK O4 observing run. This table is an archive of the lvk-alerts Pub/Sub stream.
+        It has the same schema as the original alert bytes, including nested and repeated fields.
