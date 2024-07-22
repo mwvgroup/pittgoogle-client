@@ -10,7 +10,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
-(none)
+### Added
+
+- Add 'Surveys' documentation section with pages for ZTF and LVK.
+- Add LVK to Data Listings page.
+
+### Changed
+
+- Reorganize and update data listings.
 
 ## \[v0.3.10\] - 2024-07-22
 
