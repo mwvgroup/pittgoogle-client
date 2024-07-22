@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 - Add `bigquery.Client` class.
 - Add class attributes `Table.query`, `Table.schema`.
+- Add dependency on 'db-dtypes' to support BigQuery -> Pandas.
 
 ### Changed
 
