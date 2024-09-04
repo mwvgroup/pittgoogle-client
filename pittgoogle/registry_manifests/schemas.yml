@@ -101,6 +101,13 @@
     5: 'z'
     6: 'y'
 #
+# LVK alerts
+- name: 'lvk'
+  description: 'Schema for LIGO-Virgo-KAGRA (LVK) alerts. JSON format.'
+  origin: 'https://emfollow.docs.ligo.org/userguide/content.html#kafka-notice-gcn-scimma'
+  helper: 'default_schema_helper'
+  path: null
+#
 # ZTF alerts
 - name: 'ztf'
   description: 'ZTF schema. The ZTF survey publishes alerts in Avro format with the schema attached in the header. Pitt-Google publishes ZTF alerts in json format. This schema covers both cases.'
