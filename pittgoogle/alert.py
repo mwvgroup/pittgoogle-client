@@ -62,6 +62,7 @@ class Alert:
         "google.cloud.functions_v1.context.Context", types_._FunctionsContextLike, None
     ] = attrs.field(default=None)
     _dataframe: Union["pd.DataFrame", None] = attrs.field(default=None)
+    _skymap: Union["astropy.table.Qtable", None] = attrs.field(default=None)
     _schema: Schema | None = attrs.field(default=None, init=False)
 
     # ---- class methods ---- #
@@ -344,6 +345,63 @@ class Alert:
         if self._schema is None:
             self._schema = registry.Schemas.get(self.schema_name)
         return self._schema
+
+    @property
+    def skymap(self) -> Union["astropy.table.QTable", None]:
+        """Alert skymap as an astropy Table. Currently implemented for LVK schemas only.
+
+        This skymap is loaded from the alert to an astropy table and extra columns are added, following
+        https://emfollow.docs.ligo.org/userguide/tutorial/multiorder_skymaps.html.
+        The table is sorted by PROBDENSITY and then UNIQ, in descending order, so that the most likely
+        location is first. Columns:
+
+            - UNIQ: HEALPix pixel index in the NUNIQ indexing scheme.
+            - PROBDENSITY: Probability density in the pixel (per steradian).
+            - nside: HEALPix nside parameter defining the pixel resolution.
+            - ipix: HEALPix pixel index at resolution nside.
+            - ra: Right ascension of the pixel center (radians).
+            - dec: Declination of the pixel center (radians).
+            - pixel_area: Area of the pixel (steradians).
+            - prob: Probability density in the pixel.
+            - cumprob: Cumulative probability density up to the pixel.
+
+        Examples:
+
+            .. code-block:: python
+
+                # most likely location
+                alert.skymap[0]
+
+                # 90% credible region
+                alert.skymap[:alert.skymap['cumprob'].searchsorted(0.9)]
+        """
+        if self._skymap is None and self.schema_name.startswith("lvk"):
+            import astropy.table
+            import astropy.units
+            import hpgeom
+            import numpy as np
+
+            skymap = astropy.table.QTable.read(io.BytesIO(base64.b64decode(self.get("skymap"))))
+            skymap.sort(["PROBDENSITY", "UNIQ"], reverse=True)
+
+            skymap["nside"] = (2 ** (np.log2(skymap["UNIQ"] // 4) // 2)).astype(int)
+            skymap["ipix"] = skymap["UNIQ"] - 4 * skymap["nside"] ** 2
+
+            skymap["ra"], skymap["dec"] = hpgeom.pixel_to_angle(
+                skymap["nside"], skymap["ipix"], degrees=False
+            )
+            skymap["ra"].unit = astropy.units.rad
+            skymap["dec"].unit = astropy.units.rad
+
+            skymap["pixel_area"] = hpgeom.nside_to_pixel_area(skymap["nside"], degrees=False)
+            skymap["pixel_area"].unit = astropy.units.sr
+
+            skymap["prob"] = skymap["pixel_area"] * skymap["PROBDENSITY"]
+            skymap["cumprob"] = skymap["prob"].cumsum()
+
+            self._skymap = skymap
+
+        return self._skymap
 
     # ---- methods ---- #
     def _add_id_attributes(self) -> None:
