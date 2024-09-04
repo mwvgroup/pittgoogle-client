@@ -155,21 +155,13 @@ class Alert:
         if not isinstance(envelope, dict) or "message" not in envelope:
             raise exceptions.BadRequest("Bad Request: invalid Pub/Sub message format")
 
-        # convert the message publish_time string -> datetime
-        # occasionally the string doesn't include microseconds so we need a try/except
-        publish_time = envelope["message"]["publish_time"].replace("Z", "+00:00")
-        try:
-            publish_time = datetime.datetime.strptime(publish_time, "%Y-%m-%dT%H:%M:%S.%f%z")
-        except ValueError:
-            publish_time = datetime.datetime.strptime(publish_time, "%Y-%m-%dT%H:%M:%S%z")
-
         return cls(
             msg=types_.PubsubMessageLike(
                 # data is required. the rest should be present in the message, but use get to be lenient
                 data=base64.b64decode(envelope["message"]["data"].encode("utf-8")),
-                attributes=envelope["message"].get("attributes"),
+                attributes=envelope["message"].get("attributes", {}),
                 message_id=envelope["message"].get("message_id"),
-                publish_time=publish_time,
+                publish_time=cls._str_to_datetime(envelope["message"]["publish_time"]),
                 ordering_key=envelope["message"].get("ordering_key"),
             ),
             schema_name=schema_name,
@@ -448,3 +440,11 @@ class Alert:
         # Pub/Sub requires attribute keys and values to be strings. Sort the keys while we're at it.
         attributes = {str(key): str(self.attributes[key]) for key in sorted(self.attributes)}
         return message, attributes
+
+    @staticmethod
+    def _str_to_datetime(str_time: str) -> datetime.datetime:
+        # occasionally the string doesn't include microseconds so we need a try/except
+        try:
+            return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S.%f%z")
+        except ValueError:
+            return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S%z")
