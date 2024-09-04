@@ -256,6 +256,7 @@ class Alert:
                 self._attributes = dict(self.msg.attributes)
             else:
                 self._attributes = {}
+            self._add_id_attributes()
         return self._attributes
 
     @property
@@ -356,10 +357,10 @@ class Alert:
         # but pubsub message attributes must be strings. join to avoid a future error on publish
         names = [".".join(id) if isinstance(id, list) else id for id in survey_names]
 
-        # only add to attributes if the survey has defined this field
+        # only add to attributes if the survey has defined this field and it's not already in the attributes
         for idname, idvalue in zip(names, values):
-            if idname is not None:
-                self.attributes[idname] = idvalue
+            if idname is not None and idname not in self._attributes:
+                self._attributes[idname] = idvalue
 
     def get(self, field: str, default: Any = None) -> Any:
         """Return the value of a field from the alert data.
