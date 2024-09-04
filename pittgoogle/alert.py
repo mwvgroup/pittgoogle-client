@@ -441,3 +441,10 @@ class Alert:
             return survey_field[-1]
 
         return survey_field
+
+    def _prep_for_publish(self) -> tuple[bytes, Mapping[str, str]]:
+        """Serialize the alert dict and convert all attribute keys and values to strings."""
+        message = self.schema.serialize(self.dict)
+        # Pub/Sub requires attribute keys and values to be strings. Sort the keys while we're at it.
+        attributes = {str(key): str(self.attributes[key]) for key in sorted(self.attributes)}
+        return message, attributes
