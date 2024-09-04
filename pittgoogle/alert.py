@@ -234,6 +234,11 @@ class Alert:
             msg=types_.PubsubMessageLike(data=bytes_), schema_name=schema_name, path=Path(path)
         )
 
+    def to_mock_input(self, cloud_functions: bool = False):
+        if not cloud_functions:
+            raise NotImplementedError("Only cloud functions has been implemented.")
+        return MockInput(alert=self).to_cloud_functions()
+
     # ---- properties ---- #
     @property
     def attributes(self) -> Mapping:
@@ -448,3 +453,49 @@ class Alert:
             return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S.%f%z")
         except ValueError:
             return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S%z")
+
+
+@attrs.define
+class MockInput:
+    alert: Alert = attrs.field()
+
+    def to_cloud_functions(self) -> tuple[dict, types_._FunctionsContextLike]:
+        """
+
+        Parameter definitions copied from https://cloud.google.com/functions/1stgendocs/tutorials/pubsub-1st-gen
+
+        Returns:
+            event (dict):
+                The dictionary with data specific to this type of event. The `@type` field maps to
+                `type.googleapis.com/google.pubsub.v1.PubsubMessage`. The `data` field maps to the
+                PubsubMessage data in a base64-encoded string. The `attributes` field maps to the
+                PubsubMessage attributes if any is present.
+            context (google.cloud.functions.Context):
+                Metadata of triggering event including `event_id` which maps to the PubsubMessage
+                messageId, `timestamp` which maps to the PubsubMessage publishTime, `event_type` which
+                maps to `google.pubsub.topic.publish`, and `resource` which is a dictionary that
+                describes the service API endpoint pubsub.googleapis.com, the triggering topic's name,
+                and the triggering event type `type.googleapis.com/google.pubsub.v1.PubsubMessage`.
+        """
+        message, attributes = self.alert._prep_for_publish()
+        event_type = "type.googleapis.com/google.pubsub.v1.PubsubMessage"
+        now = (
+            datetime.datetime.now(datetime.timezone.utc)
+            .isoformat(timespec="milliseconds")
+            .replace("+00:00", "Z")
+        )
+
+        event = {"@type": event_type, "data": base64.b64encode(message), "attributes": attributes}
+
+        context = types_._FunctionsContextLike(
+            event_id=str(int(1e12 * random.random())),
+            timestamp=now,
+            event_type="google.pubsub.topic.publish",
+            resource={
+                "name": "projects/NONE/topics/NONE",
+                "service": "pubsub.googleapis.com",
+                "type": event_type,
+            },
+        )
+
+        return event, context
