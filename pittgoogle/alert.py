@@ -9,17 +9,23 @@
 """
 import base64
 import datetime
+import io
 import logging
+import random
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Mapping, Union
 
 import attrs
 import google.cloud.pubsub_v1
 
-from . import registry, types_, exceptions
-from .schema import Schema  # so 'schema' module doesn't clobber 'Alert.schema' attribute
+from . import exceptions, registry, types_
+from .schema import (
+    Schema,  # so 'schema' module doesn't clobber 'Alert.schema' attribute
+)
 
 if TYPE_CHECKING:
+    import astropy.table
+    import google.cloud.functions_v1
     import pandas as pd  # always lazy-load pandas. it hogs memory on cloud functions and run
 
 LOGGER = logging.getLogger(__name__)
@@ -211,7 +217,7 @@ class Alert:
 
     @classmethod
     def from_path(cls, path: str | Path, schema_name: str | None = None) -> "Alert":
-        """Creates an `Alert` object from the file at the specified `path`.
+        """Create an `Alert` object from the file at the specified `path`.
 
         Args:
             path (str or Path):
