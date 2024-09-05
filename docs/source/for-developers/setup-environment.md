@@ -16,8 +16,8 @@ cd pittgoogle-client
 
 # recommended to create a new conda env
 # use the latest python version unless you have a specific reason not to
-conda create --name pittgoogle python=3.12
-conda activate pittgoogle
+conda create --name pittgoogle-dev python=3.12
+conda activate pittgoogle-dev
 
 # install pittgoogle-client in editable mode. use pwd so that the absolute path is registered.
 pip install -e $(pwd)
