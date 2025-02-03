@@ -81,9 +81,7 @@ class SchemaHelpers:
         # until we can get :meth:`SchemaHelpers.lsst_auto_schema_helper` working.
 
         if not schema_dict["name"] == "lsst.v7_3.alert":
-            raise NotImplementedError(
-                "Only 'lsst.v7_3.alert', 'lsst.v7_2.alert', and 'lsst.v7_1.alert' are supported for LSST."
-            )
+            raise NotImplementedError("Only 'lsst.v7_3.alert' is supported for LSST.")
 
         schema = _ConfluentWireAvroSchema(**schema_dict)
 
