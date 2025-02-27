@@ -12,6 +12,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 (none)
 
+## \[v0.3.12\] - 2025-02-27
+
+### Added
+
+- LSST schema versions 7.2, 7.3, and 7.4 to `pittgoogle/schemas/lsst`
+- README.md describing where LSST alert schema versions were obtained.
+
+### Changed
+
+- `schema.py` now specifies all schema versions that are available for LSST
+- Schema mappings for new LSST alert versions incorporated into `schemas.yml`
+
 ## \[v0.3.11\] - 2024-07-22
 
 ### Added
