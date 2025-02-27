@@ -93,7 +93,6 @@
 		"parallax": 2.124124,
 		"pmRaErr": 0.00013,
 		"pmDecErr": 0.00013,
-		"pmParallaxNdata": 0,
 		"parallaxErr": 0.00013,
 		"pmRa_pmDec_Cov": 0.00013,
 		"pmRa_parallax_Cov": 0.00013,
