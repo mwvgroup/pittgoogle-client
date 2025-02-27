@@ -16,8 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Added
 
-- LSST schema versions 7.2, 7.3, and 7.4 to `pittgoogle/schemas/lsst`
-- README.md describing where LSST alert schema versions were obtained.
+- Support for LSST schema versions 7.2, 7.3, and 7.4
+- README.md describing where the new LSST alert schemas were obtained.
 
 ### Changed
 
