@@ -21,6 +21,9 @@ conda activate pittgoogle
 
 # install pittgoogle-client in editable mode. use pwd so that the absolute path is registered.
 pip install -e $(pwd)
+
+pip install --upgrade poetry
+poetry install --with docs,tests
 ```
 
 ## Work
