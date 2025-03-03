@@ -36,4 +36,5 @@ mag_zp: [diaSource, magzpsci]  # float (magnitude zero point)
 mjd: [diaSource, midPointTai]  # float
 ra: [diaSource, ra]  # float
 ra_err: [diaSource, raErr]  # float
+skymap: [event, skymap]  # str
 snr: [diaSource, snr]  # float

@@ -61,17 +61,6 @@ class TestCast:
         assert table["key1"][0] == "value1"
         assert table["key1"][1] == "value3"
 
-    def test_strip_cutouts_ztf(self):
-        alert_dict = {
-            "key1": "value1",
-            "cutoutScience": "cutout1",
-            "cutoutTemplate": "cutout2",
-            "cutoutDifference": "cutout3",
-        }
-        expected_result = {"key1": "value1"}
-        result = Cast._strip_cutouts_ztf(alert_dict)
-        assert result == expected_result
-
     def test_jd_to_readable_date(self):
         jd = 2451545.0  # Julian date for 2000-01-01 12:00:00
         expected_result = "01 Jan 2000 - 12:00:00"

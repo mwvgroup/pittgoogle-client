@@ -9,17 +9,23 @@
 """
 import base64
 import datetime
+import io
 import logging
+import random
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Mapping, Union
 
 import attrs
 import google.cloud.pubsub_v1
 
-from . import registry, types_, exceptions
-from .schema import Schema  # so 'schema' module doesn't clobber 'Alert.schema' attribute
+from . import exceptions, registry, types_
+from .schema import (
+    Schema,  # so 'schema' module doesn't clobber 'Alert.schema' attribute
+)
 
 if TYPE_CHECKING:
+    import astropy.table
+    import google.cloud.functions_v1
     import pandas as pd  # always lazy-load pandas. it hogs memory on cloud functions and run
 
 LOGGER = logging.getLogger(__name__)
@@ -58,10 +64,50 @@ class Alert:
     )
     path: Path | None = attrs.field(default=None)
     # Use "Union" because " | " is throwing an error when combined with forward references.
+    context: Union[
+        "google.cloud.functions_v1.context.Context", types_._FunctionsContextLike, None
+    ] = attrs.field(default=None)
     _dataframe: Union["pd.DataFrame", None] = attrs.field(default=None)
+    _skymap: Union["astropy.table.Qtable", None] = attrs.field(default=None)
     _schema: Schema | None = attrs.field(default=None, init=False)
 
     # ---- class methods ---- #
+    @classmethod
+    def from_cloud_functions(
+        cls,
+        event: Mapping,
+        context: "google.cloud.functions_v1.context.Context",
+        schema_name: str | None = None,
+    ):
+        """Create an `Alert` from an 'event' and 'context', as received by a Cloud Functions module.
+
+        Argument definitions copied from https://cloud.google.com/functions/1stgendocs/tutorials/pubsub-1st-gen
+
+        Args:
+            event (dict):
+                The dictionary with data specific to this type of event. The `@type` field maps to
+                `type.googleapis.com/google.pubsub.v1.PubsubMessage`. The `data` field maps to the
+                PubsubMessage data in a base64-encoded string. The `attributes` field maps to the
+                PubsubMessage attributes if any is present.
+            context (google.cloud.functions.Context):
+                Metadata of triggering event including `event_id` which maps to the PubsubMessage
+                messageId, `timestamp` which maps to the PubsubMessage publishTime, `event_type` which
+                maps to `google.pubsub.topic.publish`, and `resource` which is a dictionary that
+                describes the service API endpoint pubsub.googleapis.com, the triggering topic's name,
+                and the triggering event type `type.googleapis.com/google.pubsub.v1.PubsubMessage`.
+        """
+        return cls(
+            msg=types_.PubsubMessageLike(
+                # data is required. the rest should be present in the message, but use get to be lenient
+                data=base64.b64decode(event["data"]),
+                attributes=event.get("attributes", {}),
+                message_id=context.event_id,
+                publish_time=cls._str_to_datetime(context.timestamp),
+            ),
+            context=context,
+            schema_name=schema_name,
+        )
+
     @classmethod
     def from_cloud_run(cls, envelope: Mapping, schema_name: str | None = None) -> "Alert":
         """Create an `Alert` from an HTTP request envelope containing a Pub/Sub message, as received by a Cloud Run module.
@@ -116,21 +162,13 @@ class Alert:
         if not isinstance(envelope, dict) or "message" not in envelope:
             raise exceptions.BadRequest("Bad Request: invalid Pub/Sub message format")
 
-        # convert the message publish_time string -> datetime
-        # occasionally the string doesn't include microseconds so we need a try/except
-        publish_time = envelope["message"]["publish_time"].replace("Z", "+00:00")
-        try:
-            publish_time = datetime.datetime.strptime(publish_time, "%Y-%m-%dT%H:%M:%S.%f%z")
-        except ValueError:
-            publish_time = datetime.datetime.strptime(publish_time, "%Y-%m-%dT%H:%M:%S%z")
-
         return cls(
             msg=types_.PubsubMessageLike(
                 # data is required. the rest should be present in the message, but use get to be lenient
                 data=base64.b64decode(envelope["message"]["data"].encode("utf-8")),
-                attributes=envelope["message"].get("attributes"),
+                attributes=envelope["message"].get("attributes", {}),
                 message_id=envelope["message"].get("message_id"),
-                publish_time=publish_time,
+                publish_time=cls._str_to_datetime(envelope["message"]["publish_time"]),
                 ordering_key=envelope["message"].get("ordering_key"),
             ),
             schema_name=schema_name,
@@ -179,7 +217,7 @@ class Alert:
 
     @classmethod
     def from_path(cls, path: str | Path, schema_name: str | None = None) -> "Alert":
-        """Creates an `Alert` object from the file at the specified `path`.
+        """Create an `Alert` object from the file at the specified `path`.
 
         Args:
             path (str or Path):
@@ -203,6 +241,11 @@ class Alert:
             msg=types_.PubsubMessageLike(data=bytes_), schema_name=schema_name, path=Path(path)
         )
 
+    def to_mock_input(self, cloud_functions: bool = False):
+        if not cloud_functions:
+            raise NotImplementedError("Only cloud functions has been implemented.")
+        return MockInput(alert=self).to_cloud_functions()
+
     # ---- properties ---- #
     @property
     def attributes(self) -> Mapping:
@@ -220,6 +263,7 @@ class Alert:
                 self._attributes = dict(self.msg.attributes)
             else:
                 self._attributes = {}
+            self._add_id_attributes()
         return self._attributes
 
     @property
@@ -254,9 +298,9 @@ class Alert:
         import pandas as pd  # always lazy-load pandas. it hogs memory on cloud functions and run
 
         # sources and previous sources are expected to have the same fields
-        sources_df = pd.DataFrame([self.get("source")] + self.get("prv_sources"))
+        sources_df = pd.DataFrame([self.get("source")] + self.get("prv_sources", []))
         # sources and forced sources may have different fields
-        forced_df = pd.DataFrame(self.get("prv_forced_sources"))
+        forced_df = pd.DataFrame(self.get("prv_forced_sources", []))
 
         # use nullable integer data type to avoid converting ints to floats
         # for columns in one dataframe but not the other
@@ -308,6 +352,66 @@ class Alert:
             self._schema = registry.Schemas.get(self.schema_name)
         return self._schema
 
+    @property
+    def skymap(self) -> Union["astropy.table.QTable", None]:
+        """Alert skymap as an astropy Table. Currently implemented for LVK schemas only.
+
+        This skymap is loaded from the alert to an astropy table and extra columns are added, following
+        https://emfollow.docs.ligo.org/userguide/tutorial/multiorder_skymaps.html.
+        The table is sorted by PROBDENSITY and then UNIQ, in descending order, so that the most likely
+        location is first. Columns:
+
+            - UNIQ: HEALPix pixel index in the NUNIQ indexing scheme.
+            - PROBDENSITY: Probability density in the pixel (per steradian).
+            - nside: HEALPix nside parameter defining the pixel resolution.
+            - ipix: HEALPix pixel index at resolution nside.
+            - ra: Right ascension of the pixel center (radians).
+            - dec: Declination of the pixel center (radians).
+            - pixel_area: Area of the pixel (steradians).
+            - prob: Probability density in the pixel.
+            - cumprob: Cumulative probability density up to the pixel.
+
+        Examples:
+
+            .. code-block:: python
+
+                # most likely location
+                alert.skymap[0]
+
+                # 90% credible region
+                alert.skymap[:alert.skymap['cumprob'].searchsorted(0.9)]
+        """
+        if self._skymap is None and self.schema_name.startswith("lvk"):
+            import astropy.table
+            import astropy.units
+            import hpgeom
+            import numpy as np
+
+            if self.get("skymap") is None:
+                return
+
+            skymap = astropy.table.QTable.read(io.BytesIO(base64.b64decode(self.get("skymap"))))
+            skymap.sort(["PROBDENSITY", "UNIQ"], reverse=True)
+
+            skymap["nside"] = (2 ** (np.log2(skymap["UNIQ"] // 4) // 2)).astype(int)
+            skymap["ipix"] = skymap["UNIQ"] - 4 * skymap["nside"] ** 2
+
+            skymap["ra"], skymap["dec"] = hpgeom.pixel_to_angle(
+                skymap["nside"], skymap["ipix"], degrees=False
+            )
+            skymap["ra"].unit = astropy.units.rad
+            skymap["dec"].unit = astropy.units.rad
+
+            skymap["pixel_area"] = hpgeom.nside_to_pixel_area(skymap["nside"], degrees=False)
+            skymap["pixel_area"].unit = astropy.units.sr
+
+            skymap["prob"] = skymap["pixel_area"] * skymap["PROBDENSITY"]
+            skymap["cumprob"] = skymap["prob"].cumsum()
+
+            self._skymap = skymap
+
+        return self._skymap
+
     # ---- methods ---- #
     def _add_id_attributes(self) -> None:
         """Add the IDs ("alertid", "objectid", "sourceid") to :attr:`Alert.attributes`."""
@@ -320,10 +424,10 @@ class Alert:
         # but pubsub message attributes must be strings. join to avoid a future error on publish
         names = [".".join(id) if isinstance(id, list) else id for id in survey_names]
 
-        # only add to attributes if the survey has defined this field
+        # only add to attributes if the survey has defined this field and it's not already in the attributes
         for idname, idvalue in zip(names, values):
-            if idname is not None:
-                self.attributes[idname] = idvalue
+            if idname is not None and idname not in self._attributes:
+                self._attributes[idname] = idvalue
 
     def get(self, field: str, default: Any = None) -> Any:
         """Return the value of a field from the alert data.
@@ -359,13 +463,13 @@ class Alert:
         if len(survey_field) == 2:
             try:
                 return self.dict[survey_field[0]][survey_field[1]]
-            except KeyError:
+            except (KeyError, TypeError):
                 return default
 
         if len(survey_field) == 3:
             try:
                 return self.dict[survey_field[0]][survey_field[1]][survey_field[2]]
-            except KeyError:
+            except (KeyError, TypeError):
                 return default
 
         raise NotImplementedError(
@@ -402,3 +506,77 @@ class Alert:
             return survey_field[-1]
 
         return survey_field
+
+    def _prep_for_publish(self) -> tuple[bytes, Mapping[str, str]]:
+        """Serialize the alert dict and convert all attribute keys and values to strings."""
+        message = self.schema.serialize(self.drop_cutouts())
+        # Pub/Sub requires attribute keys and values to be strings. Sort the keys while we're at it.
+        attributes = {str(key): str(self.attributes[key]) for key in sorted(self.attributes)}
+        return message, attributes
+
+    def drop_cutouts(self) -> dict:
+        """Drop the cutouts from the alert dictionary.
+
+        Returns:
+            dict:
+                The `dict` with the cutouts (postage stamps) removed.
+        """
+        cutouts = [
+            self.get_key(key) for key in ["cutout_difference", "cutout_science", "cutout_template"]
+        ]
+        alert_stripped = {k: v for k, v in self.dict.items() if k not in cutouts}
+        return alert_stripped
+
+    @staticmethod
+    def _str_to_datetime(str_time: str) -> datetime.datetime:
+        # occasionally the string doesn't include microseconds so we need a try/except
+        try:
+            return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S.%f%z")
+        except ValueError:
+            return datetime.datetime.strptime(str_time, "%Y-%m-%dT%H:%M:%S%z")
+
+
+@attrs.define
+class MockInput:
+    alert: Alert = attrs.field()
+
+    def to_cloud_functions(self) -> tuple[dict, types_._FunctionsContextLike]:
+        """
+
+        Parameter definitions copied from https://cloud.google.com/functions/1stgendocs/tutorials/pubsub-1st-gen
+
+        Returns:
+            event (dict):
+                The dictionary with data specific to this type of event. The `@type` field maps to
+                `type.googleapis.com/google.pubsub.v1.PubsubMessage`. The `data` field maps to the
+                PubsubMessage data in a base64-encoded string. The `attributes` field maps to the
+                PubsubMessage attributes if any is present.
+            context (google.cloud.functions.Context):
+                Metadata of triggering event including `event_id` which maps to the PubsubMessage
+                messageId, `timestamp` which maps to the PubsubMessage publishTime, `event_type` which
+                maps to `google.pubsub.topic.publish`, and `resource` which is a dictionary that
+                describes the service API endpoint pubsub.googleapis.com, the triggering topic's name,
+                and the triggering event type `type.googleapis.com/google.pubsub.v1.PubsubMessage`.
+        """
+        message, attributes = self.alert._prep_for_publish()
+        event_type = "type.googleapis.com/google.pubsub.v1.PubsubMessage"
+        now = (
+            datetime.datetime.now(datetime.timezone.utc)
+            .isoformat(timespec="milliseconds")
+            .replace("+00:00", "Z")
+        )
+
+        event = {"@type": event_type, "data": base64.b64encode(message), "attributes": attributes}
+
+        context = types_._FunctionsContextLike(
+            event_id=str(int(1e12 * random.random())),
+            timestamp=now,
+            event_type="google.pubsub.topic.publish",
+            resource={
+                "name": "projects/NONE/topics/NONE",
+                "service": "pubsub.googleapis.com",
+                "type": event_type,
+            },
+        )
+
+        return event, context

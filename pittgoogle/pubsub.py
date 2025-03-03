@@ -274,10 +274,7 @@ class Topic:
     def publish(self, alert: "Alert") -> int:
         """Publish a message with :attr:`pittgoogle.Alert.dict` as the payload and
         :attr:`pittgoogle.Alert.attributes` as the attributes."""
-        # Pub/Sub requires attribute keys and values to be strings. Sort the keys while we're at it.
-        attributes = {str(key): str(alert.attributes[key]) for key in sorted(alert.attributes)}
-        message = alert.schema.serialize(alert.dict)
-
+        message, attributes = alert._prep_for_publish()
         future = self.client.publish(self.path, data=message, **attributes)
         return future.result()
 
