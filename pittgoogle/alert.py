@@ -9,7 +9,6 @@
 """
 import base64
 import datetime
-import importlib.resources
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Mapping, Union
@@ -24,7 +23,6 @@ if TYPE_CHECKING:
     import pandas as pd  # always lazy-load pandas. it hogs memory on cloud functions and run
 
 LOGGER = logging.getLogger(__name__)
-PACKAGE_DIR = importlib.resources.files(__package__)
 
 
 @attrs.define(kw_only=True)
@@ -218,7 +216,10 @@ class Alert:
         message's Pub/Sub attributes.
         """
         if self._attributes is None:
-            self._attributes = dict(self.msg.attributes)
+            if self.msg is not None:
+                self._attributes = dict(self.msg.attributes)
+            else:
+                self._attributes = {}
         return self._attributes
 
     @property
