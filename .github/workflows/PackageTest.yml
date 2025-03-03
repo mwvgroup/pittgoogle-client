@@ -28,9 +28,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          poetry run coverage run -m unittest discover 
-          poetry run coverage report --omit="tests/*"
-          poetry run coverage xml --omit="tests/*" -o coverage.xml
+          poetry run pytest --cov=pittgoogle --cov-report=xml --cov-report=term
 
       # Report partial coverage results to codacy for the current python version
       - name: Report partial coverage results
