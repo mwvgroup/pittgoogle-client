@@ -387,6 +387,9 @@ class Alert:
             import hpgeom
             import numpy as np
 
+            if self.get("skymap") is None:
+                return
+
             skymap = astropy.table.QTable.read(io.BytesIO(base64.b64decode(self.get("skymap"))))
             skymap.sort(["PROBDENSITY", "UNIQ"], reverse=True)
 
@@ -460,13 +463,13 @@ class Alert:
         if len(survey_field) == 2:
             try:
                 return self.dict[survey_field[0]][survey_field[1]]
-            except KeyError:
+            except (KeyError, TypeError):
                 return default
 
         if len(survey_field) == 3:
             try:
                 return self.dict[survey_field[0]][survey_field[1]][survey_field[2]]
-            except KeyError:
+            except (KeyError, TypeError):
                 return default
 
         raise NotImplementedError(
