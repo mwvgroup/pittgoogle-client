@@ -134,22 +134,6 @@ class Cast:
         table.meta["comments"] = f"ZTF objectId: {alert_dict['objectId']}"
         return table
 
-    @staticmethod
-    def _strip_cutouts_ztf(alert_dict: dict) -> dict:
-        """Drop the cutouts from the alert dictionary.
-
-        Args:
-            alert_dict (dict):
-                ZTF alert formatted as a dictionary.
-
-        Returns:
-            dict:
-                The modified `alert_dict` with the cutouts (postage stamps) removed.
-        """
-        cutouts = ["cutoutScience", "cutoutTemplate", "cutoutDifference"]
-        alert_stripped = {k: v for k, v in alert_dict.items() if k not in cutouts}
-        return alert_stripped
-
     # dates
     @staticmethod
     def jd_to_readable_date(jd) -> str:
