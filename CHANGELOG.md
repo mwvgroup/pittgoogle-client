@@ -10,7 +10,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
-(none)
+### Added
+
+- Add '\_\_package_path__' as a package-level variable.
+- Add test data for LSST and ZTF.
+- Add unit tests for:
+    - `registry.Schemas`
+    - `alert.Alert`
+    - `utils.Cast`
+
+### Changed
+
+- Implement `schema._ConfluentWireAvroSchema.serialize`.
 
 ## \[v0.3.11\] - 2024-07-22
 
