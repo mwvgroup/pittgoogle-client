@@ -14,7 +14,7 @@ create a conda environment with Poetry installed. Then:
 
 ```bash
 # Install pittgoogle dependencies, including those in the "docs" group.
-poetry install --with=docs
+poetry install --with docs
 ```
 
 Now, `cd` to the docs directory and run `make`:

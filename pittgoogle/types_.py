@@ -8,13 +8,11 @@
 ----
 """
 import datetime
-import importlib.resources
 import logging
 
 import attrs
 
 LOGGER = logging.getLogger(__name__)
-PACKAGE_DIR = importlib.resources.files(__package__)
 
 
 @attrs.define(frozen=True)
