@@ -12,6 +12,7 @@ import io
 import json
 import logging
 import re
+import struct
 from pathlib import Path
 
 import attrs
@@ -43,7 +44,7 @@ class SchemaHelpers:
     """
 
     @staticmethod
-    def default_schema_helper(schema_dict: dict) -> "Schema":
+    def default_schema_helper(schema_dict: dict) -> "_DefaultSchema":
         """Resolve `schema.path`. If it points to a valid ".avsc" file, load it into `schema.avsc`."""
         schema = _DefaultSchema(**schema_dict)
 
@@ -63,7 +64,7 @@ class SchemaHelpers:
         return schema
 
     @staticmethod
-    def elasticc_schema_helper(schema_dict: dict) -> "Schema":
+    def elasticc_schema_helper(schema_dict: dict) -> "_SchemalessAvroSchema":
         schema = _SchemalessAvroSchema(**schema_dict)
 
         # Resolve the path and load the schema
@@ -73,7 +74,7 @@ class SchemaHelpers:
         return schema
 
     @staticmethod
-    def lsst_schema_helper(schema_dict: dict) -> "Schema":
+    def lsst_schema_helper(schema_dict: dict) -> "_ConfluentWireAvroSchema":
         """Load the Avro schema definition for lsst.v7_1.alert."""
         # [FIXME] This is hack to get the latest schema version into pittgoogle-client
         # until we can get :meth:`SchemaHelpers.lsst_auto_schema_helper` working.
@@ -90,7 +91,7 @@ class SchemaHelpers:
         return schema
 
     @staticmethod
-    def lsst_auto_schema_helper(schema_dict: dict) -> "Schema":
+    def lsst_auto_schema_helper(schema_dict: dict) -> "_ConfluentWireAvroSchema":
         """Load the Avro schema definition using the ``lsst.alert.packet`` package.
 
         Raises:
@@ -153,8 +154,8 @@ class Schema:
     """Path where the helper can find the schema, if needed."""
     filter_map: dict = attrs.field(factory=dict)
     """Mapping of the filter name as stored in the alert (often an int) to the common name (often a string)."""
+    _header_bytes: bytes | None = attrs.field(default=None)
     # The rest don't need string descriptions because we will define them as explicit properties.
-    _survey: str | None = attrs.field(default=None)
     # _map is important, but don't accept it as an init arg. We'll load it from a yaml file later.
     _map: dict | None = attrs.field(default=None, init=False)
 
@@ -182,10 +183,13 @@ class Schema:
 
     @property
     def survey(self) -> str:
-        """Name of the survey. This is usually the first part of the schema's name."""
-        if self._survey is None:
-            self._survey = self.name.split(".")[0]
-        return self._survey
+        """Name of the survey."""
+        return self.name.split(".")[0]
+
+    @property
+    def version(self) -> str:
+        """Version of the schema."""
+        return self.name.split(".")[1]
 
     @property
     def map(self) -> dict:
@@ -248,9 +252,7 @@ class _SchemalessAvroSchema(Schema):
         """Serialize `alert_dict` using the schemaless Avro format."""
         fout = io.BytesIO()
         fastavro.schemaless_writer(fout, self.definition, alert_dict)
-        fout.seek(0)
-        message = fout.getvalue()
-        return message
+        return fout.getvalue()
 
     def deserialize(self, alert_bytes: bytes) -> dict:
         bytes_io = io.BytesIO(alert_bytes)
@@ -263,10 +265,24 @@ class _ConfluentWireAvroSchema(Schema):
     https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format
     """
 
-    def serialize(self, alert_dict: dict) -> bytes:
-        # [TODO]
-        raise NotImplementedError("Confluent Wire Format not yet supported.")
+    def serialize(self, alert_dict: dict, schema_id: int = 12345) -> bytes:
+        fout = io.BytesIO()
+        # Write the header
+        if self._header_bytes:
+            fout.write(self._header_bytes)
+        else:
+            fout.write(b"\x00")  # magic byte
+            fout.write(struct.pack(">i", schema_id))  # schema ID (4 bytes, big-endian)
+        # Serialize data and return
+        fastavro.schemaless_writer(fout, self.definition, alert_dict)
+        return fout.getvalue()
+        # To convert from an avro file that has the schema attached:
+        # alert = pittgoogle.Alert.from_path(alert_with_schema_path)
+        # message = alert.schema.serialize(alert.dict)
+        # with open('alert_cwire_path', 'wb') as fout:
+        #     fout.write(message)
 
     def deserialize(self, alert_bytes: bytes) -> dict:
+        self._header_bytes = alert_bytes[:5]
         bytes_io = io.BytesIO(alert_bytes[5:])
         return fastavro.schemaless_reader(bytes_io, self.definition)

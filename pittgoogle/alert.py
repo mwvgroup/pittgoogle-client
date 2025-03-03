@@ -216,7 +216,10 @@ class Alert:
         message's Pub/Sub attributes.
         """
         if self._attributes is None:
-            self._attributes = dict(self.msg.attributes)
+            if self.msg is not None:
+                self._attributes = dict(self.msg.attributes)
+            else:
+                self._attributes = {}
         return self._attributes
 
     @property
