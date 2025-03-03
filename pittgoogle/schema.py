@@ -44,7 +44,7 @@ class SchemaHelpers:
     """
 
     @staticmethod
-    def default_schema_helper(schema_dict: dict) -> "Schema":
+    def default_schema_helper(schema_dict: dict) -> "_DefaultSchema":
         """Resolve `schema.path`. If it points to a valid ".avsc" file, load it into `schema.avsc`."""
         schema = _DefaultSchema(**schema_dict)
 
@@ -64,7 +64,7 @@ class SchemaHelpers:
         return schema
 
     @staticmethod
-    def elasticc_schema_helper(schema_dict: dict) -> "Schema":
+    def elasticc_schema_helper(schema_dict: dict) -> "_SchemalessAvroSchema":
         schema = _SchemalessAvroSchema(**schema_dict)
 
         # Resolve the path and load the schema
@@ -74,7 +74,7 @@ class SchemaHelpers:
         return schema
 
     @staticmethod
-    def lsst_schema_helper(schema_dict: dict) -> "Schema":
+    def lsst_schema_helper(schema_dict: dict) -> "_ConfluentWireAvroSchema":
         """Load the Avro schema definition for lsst.v7_1.alert."""
         # [FIXME] This is hack to get the latest schema version into pittgoogle-client
         # until we can get :meth:`SchemaHelpers.lsst_auto_schema_helper` working.
@@ -91,7 +91,7 @@ class SchemaHelpers:
         return schema
 
     @staticmethod
-    def lsst_auto_schema_helper(schema_dict: dict) -> "Schema":
+    def lsst_auto_schema_helper(schema_dict: dict) -> "_ConfluentWireAvroSchema":
         """Load the Avro schema definition using the ``lsst.alert.packet`` package.
 
         Raises:
@@ -252,9 +252,7 @@ class _SchemalessAvroSchema(Schema):
         """Serialize `alert_dict` using the schemaless Avro format."""
         fout = io.BytesIO()
         fastavro.schemaless_writer(fout, self.definition, alert_dict)
-        fout.seek(0)
-        message = fout.getvalue()
-        return message
+        return fout.getvalue()
 
     def deserialize(self, alert_bytes: bytes) -> dict:
         bytes_io = io.BytesIO(alert_bytes)
