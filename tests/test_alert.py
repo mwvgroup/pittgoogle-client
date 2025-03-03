@@ -1,5 +1,7 @@
 # -*- coding: UTF-8 -*-
 """Unit tests for the alert module."""
+import astropy.table
+
 import pittgoogle
 
 
@@ -26,3 +28,13 @@ class TestAlert:
             _expected_keys = [".".join(key) if isinstance(key, list) else key for key in key_gen]
             expected_keys = set(key for key in _expected_keys if key)  # get rid of None
             assert set(alert.attributes) == expected_keys
+
+    def test_skymap(self, sample_alerts_lvk):
+        for sample_alert in sample_alerts_lvk:
+            alert = pittgoogle.Alert.from_path(
+                sample_alert.path, schema_name=sample_alert.schema_name
+            )
+            if "retraction" not in sample_alert.path.name:
+                assert isinstance(alert.skymap, astropy.table.QTable)
+            else:
+                assert alert.skymap is None
