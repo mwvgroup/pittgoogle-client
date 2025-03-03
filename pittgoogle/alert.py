@@ -509,10 +509,23 @@ class Alert:
 
     def _prep_for_publish(self) -> tuple[bytes, Mapping[str, str]]:
         """Serialize the alert dict and convert all attribute keys and values to strings."""
-        message = self.schema.serialize(self.dict)
+        message = self.schema.serialize(self.drop_cutouts())
         # Pub/Sub requires attribute keys and values to be strings. Sort the keys while we're at it.
         attributes = {str(key): str(self.attributes[key]) for key in sorted(self.attributes)}
         return message, attributes
+
+    def drop_cutouts(self) -> dict:
+        """Drop the cutouts from the alert dictionary.
+
+        Returns:
+            dict:
+                The `dict` with the cutouts (postage stamps) removed.
+        """
+        cutouts = [
+            self.get_key(key) for key in ["cutout_difference", "cutout_science", "cutout_template"]
+        ]
+        alert_stripped = {k: v for k, v in self.dict.items() if k not in cutouts}
+        return alert_stripped
 
     @staticmethod
     def _str_to_datetime(str_time: str) -> datetime.datetime:
