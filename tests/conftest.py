@@ -22,26 +22,6 @@ class SampleAlert:
     survey: str = attrs.field()
 
 
-# @attrs.define(kw_only=True)
-# class SurveyAlerts:
-#     _sample_alerts: tuple[SampleAlert] = attrs.field(converter=tuple)
-
-#     def __iter__(self):
-#         return iter(self._sample_alerts)
-
-#     def __getitem__(self, index):
-#         return self._sample_alerts[index]
-
-#     def __len__(self):
-#         return len(self._sample_alerts)
-
-#     def paths(self):
-#         return [alert.path for alert in self._sample_alerts]
-
-#     def dicts(self):
-#         return [alert.dict_ for alert in self._sample_alerts]
-
-
 @pytest.fixture
 def sample_alerts_lsst() -> list[SampleAlert]:
     survey = "lsst"
