@@ -12,7 +12,6 @@
 """
 import concurrent.futures
 import datetime
-import importlib.resources
 import logging
 import queue
 import time
@@ -28,7 +27,6 @@ from .alert import Alert
 from .auth import Auth
 
 LOGGER = logging.getLogger(__name__)
-PACKAGE_DIR = importlib.resources.files(__package__)
 
 
 def msg_callback_example(alert: Alert) -> "Response":

@@ -9,7 +9,6 @@
 """
 import base64
 import datetime
-import importlib.resources
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Mapping, Union
@@ -24,7 +23,6 @@ if TYPE_CHECKING:
     import pandas as pd  # always lazy-load pandas. it hogs memory on cloud functions and run
 
 LOGGER = logging.getLogger(__name__)
-PACKAGE_DIR = importlib.resources.files(__package__)
 
 
 @attrs.define(kw_only=True)

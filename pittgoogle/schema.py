@@ -8,7 +8,6 @@
 
 ----
 """
-import importlib.resources
 import io
 import json
 import logging
@@ -19,10 +18,9 @@ import attrs
 import fastavro
 import yaml
 
-from . import exceptions, utils
+from . import __package_path__, exceptions, utils
 
 LOGGER = logging.getLogger(__name__)
-PACKAGE_DIR = importlib.resources.files(__package__)
 
 
 @attrs.define(kw_only=True)
@@ -51,7 +49,7 @@ class SchemaHelpers:
 
         # Resolve the path. If it is not None, this helper expects it to be the path to
         # a ".avsc" file relative to the pittgoogle package directory.
-        schema.path = PACKAGE_DIR / schema.path if schema.path is not None else None
+        schema.path = __package_path__ / schema.path if schema.path is not None else None
 
         # Load the avro schema, if the file exists. Fallback to None.
         invalid_path = (
@@ -69,7 +67,7 @@ class SchemaHelpers:
         schema = _SchemalessAvroSchema(**schema_dict)
 
         # Resolve the path and load the schema
-        schema.path = PACKAGE_DIR / schema.path
+        schema.path = __package_path__ / schema.path
         schema.definition = fastavro.schema.load_schema(schema.path)
 
         return schema
@@ -86,7 +84,7 @@ class SchemaHelpers:
         schema = _ConfluentWireAvroSchema(**schema_dict)
 
         # Resolve the path and load the schema
-        schema.path = PACKAGE_DIR / schema.path
+        schema.path = __package_path__ / schema.path
         schema.definition = fastavro.schema.load_schema(schema.path)
 
         return schema
@@ -193,7 +191,7 @@ class Schema:
     def map(self) -> dict:
         """Mapping of Pitt-Google's generic field names to survey-specific field names."""
         if self._map is None:
-            yml = PACKAGE_DIR / f"schemas/maps/{self.survey}.yml"
+            yml = __package_path__ / f"schemas/maps/{self.survey}.yml"
             try:
                 self._map = yaml.safe_load(yml.read_text())
             except FileNotFoundError:

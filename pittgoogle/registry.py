@@ -8,18 +8,19 @@
 
 ----
 """
-import importlib.resources
 import logging
 from typing import Final
 
 import attrs
 import yaml
 
-from . import exceptions, schema
+from . import __package_path__, exceptions, schema
 
 LOGGER = logging.getLogger(__name__)
-PACKAGE_DIR = importlib.resources.files(__package__)
-SCHEMA_MANIFEST = yaml.safe_load((PACKAGE_DIR / "registry_manifests/schemas.yml").read_text())
+
+# Load the schema manifest as a list of dicts sorted by key.
+manifest_yaml = (__package_path__ / "registry_manifests/schemas.yml").read_text()
+SCHEMA_MANIFEST = sorted(yaml.safe_load(manifest_yaml), key=lambda schema: schema["name"])
 
 
 @attrs.define(frozen=True)
