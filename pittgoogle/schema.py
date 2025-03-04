@@ -88,7 +88,7 @@ class SchemaHelpers:
         ]
 
         if schema_dict.get("name") not in supported_versions:
-            raise NotImplementedError(
+            raise exceptions.SchemaError(
                 f"Only {', '.join(supported_versions)} are supported for LSST."
             )
 
