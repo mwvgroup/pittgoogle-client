@@ -13,6 +13,12 @@ TESTS_DATA_DIR = Path(__file__).parent / "data"
 SCHEMAS_DIR = pittgoogle.__package_path__ / "schemas"
 
 
+@pytest.fixture
+def survey_names() -> list[str]:
+    """List of all survey names supported by pittgoogle."""
+    return ["lsst", "ztf"]
+
+
 @attrs.define(kw_only=True)
 class SampleAlert:
     """Container for a single sample alert."""

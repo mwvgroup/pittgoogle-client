@@ -36,6 +36,9 @@ class TestRegistrySchemas:
         schema = self.schemas.get(schema_name=schema_name)
         assert isinstance(schema, pittgoogle.schema.Schema)
 
-    def test_get_schema_name_not_found(self):
+    def test_get_schema_with_bad_name(self, survey_names):
         with pytest.raises(pittgoogle.exceptions.SchemaError):
             self.schemas.get(schema_name="nonexistent_schema")
+        for survey in survey_names:
+            with pytest.raises(pittgoogle.exceptions.SchemaError):
+                self.schemas.get(schema_name=f"{survey}.vNONE.alert")
