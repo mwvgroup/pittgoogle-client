@@ -13,8 +13,16 @@ TESTS_DATA_DIR = Path(__file__).parent / "data"
 SCHEMAS_DIR = pittgoogle.__package_path__ / "schemas"
 
 
+@pytest.fixture
+def survey_names() -> list[str]:
+    """List of all survey names supported by pittgoogle."""
+    return ["lsst", "ztf"]
+
+
 @attrs.define(kw_only=True)
 class SampleAlert:
+    """Container for a single sample alert."""
+
     path: Path = attrs.field()
     dict_: dict = attrs.field()
     schema_name: str = attrs.field()
@@ -22,10 +30,21 @@ class SampleAlert:
     survey: str = attrs.field()
 
 
+def _get_sample_alert_paths(survey: str) -> list[Path]:
+    """Return all paths under 'tests/data/' that look like sample alerts for `survey`."""
+    alert_paths = [
+        path
+        for path in (TESTS_DATA_DIR / "sample_alerts" / survey).iterdir()
+        if path.suffix in [".avro", ".json"]
+    ]
+    return alert_paths
+
+
 @pytest.fixture
 def sample_alerts_lsst() -> list[SampleAlert]:
+    """List of all LSST sample alerts."""
     survey = "lsst"
-    alert_paths = list((TESTS_DATA_DIR / "sample_alerts" / survey).iterdir())
+    alert_paths = _get_sample_alert_paths(survey)
     alerts = []
     for alert_path in alert_paths:
         schema_fname = alert_path.with_suffix(".alert.avsc").name
@@ -50,8 +69,9 @@ def sample_alerts_lsst() -> list[SampleAlert]:
 
 @pytest.fixture
 def sample_alerts_ztf() -> list[SampleAlert]:
+    """List of all ZTF sample alerts."""
     survey = "ztf"
-    alert_paths = list((TESTS_DATA_DIR / "sample_alerts" / survey).iterdir())
+    alert_paths = _get_sample_alert_paths(survey)
     alerts = []
     for alert_path in alert_paths:
         alert_bytes = alert_path.read_bytes()
@@ -69,9 +89,11 @@ def sample_alerts_ztf() -> list[SampleAlert]:
 
 @pytest.fixture
 def sample_alerts(sample_alerts_lsst, sample_alerts_ztf) -> list[SampleAlert]:
+    """List of all sample alerts for all surveys."""
     return [*sample_alerts_lsst, *sample_alerts_ztf]
 
 
 @pytest.fixture
 def sample_alert(sample_alerts_ztf) -> SampleAlert:
+    """Single sample alert. Useful when a test needs a sample alert but doesn't care which one."""
     return sample_alerts_ztf[0]

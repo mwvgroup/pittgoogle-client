@@ -75,12 +75,22 @@ class SchemaHelpers:
 
     @staticmethod
     def lsst_schema_helper(schema_dict: dict) -> "_ConfluentWireAvroSchema":
-        """Load the Avro schema definition for lsst.v7_1.alert."""
+        """Load the Avro schema definition for lsst.v7_x.alert."""
         # [FIXME] This is hack to get the latest schema version into pittgoogle-client
         # until we can get :meth:`SchemaHelpers.lsst_auto_schema_helper` working.
 
-        if not schema_dict["name"] == "lsst.v7_1.alert":
-            raise NotImplementedError("Only 'lsst.v7_1.alert' is supported for LSST.")
+        supported_versions = [
+            "lsst.v7_0.alert",
+            "lsst.v7_1.alert",
+            "lsst.v7_2.alert",
+            "lsst.v7_3.alert",
+            "lsst.v7_4.alert",
+        ]
+
+        if schema_dict.get("name") not in supported_versions:
+            raise exceptions.SchemaError(
+                f"Only {', '.join(supported_versions)} are supported for LSST."
+            )
 
         schema = _ConfluentWireAvroSchema(**schema_dict)
 
