@@ -68,10 +68,6 @@ Pub/Sub Alert Streams
       - One message per alert indicating that the Avro file is available in a Cloud Storage bucket.
         The file and bucket names are in the message attributes. Messages contain no data.
 
-    * - ztf-BigQuery
-      - One message per alert indicating that the alert data is available in a BigQuery table.
-        Table names are in the message attributes. Messages contain no data.
-
     * - .. centered:: *Testing Stream*
       -
 
@@ -151,10 +147,6 @@ Pub/Sub Alert Streams
       - LVK alert stream in Pub/Sub.
         Messages contain the original alert bytes and metadata.
 
-    * - lvk-BigQuery
-      - One message per alert indicating that the alert data is available in a BigQuery table.
-        Table names and alert metadata are in the message attributes. Messages contain no data.
-
 BigQuery Tables
 ^^^^^^^^^^^^^^^
 
@@ -168,6 +160,65 @@ BigQuery Tables
       - Description
 
     * - lvk
-      - alerts_O4
+      - alerts_v1_0
       - Alert data from the LVK O4 observing run. This table is an archive of the lvk-alerts Pub/Sub stream.
         It has the same schema as the original alert bytes, including nested and repeated fields.
+
+Legacy Survey of Space and Time (LSST)
+-------------------------------
+
+:ref:`LSST <survey lsst>` is a wide-field, optical survey producing an alert stream at an average rate of 10^7 per night.
+
+Pub/Sub Alert Streams
+^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+    :class: tight-table
+    :widths: 25 75
+    :header-rows: 1
+
+    * - Topic
+      - Description
+
+    * - .. centered:: *Data Streams*
+      -
+
+    * - lsst-alerts
+      - LSST alert stream in Pub/Sub, cleaned of duplicate alerts.
+        Messages contain the original alert bytes and metadata.
+
+BigQuery Tables
+^^^^^^^^^^^^^^^
+
+.. list-table::
+    :class: tight-table
+    :widths: 15 15 70
+    :header-rows: 1
+
+    * - Dataset
+      - Table
+      - Description
+
+    * - lsst
+      - alerts_v7_4
+      - Alert data for LSST schema version 7.4. This table is an archive of the lsst-alerts Pub/Sub stream,
+        excluding image cutouts and metadata.
+        It has the same schema as the original alert bytes (except cutouts), including nested and repeated fields.
+        Equivalent tables exist for previous schema versions: alerts_v7_3,  alerts_v7_1.
+
+Cloud Storage Buckets
+^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+    :class: tight-table
+    :widths: 40 60
+    :header-rows: 1
+
+    * - Bucket
+      - Description
+
+    * - ardent-cycling-243415-lsst_alerts
+      - Alert data for LSST. This bucket is an Avro file archive of the lsst-alerts Pub/Sub stream,
+        including image cutouts and metadata. Each alert is stored as a separate Avro file.
+        The filename syntax is: `<schema_version>/<alert_date>/<diaObjectId>/<diaSourceId>.avro`.
+        Equivalent directory structures exist for previous schema versions: v7_3,  v7_1.
