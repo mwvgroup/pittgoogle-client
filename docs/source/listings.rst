@@ -95,12 +95,6 @@ BigQuery Tables
         Equivalent tables exist for previous schema versions: alerts_v3_3,  alerts_v3_1,  alerts_v3_0,  alerts_v1_8.
 
     * - ztf
-      - DIASource
-      - ZTF alert data of the DIA source that triggered the alert. Includes the object ID and a
-        list of source IDs for the previous sources included in the alert, excluding cutouts and
-        data for previous sources. The schema is flat.
-
-    * - ztf
       - SuperNNova
       - Results from a SuperNNova (Möller \& de Boissière, 2019)
         Type Ia supernova classification (binary).
