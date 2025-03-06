@@ -13,8 +13,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Added
 
 - Data listings and references for LSST
-- Support for LSST schema versions 7.2, 7.3, and 7.4
-- README.md describing where the new LSST alert schemas were obtained.
 - Add '\_\_package_path__' as a package-level variable.
 - Add test data for LSST and ZTF.
 - Add unit tests for:
@@ -24,8 +22,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Changed
 
-- `schema.py` now specifies all schema versions that are available for LSST
-- Schema mappings for new LSST alert versions incorporated into `schemas.yml`
 - Implement `schema._ConfluentWireAvroSchema.serialize`.
 
 ## \[v0.3.11\] - 2024-07-22

@@ -3,9 +3,10 @@
 Legacy Survey of Space and Time (LSST)
 ===============================
 
-LSST is the widest, fastest, and deepest optical survey imaging in six bands: u, g, r, i, z, and y.
-It produces an alert stream of astronomical transients detected by difference imaging at an average rate of 10^7 alerts per night.
-It scans the entire Southern sky every few days.
+LSST will be the `widest, fastest, and deepest optical survey <https://www.lsst.org/sites/default/files/documents/rubinobs_lsst_factsheet_9_2020_final.pdf>`__
+imaging in six bands: u, g, r, i, z, and y. It will produce an alert stream of astronomical transients detected by
+difference imaging at an average rate of 10^7 alerts per night and is expected to scan the entire Southern sky every
+few days.
 
 Mission resources:
 

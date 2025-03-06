@@ -158,10 +158,14 @@ BigQuery Tables
       - Alert data from the LVK O4 observing run. This table is an archive of the lvk-alerts Pub/Sub stream.
         It has the same schema as the original alert bytes, including nested and repeated fields.
 
+.. _data lsst:
+
 Legacy Survey of Space and Time (LSST)
 -------------------------------
 
-:ref:`LSST <survey lsst>` is a wide-field, optical survey producing an alert stream at an average rate of 10^7 per night.
+:ref:`LSST <survey lsst>` is an upcoming wide-field, optical survey that is currently in the commissioning phase and
+producing an alert stream that is suitable for testing and development. LSST is expected to produce on average 10^7
+alerts per night.
 
 Pub/Sub Alert Streams
 ^^^^^^^^^^^^^^^^^^^^^
@@ -215,4 +219,4 @@ Cloud Storage Buckets
       - Alert data for LSST. This bucket is an Avro file archive of the lsst-alerts Pub/Sub stream,
         including image cutouts and metadata. Each alert is stored as a separate Avro file.
         The filename syntax is: `<schema_version>/<alert_date>/<diaObjectId>/<diaSourceId>.avro`.
-        Equivalent directory structures exist for previous schema versions: v7_3,  v7_1.
+        For example, `v7_3/2026-10-01/3516505565058564097/3527242976319242284.avro`.
