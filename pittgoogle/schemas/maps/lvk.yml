@@ -1,0 +1,14 @@
+SURVEY: lvk
+SCHEMA_ORIGIN: 'https://emfollow.docs.ligo.org/userguide/content.html#kafka-notice-gcn-scimma'
+#
+# IDs.
+alertid: superevent_id  # str
+sourceid: superevent_id  # str
+#
+# Sources and Objects
+source: event # record
+#
+# Everything else.
+skymap: [event, skymap]
+urls: urls
+# [TODO] What else would be useful?

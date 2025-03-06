@@ -644,6 +644,28 @@ google-auth = ">=1.25.0,<3.0dev"
 grpc = ["grpcio (>=1.38.0,<2.0dev)", "grpcio-status (>=1.38.0,<2.0.dev0)"]
 
 [[package]]
+name = "google-cloud-functions"
+version = "1.20.1"
+description = "Google Cloud Functions API client library"
+optional = false
+python-versions = ">=3.7"
+groups = ["main"]
+files = [
+    {file = "google_cloud_functions-1.20.1-py2.py3-none-any.whl", hash = "sha256:50d8eb7ae3287d6a6e9023a80ad7e26dec6feb92005c2614e0f85a38852da147"},
+    {file = "google_cloud_functions-1.20.1.tar.gz", hash = "sha256:1eca0401afd443e285c032280b4136c9338bd96d8aeb10a112d1de54da4b124c"},
+]
+
+[package.dependencies]
+google-api-core = {version = ">=1.34.1,<2.0.dev0 || >=2.11.dev0,<3.0.0dev", extras = ["grpc"]}
+google-auth = ">=2.14.1,<2.24.0 || >2.24.0,<2.25.0 || >2.25.0,<3.0.0dev"
+grpc-google-iam-v1 = ">=0.14.0,<1.0.0dev"
+proto-plus = [
+    {version = ">=1.25.0,<2.0.0dev", markers = "python_version >= \"3.13\""},
+    {version = ">=1.22.3,<2.0.0dev"},
+]
+protobuf = ">=3.20.2,<4.21.0 || >4.21.0,<4.21.1 || >4.21.1,<4.21.2 || >4.21.2,<4.21.3 || >4.21.3,<4.21.4 || >4.21.4,<4.21.5 || >4.21.5,<6.0.0dev"
+
+[[package]]
 name = "google-cloud-pubsub"
 version = "2.28.0"
 description = "Google Cloud Pub/Sub API client library"
@@ -852,6 +874,40 @@ files = [
 googleapis-common-protos = ">=1.5.5"
 grpcio = ">=1.70.0"
 protobuf = ">=5.26.1,<6.0dev"
+
+[[package]]
+name = "hpgeom"
+version = "1.4.0"
+description = "HEALPix pixel lookup and geometry routines with numpy"
+optional = false
+python-versions = ">=3.7"
+groups = ["main"]
+files = [
+    {file = "hpgeom-1.4.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:ac52505e5897d1d793019ee03ee673b451479488c5ab59dbcb13946cf1cc26cc"},
+    {file = "hpgeom-1.4.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:df8b0d92b8dcd4f1c64ebeb0e9a85a68579623d2fac96a00fa628223d564a12d"},
+    {file = "hpgeom-1.4.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:978dd7d2dfcf06b621981fb7f5635267f17336dd5dc8456113ab0dd1f290de78"},
+    {file = "hpgeom-1.4.0-cp310-cp310-win_amd64.whl", hash = "sha256:96e051baa06fff9514e2b264649e192f560130142352628bf3ae1fb7d7884848"},
+    {file = "hpgeom-1.4.0-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:5650f5be65f3aecf9b86fce8fe4b22895e0b3480fb3ecfa2ffc3b7fa1138a4e9"},
+    {file = "hpgeom-1.4.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:1429d101db6342febc40fca5eb5d407603fe2af4cda3b3bf9ddb6173b0c058fd"},
+    {file = "hpgeom-1.4.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:91abaf5841215dc8bcccd194f0d7351f7bd7163ec6ff69449abfb20a76250506"},
+    {file = "hpgeom-1.4.0-cp311-cp311-win_amd64.whl", hash = "sha256:8f3af4974d86e8d922dd5b81badb93e2d9dcc068538bd93eab002a23ebd9f7f2"},
+    {file = "hpgeom-1.4.0-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:e70c81bf01c6b2bbe417a4b164d0effb349259b9ddcaed81a14b02a57a3a13b6"},
+    {file = "hpgeom-1.4.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:8c73de4b08abf736b2dadeca4a6428b514df0c9387bc560e7428ef7a2ae5b723"},
+    {file = "hpgeom-1.4.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:adc5e9a27c5da2219c1ef76c6ddf2ed4f74ea217e3a639d430e84a567de6ec0c"},
+    {file = "hpgeom-1.4.0-cp312-cp312-win_amd64.whl", hash = "sha256:56b75fea7ff008e40a1acbe37ab112a6e0d3d3d018a16606ad12b93cd79412c3"},
+    {file = "hpgeom-1.4.0-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:c4fa7ba41f6c4802dcfea52f47ce15def620bec6846cbf02f50f7a4745fb66c2"},
+    {file = "hpgeom-1.4.0-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:832a4037399187a74046a7337c00564ab522a432d64dd728c375008bb6230c84"},
+    {file = "hpgeom-1.4.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e19c5068894cc470e2c3766eb6743ea8b583c4338b2eaae1d4ba8a586d414f4a"},
+    {file = "hpgeom-1.4.0-cp39-cp39-win_amd64.whl", hash = "sha256:2d6dc38747dc5ab07153a235787393df3268160eb9cf5a5940854d9f87a456e1"},
+    {file = "hpgeom-1.4.0.tar.gz", hash = "sha256:95f7b355a4ca9e923e7b37f13f14c828670435645c51fb41e92223894532a26e"},
+]
+
+[package.dependencies]
+numpy = "*"
+
+[package.extras]
+test = ["flake8", "pytest"]
+test-with-healpy = ["healpy (>=1.17)"]
 
 [[package]]
 name = "idna"
@@ -2248,4 +2304,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.9"
-content-hash = "3c7a421cb53398146f2a742313ee5dcbbd5e00703ebbf28c07b09cf7ee24d143"
+content-hash = "8514fd9db5f1e03ca2c5c838c33a819faced38f2676052c64fd6e2b3d6306ea6"

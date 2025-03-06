@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 """Fixtures for unit tests."""
 import io
+import json
 from pathlib import Path
 
 import attrs
@@ -68,6 +69,27 @@ def sample_alerts_lsst() -> list[SampleAlert]:
 
 
 @pytest.fixture
+def sample_alerts_lvk() -> list[SampleAlert]:
+    survey = "lvk"
+    alert_paths = [
+        f for f in (TESTS_DATA_DIR / "sample_alerts" / survey).iterdir() if f.suffix == ".json"
+    ]
+    alerts = []
+    for alert_path in alert_paths:
+        alert_bytes = alert_path.read_bytes()
+        alerts.append(
+            SampleAlert(
+                survey=survey,
+                schema_name=survey,
+                schema_version="UNKNOWN",
+                path=alert_path,
+                dict_=json.loads(alert_bytes),
+            )
+        )
+    return alerts
+
+
+@pytest.fixture
 def sample_alerts_ztf() -> list[SampleAlert]:
     """List of all ZTF sample alerts."""
     survey = "ztf"
@@ -88,9 +110,8 @@ def sample_alerts_ztf() -> list[SampleAlert]:
 
 
 @pytest.fixture
-def sample_alerts(sample_alerts_lsst, sample_alerts_ztf) -> list[SampleAlert]:
-    """List of all sample alerts for all surveys."""
-    return [*sample_alerts_lsst, *sample_alerts_ztf]
+def sample_alerts(sample_alerts_lsst, sample_alerts_lvk, sample_alerts_ztf) -> list[SampleAlert]:
+    return [*sample_alerts_lsst, *sample_alerts_lvk, *sample_alerts_ztf]
 
 
 @pytest.fixture

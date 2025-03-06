@@ -8,15 +8,16 @@
 ----
 """
 import base64
-import collections
 import io
 import json
 import logging
+from typing import TYPE_CHECKING
 
-import astropy.table
-import astropy.time
 import attrs
 import fastavro
+
+if TYPE_CHECKING:
+    import astropy.table
 
 LOGGER = logging.getLogger(__name__)
 
@@ -105,7 +106,7 @@ class Cast:
 
     # --- Work with alert dictionaries
     @staticmethod
-    def alert_dict_to_table(alert_dict: dict) -> astropy.table.Table:
+    def alert_dict_to_table(alert_dict: dict) -> "astropy.table.Table":
         """Package a ZTF alert dictionary into an Astropy Table.
 
         Args:
@@ -117,6 +118,9 @@ class Cast:
                 An Astropy Table containing the alert information.
 
         """
+        import astropy.table
+        import collections
+
         # collect rows for the table
         candidate = collections.OrderedDict(alert_dict["candidate"])
         rows = [candidate]
@@ -129,22 +133,6 @@ class Cast:
         table = astropy.table.Table(rows=rows)
         table.meta["comments"] = f"ZTF objectId: {alert_dict['objectId']}"
         return table
-
-    @staticmethod
-    def _strip_cutouts_ztf(alert_dict: dict) -> dict:
-        """Drop the cutouts from the alert dictionary.
-
-        Args:
-            alert_dict (dict):
-                ZTF alert formatted as a dictionary.
-
-        Returns:
-            dict:
-                The modified `alert_dict` with the cutouts (postage stamps) removed.
-        """
-        cutouts = ["cutoutScience", "cutoutTemplate", "cutoutDifference"]
-        alert_stripped = {k: v for k, v in alert_dict.items() if k not in cutouts}
-        return alert_stripped
 
     # dates
     @staticmethod
@@ -159,6 +147,8 @@ class Cast:
             str:
                 The ``jd`` in the format 'day mon year hour:min'.
         """
+        import astropy.time
+
         return astropy.time.Time(jd, format="jd").strftime("%d %b %Y - %H:%M:%S")
 
 

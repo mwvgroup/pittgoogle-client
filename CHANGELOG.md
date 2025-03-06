@@ -15,17 +15,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Support for LSST schema versions 7.2, 7.3, and 7.4
 - README.md describing where the new LSST alert schemas were obtained.
 - Add '\_\_package_path__' as a package-level variable.
-- Add test data for LSST and ZTF.
+- Add test data for LSST, LVK, and ZTF.
 - Add unit tests for:
     - `registry.Schemas`
     - `alert.Alert`
     - `utils.Cast`
+- Add `Alert` properties and methods:
+    - `skymap`
+    - `drop_cutouts`
+    - `_prep_for_publish`
+    - `_str_to_datetime`
+- Add class `alert.MockInput` with support for Cloud Functions
+- Add dependencies `hpgeom` and `google-cloud-functions`.
 
 ### Changed
 
 - `schema.py` now specifies all schema versions that are available for LSST
 - Schema mappings for new LSST alert versions incorporated into `schemas.yml`
 - Implement `schema._ConfluentWireAvroSchema.serialize`.
+- Add IDs to `Alert.attributes` the first time it is accessed.
+- Dependencies: Lazy load astropy.
+
+### Removed
+
+- Remove `utils.Cast._strip_cutouts_ztf` (moved to `Alert`)
 
 ## \[v0.3.11\] - 2024-07-22
 
