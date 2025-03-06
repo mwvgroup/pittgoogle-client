@@ -10,4 +10,5 @@ source: event # record
 #
 # Everything else.
 skymap: [event, skymap]
+urls: urls
 # [TODO] What else would be useful?

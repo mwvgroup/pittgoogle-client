@@ -16,3 +16,4 @@ filter: fid
 mag: magpsf
 mag_err: sigmapsf
 mag_zp: magzpsci
+urls:
