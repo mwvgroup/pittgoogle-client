@@ -28,3 +28,4 @@ mjd: [diaSource, midpointMjdTai]
 ra: [diaSource, ra]
 ra_err: [diaSource, raErr]
 snr: [diaSource, snr]
+urls:
