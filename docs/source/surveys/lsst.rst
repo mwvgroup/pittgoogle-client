@@ -5,7 +5,7 @@ Legacy Survey of Space and Time (LSST)
 
 Rubin Observatory's Legacy Survey of Space and Time is an upcoming wide-field, optical survey that will scan the entire
 visible southern sky every few days for a decade in six bands: u, g, r, i, z, and y. It will produce an alert stream of
-astronomical transients detected by difference imaging at an average rate of 10^7 alerts per night.
+astronomical transients detected by difference imaging at an expected average rate of 10^7 alerts per night.
 
 Mission resources:
 

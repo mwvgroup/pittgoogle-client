@@ -31,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Changed
 
+- Update data listings for ZTF and LVK
 - `schema.py` now specifies all schema versions that are available for LSST
 - Schema mappings for new LSST alert versions incorporated into `schemas.yml`
 - Implement `schema._ConfluentWireAvroSchema.serialize`.
