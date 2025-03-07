@@ -161,7 +161,7 @@ BigQuery Tables
 .. _data lsst:
 
 Legacy Survey of Space and Time (LSST)
--------------------------------
+--------------------------------------
 
 :ref:`LSST <survey lsst>` is an upcoming wide-field, optical survey that is currently in the commissioning phase and
 producing an alert stream that is suitable for testing and development. LSST is expected to produce on average 10^7

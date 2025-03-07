@@ -1,7 +1,7 @@
 .. _survey lsst:
 
 Legacy Survey of Space and Time (LSST)
-===============================
+======================================
 
 LSST will be the `widest, fastest, and deepest optical survey <https://www.lsst.org/sites/default/files/documents/rubinobs_lsst_factsheet_9_2020_final.pdf>`__
 imaging in six bands: u, g, r, i, z, and y. It will produce an alert stream of astronomical transients detected by
