@@ -298,7 +298,7 @@ class Alert:
         import pandas as pd  # always lazy-load pandas. it hogs memory on cloud functions and run
 
         # sources and previous sources are expected to have the same fields
-        sources_df = pd.DataFrame([self.get("source")] + self.get("prv_sources", []))
+        sources_df = pd.DataFrame([self.get("source")] + (self.get("prv_sources") or []))
         # sources and forced sources may have different fields
         forced_df = pd.DataFrame(self.get("prv_forced_sources", []))
 
