@@ -78,7 +78,7 @@ class SchemaHelpers:
     def lsst_schema_helper(schema_dict: dict) -> "_ConfluentWireAvroSchema":
         """Load the class:`Schema` for LSST alerts."""
 
-        def _init_from_bytes(schema: _ConfluentWireAvroSchema, alert_bytes: bytes):
+        def _init_from_bytes(schema: "_ConfluentWireAvroSchema", alert_bytes: bytes):
             _, version_id = struct.Struct(">bi").unpack(alert_bytes[:5])
 
             # Convert, eg, 703 -> 'v7_3'
