@@ -60,6 +60,11 @@ def sample_alerts_lsst() -> list[load_data.TestAlert]:
 
 
 @pytest.fixture
+def random_alerts_lsst() -> list[load_data.TestAlert]:
+    return [load_data.RandomLsst().to_testalert(), load_data.RandomLsst().to_minimal_testalert()]
+
+
+@pytest.fixture
 def sample_alerts_lvk() -> list[load_data.TestAlert]:
     survey = "lvk"
     alert_paths = [
