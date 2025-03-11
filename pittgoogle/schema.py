@@ -76,67 +76,25 @@ class SchemaHelpers:
 
     @staticmethod
     def lsst_schema_helper(schema_dict: dict) -> "_ConfluentWireAvroSchema":
-        """Load the Avro schema definition for lsst.v7_x.alert."""
-        # [FIXME] This is hack to get the latest schema version into pittgoogle-client
-        # until we can get :meth:`SchemaHelpers.lsst_auto_schema_helper` working.
+        """Load the class:`Schema` for LSST alerts."""
 
-        supported_versions = [
-            "lsst.v7_0.alert",
-            "lsst.v7_1.alert",
-            "lsst.v7_2.alert",
-            "lsst.v7_3.alert",
-            "lsst.v7_4.alert",
-        ]
+        def _init_from_bytes(schema: _ConfluentWireAvroSchema, alert_bytes: bytes):
+            _, version_id = struct.Struct(">bi").unpack(alert_bytes[:5])
 
-        if schema_dict.get("name") not in supported_versions:
-            raise exceptions.SchemaError(
-                f"Only {', '.join(supported_versions)} are supported for LSST."
-            )
+            # Convert, eg, 703 -> 'v7_3'
+            schema.version_id = version_id
+            major, minor = str(version_id).split("0", maxsplit=1)
+            schema.version = f"v{major}_{minor}"
 
-        schema = _ConfluentWireAvroSchema(**schema_dict)
+            if schema.version not in ["v7_0", "v7_1", "v7_2", "v7_3", "v7_4"]:
+                raise exceptions.SchemaError(f"Schema definition not found for {schema.version}.")
 
-        # Resolve the path and load the schema
-        schema.path = __package_path__ / schema.path
-        schema.definition = fastavro.schema.load_schema(schema.path)
+            # Resolve the path and load the schema
+            schema_path = schema.path.replace("MAJOR", major).replace("MINOR", minor)
+            schema.path = __package_path__ / schema_path
+            schema.definition = fastavro.schema.load_schema(schema.path)
 
-        return schema
-
-    @staticmethod
-    def lsst_auto_schema_helper(schema_dict: dict) -> "_ConfluentWireAvroSchema":
-        """Load the Avro schema definition using the ``lsst.alert.packet`` package.
-
-        Raises:
-            SchemaError:
-                If an LSST schema called ``schema.name`` cannot be loaded. An error is raised
-                because the LSST alert bytes are schemaless, so ``schema.definition`` will be
-                required in order to deserialize the alert.
-        """
-        import lsst.alert.packet.schema
-
-        schema = _ConfluentWireAvroSchema(**schema_dict)
-
-        version_msg = f"For valid versions, see {schema.origin}."
-
-        # Parse major and minor versions out of schema.name. Expecting syntax "lsst.v<MAJOR>_<MINOR>.alert".
-        try:
-            major, minor = map(int, re.findall(r"\d+", schema.name))
-        except ValueError as excep:
-            msg = (
-                f"Unable to identify major and minor version. Please use the syntax "
-                "'lsst.v<MAJOR>_<MINOR>.alert', replacing '<MAJOR>' and '<MINOR>' with integers. "
-                f"{version_msg}"
-            )
-            raise exceptions.SchemaError(msg) from excep
-
-        schema_dir = Path(lsst.alert.packet.schema.get_schema_path(major, minor))
-        schema.path = schema_dir / f"{schema.name}.avsc"
-
-        try:
-            schema.definition = lsst.alert.packet.schema.Schema.from_file(schema.path).definition
-        except fastavro.repository.SchemaRepositoryError as excep:
-            msg = f"Unable to load the schema. {version_msg}"
-            raise exceptions.SchemaError(msg) from excep
-
+        schema = _ConfluentWireAvroSchema(init_from_bytes=_init_from_bytes, **schema_dict)
         return schema
 
 
@@ -276,14 +234,13 @@ class _ConfluentWireAvroSchema(Schema):
     https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format
     """
 
-    def serialize(self, alert_dict: dict, schema_id: int = 12345) -> bytes:
+    def serialize(self, alert_dict: dict) -> bytes:
+        if self.definition is None:
+            raise exceptions.SchemaError("Schema definition unknown. Unable to serialize.")
         fout = io.BytesIO()
         # Write the header
-        if self._header_bytes:
-            fout.write(self._header_bytes)
-        else:
-            fout.write(b"\x00")  # magic byte
-            fout.write(struct.pack(">i", schema_id))  # schema ID (4 bytes, big-endian)
+        fout.write(b"\x00")  # magic byte
+        fout.write(struct.pack(">i", self.version_id))  # schema ID (4 bytes, big-endian)
         # Serialize data and return
         fastavro.schemaless_writer(fout, self.definition, alert_dict)
         return fout.getvalue()
@@ -294,6 +251,10 @@ class _ConfluentWireAvroSchema(Schema):
         #     fout.write(message)
 
     def deserialize(self, alert_bytes: bytes) -> dict:
-        self._header_bytes = alert_bytes[:5]
+        _, version_id = struct.Struct(">bi").unpack(alert_bytes[:5])
+        if self.definition is None:
+            self._init_from_bytes(schema=self, alert_bytes=alert_bytes)
+        assert self.version_id == version_id  # [FIXME] how to handle this?
+
         bytes_io = io.BytesIO(alert_bytes[5:])
         return fastavro.schemaless_reader(bytes_io, self.definition)
