@@ -19,9 +19,9 @@ import attrs
 import google.cloud.pubsub_v1
 
 from . import exceptions, registry, types_
-from .schema import (
-    Schema,  # so 'schema' module doesn't clobber 'Alert.schema' attribute
-)
+
+# so 'schema' module doesn't clobber 'Alert.schema' attribute
+from .schema import Schema, _ConfluentWireAvroSchema
 
 if TYPE_CHECKING:
     import astropy.table
@@ -509,6 +509,9 @@ class Alert:
 
     def _prep_for_publish(self) -> tuple[bytes, Mapping[str, str]]:
         """Serialize the alert dict and convert all attribute keys and values to strings."""
+        if self.schema.definition is None and isinstance(self.schema, _ConfluentWireAvroSchema):
+            # [FIXME] How to handle this better?
+            self.schema._init_from_bytes(schema=self.schema, alert_bytes=self.msg.data)
         message = self.schema.serialize(self.drop_cutouts())
         # Pub/Sub requires attribute keys and values to be strings. Sort the keys while we're at it.
         attributes = {str(key): str(self.attributes[key]) for key in sorted(self.attributes)}
