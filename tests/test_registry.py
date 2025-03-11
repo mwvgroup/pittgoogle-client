@@ -1,5 +1,8 @@
 # -*- coding: UTF-8 -*-
 """Unit tests for the registry module."""
+import io
+import struct
+
 import pytest
 import yaml
 
@@ -42,3 +45,20 @@ class TestRegistrySchemas:
         for survey in survey_names:
             with pytest.raises(pittgoogle.exceptions.SchemaError):
                 self.schemas.get(schema_name=f"{survey}.vNONE.alert")
+
+    def test_serialize_without_definition(self):
+        schema = self.schemas.get(schema_name="lsst")
+        with pytest.raises(pittgoogle.exceptions.SchemaError, match="Schema definition unknown."):
+            schema.serialize({})
+
+    def test_unsupported_version_lsst(self):
+        unsuported_version_id = 601
+        # LSST schemas get the version from the alert bytes.
+        # Write an avro header with the unsupported version_id.
+        fout = io.BytesIO()
+        fout.write(b"\x00")
+        fout.write(struct.pack(">i", unsuported_version_id))
+        # Try to load the schema definition and show that it raises an error.
+        schema = pittgoogle.Alert.from_dict({"key": "value"}, schema_name="lsst").schema
+        with pytest.raises(pittgoogle.exceptions.SchemaError, match="Schema definition not found"):
+            schema._init_from_bytes(schema=schema, alert_bytes=fout.getvalue())
