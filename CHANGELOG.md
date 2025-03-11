@@ -12,13 +12,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Added
 
-- Testing:
-    - Add test data for schema "lsst.v7_4.alert" that is randomly generated.
-    - Add `TestAlertProperties.test_dataframe`. Currently this only tests alerts with schema "lsst.v7_4.alert".
+- `Alert`:
+    - Properties: `ra`, `dec`, `name_in_bucket`.
+- `Schema`:
+    - Property: `_name_in_bucket`.
+    - Methods to support LSST schema consolidation.
+    - Schema map for the default schema.
+- Unit tests:
+    - Tests for new `Alert` properties.
+    - Tests for LSST version and serialization.
+    - Randomly generated data for schema "lsst.v7_4.alert".
 
 ### Changed
 
-- Testing:
+- `Alert`:
+    - `from_*` methods now call `Schema._init_from_msg` so the schema version can be retrieved from the message.
+    - `Schema.version` is now added to the `attributes` automatically.
+- `Schema`:
+    - Consolidate LSST schemas into one. Name is "lsst".
+    - Change default schema name "default_schema" -> "default".
+- Unit tests:
     - Move `conftest.SampleAlert` -> `load_data.TestAlert`
     - Split `TestAlert` -> `TestAlertFrom`, `TestAlertProperties`, and `TestAlertMethods`
 
