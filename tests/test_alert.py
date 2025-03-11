@@ -5,11 +5,12 @@ import datetime
 
 import astropy.table
 import google.cloud.pubsub_v1
+import pandas as pd
 
 import pittgoogle
 
 
-class TestAlert:
+class TestAlertFrom:
     def test_from_path(self, sample_alerts):
         for sample_alert in sample_alerts:
             alert = pittgoogle.Alert.from_path(
@@ -84,6 +85,8 @@ class TestAlert:
         assert alert_instance.schema_name == "test_schema"
         assert alert_instance.msg == msg
 
+
+class TestAlertProperties:
     def test_skymap(self, sample_alerts_lvk):
         for sample_alert in sample_alerts_lvk:
             alert = pittgoogle.Alert.from_path(
@@ -94,12 +97,11 @@ class TestAlert:
             else:
                 assert alert.skymap is None
 
+
+class TestAlertMethods:
     def test_prep_for_publish(self, sample_alerts):
         for sample_alert in sample_alerts:
-            alert = pittgoogle.Alert.from_dict(
-                sample_alert.dict_, schema_name=sample_alert.schema_name
-            )
-            message, attributes = alert._prep_for_publish()
+            message, attributes = sample_alert.pgalert._prep_for_publish()
             assert isinstance(message, bytes)
             assert isinstance(attributes, dict)
             assert all(isinstance(k, str) and isinstance(v, str) for k, v in attributes.items())
