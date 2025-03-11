@@ -10,11 +10,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
-### Added
+### Fixed
 
-### Changed
-
-- Add functionality to create DataFrame object when a field's value is `None`
+- Fix issue #76. Make `Alert.dataframe` succeed even when there are no previous sources.
 
 ### Removed
 
