@@ -300,7 +300,7 @@ class Alert:
         # sources and previous sources are expected to have the same fields
         sources_df = pd.DataFrame([self.get("source")] + (self.get("prv_sources") or []))
         # sources and forced sources may have different fields
-        forced_df = pd.DataFrame(self.get("prv_forced_sources", []))
+        forced_df = pd.DataFrame(self.get("prv_forced_sources") or [])
 
         # use nullable integer data type to avoid converting ints to floats
         # for columns in one dataframe but not the other
