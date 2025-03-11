@@ -97,6 +97,24 @@ class TestAlertProperties:
             else:
                 assert alert.skymap is None
 
+    def test_dataframe(self, random_alerts_lsst, sample_alerts_lsst):
+        # [FIXME] This is only testing schema "lsst.v7_4.alert"
+        full, minimal = random_alerts_lsst
+
+        mandatory_cols = set(full.pgalert.get("source").keys())
+        all_cols = mandatory_cols.union(full.pgalert.get("prv_forced_sources")[0].keys())
+
+        # Make sure we have some data that will test the bug from issue #76.
+        assert minimal.pgalert.get("prv_sources") is None
+        assert minimal.pgalert.get("prv_forced_sources") is None
+
+        for testalert in random_alerts_lsst + sample_alerts_lsst:
+            if testalert.schema_name != "lsst.v7_4.alert":
+                continue
+            pgdf = testalert.pgalert.dataframe
+            assert isinstance(pgdf, pd.DataFrame)
+            assert set(pgdf.columns) == mandatory_cols or set(pgdf.columns) == all_cols
+
 
 class TestAlertMethods:
     def test_prep_for_publish(self, sample_alerts):
