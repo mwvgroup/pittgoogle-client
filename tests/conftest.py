@@ -11,14 +11,18 @@ import pittgoogle
 
 import load_data
 
+
 TESTS_DATA_DIR = Path(__file__).parent / "data"
 SCHEMAS_DIR = pittgoogle.__package_path__ / "schemas"
 
 
+# [FIXME]
+# I'm fighting with pytest a lot over how to define the fixtures and parameterizations.
+# Maybe I should be using unittest.
 @pytest.fixture
 def survey_names() -> list[str]:
     """List of all survey names supported by pittgoogle."""
-    return ["lsst", "ztf"]
+    return ["lsst", "ztf", "lvk"]
 
 
 # [FIXME] Move most of this to load_data?
