@@ -14,6 +14,7 @@ import logging
 import re
 import struct
 from pathlib import Path
+from typing import Callable
 
 import attrs
 import fastavro
@@ -151,11 +152,15 @@ class Schema:
 
     # String _under_ field definition will cause field to appear as a property in rendered docs.
     name: str = attrs.field()
-    """Name of the schema."""
+    """Name of the schema. This is typically the name of the survey as well."""
     description: str = attrs.field()
     """A description of the schema."""
     origin: str = attrs.field()
     """Pointer to the schema's origin. Typically this is a URL to a repo maintained by the survey."""
+    version: str | None = attrs.field(default=None)
+    """Version of the schema, or None."""
+    version_id: str | None = attrs.field(default=None)
+    """Version ID of the schema, or None. Currently only used for class:`_ConfluentWireAvroSchema`."""
     definition: dict | None = attrs.field(default=None)
     """The schema definition used to serialize and deserialize the alert bytes, if one is required."""
     _helper: str = attrs.field(default="default_schema_helper")
@@ -164,7 +169,9 @@ class Schema:
     """Path where the helper can find the schema, if needed."""
     filter_map: dict = attrs.field(factory=dict)
     """Mapping of the filter name as stored in the alert (often an int) to the common name (often a string)."""
-    _header_bytes: bytes | None = attrs.field(default=None)
+    _init_from_bytes: Callable | None = attrs.field(default=None)
+    """Callable used to finish initializing, e.g., `self.definition`.
+    It should have a signature like `._init_from_bytes(schema=self, alert_bytes=alert_bytes) -> None`."""
     # The rest don't need string descriptions because we will define them as explicit properties.
     # _map is important, but don't accept it as an init arg. We'll load it from a yaml file later.
     _map: dict | None = attrs.field(default=None, init=False)
@@ -193,13 +200,7 @@ class Schema:
 
     @property
     def survey(self) -> str:
-        """Name of the survey."""
-        return self.name.split(".")[0]
-
-    @property
-    def version(self) -> str:
-        """Version of the schema."""
-        return self.name.split(".")[1]
+        return self.name
 
     @property
     def map(self) -> dict:
