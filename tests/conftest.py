@@ -54,7 +54,7 @@ def sample_alerts_lsst() -> list[load_data.TestAlert]:
         alerts.append(
             load_data.TestAlert(
                 survey=survey,
-                schema_name=schema_fname.removesuffix(".avsc"),
+                schema_name=survey,
                 schema_version=schema_version,
                 path=alert_path,
                 dict_=fastavro.schemaless_reader(bytes_io, schema),
