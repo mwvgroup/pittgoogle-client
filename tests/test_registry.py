@@ -9,7 +9,7 @@ import yaml
 import pittgoogle
 
 # Load the schema manifest as a list of dicts sorted by key.
-manifest_yaml = pittgoogle.__package_path__ / "registry_manifests/schemas.yml"
+manifest_yaml = pittgoogle.__package_path__ / "registry_manifests" / "schemas.yml"
 SCHEMA_MANIFEST = yaml.safe_load(manifest_yaml.read_text())
 
 

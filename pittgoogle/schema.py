@@ -164,7 +164,7 @@ class Schema:
     def map(self) -> dict:
         """Mapping of Pitt-Google's generic field names to survey-specific field names."""
         if self._map is None:
-            yml = __package_path__ / f"schemas/maps/{self.survey}.yml"
+            yml = __package_path__ / "schemas" / "maps" / f"{self.survey}.yml"
             try:
                 self._map = yaml.safe_load(yml.read_text())
             except FileNotFoundError:

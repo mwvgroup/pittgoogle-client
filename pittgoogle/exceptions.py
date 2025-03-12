@@ -9,6 +9,8 @@
 
 ----
 """
+
+
 class BadRequest(Exception):
     """Raised when a Flask request json envelope (e.g., from Cloud Run) is invalid."""
 

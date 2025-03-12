@@ -19,7 +19,7 @@ from . import __package_path__, exceptions, schema
 LOGGER = logging.getLogger(__name__)
 
 # Load the schema manifest as a list of dicts sorted by key.
-manifest_yaml = (__package_path__ / "registry_manifests/schemas.yml").read_text()
+manifest_yaml = (__package_path__ / "registry_manifests" / "schemas.yml").read_text()
 SCHEMA_MANIFEST = sorted(yaml.safe_load(manifest_yaml), key=lambda schema: schema["name"])
 
 
