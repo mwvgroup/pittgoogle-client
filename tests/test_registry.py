@@ -52,13 +52,14 @@ class TestRegistrySchemas:
             schema.serialize({})
 
     def test_unsupported_version_lsst(self):
+        # LSST schema versions are retrieved from the avro header.
+        # Write an avro header with an unsupported version_id.
         unsuported_version_id = 601
-        # LSST schemas get the version from the alert bytes.
-        # Write an avro header with the unsupported version_id.
         fout = io.BytesIO()
         fout.write(b"\x00")
         fout.write(struct.pack(">i", unsuported_version_id))
         # Try to load the schema definition and show that it raises an error.
-        schema = pittgoogle.Alert.from_dict({"key": "value"}, schema_name="lsst").schema
         with pytest.raises(pittgoogle.exceptions.SchemaError, match="Schema definition not found"):
-            schema._init_from_bytes(schema=schema, alert_bytes=fout.getvalue())
+            pittgoogle.Alert.from_msg(
+                pittgoogle.types_.PubsubMessageLike(data=fout.getvalue()), schema_name="lsst"
+            )
