@@ -11,16 +11,18 @@
 import io
 import json
 import logging
-import re
 import struct
 from pathlib import Path
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 import attrs
 import fastavro
 import yaml
 
 from . import __package_path__, exceptions, utils
+
+if TYPE_CHECKING:
+    from . import Alert
 
 LOGGER = logging.getLogger(__name__)
 
@@ -78,23 +80,34 @@ class SchemaHelpers:
     def lsst_schema_helper(schema_dict: dict) -> "_ConfluentWireAvroSchema":
         """Load the class:`Schema` for LSST alerts."""
 
-        def _init_from_bytes(schema: "_ConfluentWireAvroSchema", alert_bytes: bytes):
-            _, version_id = struct.Struct(">bi").unpack(alert_bytes[:5])
+        def _init_from_msg(alert: "Alert") -> None:
+            _, version_id = struct.Struct(">bi").unpack(alert.msg.data[:5])
 
             # Convert, eg, 703 -> 'v7_3'
-            schema.version_id = version_id
+            alert.schema.version_id = version_id
             major, minor = str(version_id).split("0", maxsplit=1)
-            schema.version = f"v{major}_{minor}"
+            alert.schema.version = f"v{major}_{minor}"
 
-            if schema.version not in ["v7_0", "v7_1", "v7_2", "v7_3", "v7_4"]:
-                raise exceptions.SchemaError(f"Schema definition not found for {schema.version}.")
+            if alert.schema.version not in ["v7_0", "v7_1", "v7_2", "v7_3", "v7_4"]:
+                raise exceptions.SchemaError(
+                    f"Schema definition not found for {alert.schema.version}."
+                )
 
             # Resolve the path and load the schema
-            schema_path = schema.path.replace("MAJOR", major).replace("MINOR", minor)
-            schema.path = __package_path__ / schema_path
-            schema.definition = fastavro.schema.load_schema(schema.path)
+            schema_path = alert.schema.path.replace("MAJOR", major).replace("MINOR", minor)
+            alert.schema.path = __package_path__ / schema_path
+            alert.schema.definition = fastavro.schema.load_schema(alert.schema.path)
 
-        schema = _ConfluentWireAvroSchema(init_from_bytes=_init_from_bytes, **schema_dict)
+        # [FIXME] The helpers need to be restructured so that these callables are not so hidden.
+        def _name_in_bucket(alert: "Alert"):
+            import astropy.time  # always lazy-load astropy
+
+            _date = astropy.time.Time(alert.get("mjd"), format="mjd").datetime.strftime("%Y-%m-%d")
+            return f"{alert.schema.version}/{_date}/{alert.objectid}/{alert.sourceid}.avro"
+
+        schema = _ConfluentWireAvroSchema(
+            init_from_msg=_init_from_msg, name_in_bucket=_name_in_bucket, **schema_dict
+        )
         return schema
 
 
@@ -127,9 +140,12 @@ class Schema:
     """Path where the helper can find the schema, if needed."""
     filter_map: dict = attrs.field(factory=dict)
     """Mapping of the filter name as stored in the alert (often an int) to the common name (often a string)."""
-    _init_from_bytes: Callable | None = attrs.field(default=None)
-    """Callable used to finish initializing, e.g., `self.definition`.
-    It should have a signature like `._init_from_bytes(schema=self, alert_bytes=alert_bytes) -> None`."""
+    _init_from_msg: Callable = attrs.field(default=lambda _: None)
+    """Callable that will finish initializing the schema using data in :meth:`Alert.msg`.
+    It should have a signature like `_init_from_msg(alert: Alert) -> None`."""
+    _name_in_bucket: Callable = attrs.field(default=lambda _: str())
+    """Callable that will construct the name of the Google Cloud Storage object.
+    It should have a signature like `_name_in_bucket(alert: Alert) -> str`."""
     # The rest don't need string descriptions because we will define them as explicit properties.
     # _map is important, but don't accept it as an init arg. We'll load it from a yaml file later.
     _map: dict | None = attrs.field(default=None, init=False)
