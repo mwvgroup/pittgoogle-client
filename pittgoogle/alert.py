@@ -21,7 +21,7 @@ import google.cloud.pubsub_v1
 from . import exceptions, registry, types_
 
 # so 'schema' module doesn't clobber 'Alert.schema' attribute
-from .schema import Schema, _ConfluentWireAvroSchema
+from .schema import Schema
 
 if TYPE_CHECKING:
     import astropy.table
@@ -96,7 +96,7 @@ class Alert:
                 describes the service API endpoint pubsub.googleapis.com, the triggering topic's name,
                 and the triggering event type `type.googleapis.com/google.pubsub.v1.PubsubMessage`.
         """
-        return cls(
+        alert = cls(
             msg=types_.PubsubMessageLike(
                 # data is required. the rest should be present in the message, but use get to be lenient
                 data=base64.b64decode(event["data"]),
@@ -107,6 +107,8 @@ class Alert:
             context=context,
             schema_name=schema_name,
         )
+        alert.schema._init_from_msg(alert)
+        return alert
 
     @classmethod
     def from_cloud_run(cls, envelope: Mapping, schema_name: str | None = None) -> "Alert":
@@ -162,7 +164,7 @@ class Alert:
         if not isinstance(envelope, dict) or "message" not in envelope:
             raise exceptions.BadRequest("Bad Request: invalid Pub/Sub message format")
 
-        return cls(
+        alert = cls(
             msg=types_.PubsubMessageLike(
                 # data is required. the rest should be present in the message, but use get to be lenient
                 data=base64.b64decode(envelope["message"]["data"].encode("utf-8")),
@@ -173,6 +175,8 @@ class Alert:
             ),
             schema_name=schema_name,
         )
+        alert.schema._init_from_msg(alert)
+        return alert
 
     @classmethod
     def from_dict(
@@ -213,7 +217,9 @@ class Alert:
             Alert:
                 The created `Alert` object.
         """
-        return cls(msg=msg, schema_name=schema_name)
+        alert = cls(msg=msg, schema_name=schema_name)
+        alert.schema._init_from_msg(alert)
+        return alert
 
     @classmethod
     def from_path(cls, path: str | Path, schema_name: str | None = None) -> "Alert":
@@ -237,9 +243,11 @@ class Alert:
         """
         with open(path, "rb") as f:
             bytes_ = f.read()
-        return cls(
+        alert = cls(
             msg=types_.PubsubMessageLike(data=bytes_), schema_name=schema_name, path=Path(path)
         )
+        alert.schema._init_from_msg(alert)
+        return alert
 
     def to_mock_input(self, cloud_functions: bool = False):
         if not cloud_functions:
@@ -509,9 +517,6 @@ class Alert:
 
     def _prep_for_publish(self) -> tuple[bytes, Mapping[str, str]]:
         """Serialize the alert dict and convert all attribute keys and values to strings."""
-        if self.schema.definition is None and isinstance(self.schema, _ConfluentWireAvroSchema):
-            # [FIXME] How to handle this better?
-            self.schema._init_from_bytes(schema=self.schema, alert_bytes=self.msg.data)
         message = self.schema.serialize(self.drop_cutouts())
         # Pub/Sub requires attribute keys and values to be strings. Sort the keys while we're at it.
         attributes = {str(key): str(self.attributes[key]) for key in sorted(self.attributes)}

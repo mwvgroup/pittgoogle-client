@@ -267,10 +267,7 @@ class _ConfluentWireAvroSchema(Schema):
         #     fout.write(message)
 
     def deserialize(self, alert_bytes: bytes) -> dict:
-        _, version_id = struct.Struct(">bi").unpack(alert_bytes[:5])
         if self.definition is None:
-            self._init_from_bytes(schema=self, alert_bytes=alert_bytes)
-        assert self.version_id == version_id  # [FIXME] how to handle this?
-
+            raise exceptions.SchemaError("Schema definition unknown. Unable to deserialize.")
         bytes_io = io.BytesIO(alert_bytes[5:])
         return fastavro.schemaless_reader(bytes_io, self.definition)
