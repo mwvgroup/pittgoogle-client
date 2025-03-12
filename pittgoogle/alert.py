@@ -420,6 +420,11 @@ class Alert:
 
         return self._skymap
 
+    @property
+    def name_in_bucket(self) -> str:
+        """Name of the alert object (file) in Google Cloud Storage."""
+        return self.schema._name_in_bucket(alert=self)
+
     # ---- methods ---- #
     def _add_id_attributes(self) -> None:
         """Add the IDs ("alertid", "objectid", "sourceid") to :attr:`Alert.attributes`."""
