@@ -2,6 +2,7 @@
 """Unit tests for the alert module."""
 import base64
 import datetime
+import json
 
 import astropy.table
 import google.cloud.pubsub_v1
@@ -114,6 +115,21 @@ class TestAlertProperties:
             pgdf = testalert.pgalert.dataframe
             assert isinstance(pgdf, pd.DataFrame)
             assert set(pgdf.columns) == mandatory_cols or set(pgdf.columns) == all_cols
+
+    def test_name_in_bucket(self):
+        alert_dict = {
+            "diaObject": {"diaObjectId": 222},
+            "diaSource": {"diaSourceId": 3333, "midpointMjdTai": 60745.0031},
+        }
+        alert = pittgoogle.Alert.from_msg(
+            pittgoogle.types_.PubsubMessageLike(data=json.dumps(alert_dict))
+        )
+        alert.schema_name = "lsst"
+        alert._schema = None
+        alert.schema.version = "v7_4"
+        alert.schema.deserialize = json.loads
+
+        assert alert.name_in_bucket == "v7_4/2025-03-11/222/3333.avro"
 
 
 class TestAlertMethods:
