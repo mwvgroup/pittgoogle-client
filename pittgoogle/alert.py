@@ -349,6 +349,22 @@ class Alert:
         return self.get("sourceid")
 
     @property
+    def ra(self) -> float:
+        """Return the source's right ascension. Convenience wrapper around :attr:`Alert.get`.
+
+        The "source" is the detection that triggered the alert.
+        """
+        return self.get("ra")
+
+    @property
+    def dec(self) -> float:
+        """Return the source's declination. Convenience wrapper around :attr:`Alert.get`.
+
+        The "source" is the detection that triggered the alert.
+        """
+        return self.get("dec")
+
+    @property
     def schema(self) -> Schema:
         """Return the schema from the :class:`pittgoogle.registry.Schemas` registry.
 
