@@ -12,11 +12,13 @@ import io
 import json
 import logging
 import struct
+import types
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable
 
 import attrs
 import fastavro
+import numpy as np
 import yaml
 
 from . import __package_path__, exceptions, utils
@@ -187,9 +189,41 @@ class Schema:
                 raise ValueError(f"no schema map found for schema name '{self.name}'")
         return self._map
 
+    def _clean_for_json(
+        self, value: str | int | float | list | dict | None
+    ) -> str | int | float | list | dict | None:
+        """Recursively replace NaN values with None.
+
+        Args:
+            value (str, int, float, list, or dict):
+                The bytes to be deserialized. This is expected to be serialized as either
+                Avro with the schema attached in the header or JSON.
+
+        Returns:
+            str, int, float, list, dict, or None
+                `value` with NaN replaced by None. Replacement is recursive if `value` is a list or dict.
+
+        Raises:
+            TypeError:
+                If `value` is not a str, int, float, list, or dict.
+        """
+        if isinstance(value, (str, int, types.NoneType)):
+            return value
+        if isinstance(value, float):
+            return value if not np.isnan(value) else None
+        if isinstance(value, list):
+            return [self._clean_for_json(v) for v in value]
+        if isinstance(value, dict):
+            return {k: self._clean_for_json(v) for k, v in value.items()}
+        # That's all we know how to deal with right now.
+        raise TypeError(f"Unrecognized type '{type(value)}' ({value})")
+
 
 class _DefaultSchema(Schema):
-    """Default schema to serialize and deserialize alert bytes."""
+    """Default schema to serialize and deserialize alert bytes.
+
+    `deserialize` tries Avro, then JSON. `serialize` uses JSON.
+    """
 
     def serialize(self, alert_dict: dict) -> bytes:
         """Serialize `alert_dict` using the JSON format.
@@ -202,7 +236,7 @@ class _DefaultSchema(Schema):
             bytes:
                 The serialized data in bytes.
         """
-        return json.dumps(alert_dict).encode("utf-8")
+        return json.dumps(self._clean_for_json(alert_dict)).encode("utf-8")
 
     def deserialize(self, alert_bytes: bytes) -> dict:
         """Deserialize `alert_bytes`.
