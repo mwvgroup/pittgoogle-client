@@ -13,7 +13,7 @@
 #     2: ''
 #
 # DEFAULT
-- name: 'default_schema'
+- name: 'default'
   description: 'Default schema used when no other schema is specified.'
   origin: null
   helper: 'default_schema_helper'

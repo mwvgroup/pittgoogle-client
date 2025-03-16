@@ -41,10 +41,10 @@ class TestAlertFrom:
             sample_alert.path, schema_name=sample_alert.schema_name
         ).to_mock_input(cloud_functions=True)
         alert_instance = pittgoogle.Alert.from_cloud_functions(
-            event, context, schema_name="default_schema"
+            event, context, schema_name="default"
         )
         assert isinstance(alert_instance, pittgoogle.Alert)
-        assert alert_instance.schema_name == "default_schema"
+        assert alert_instance.schema_name == "default"
         assert alert_instance.msg.data == base64.b64decode(event["data"])
         assert alert_instance.msg.attributes == event["attributes"]
         assert alert_instance.msg.message_id == context.event_id
@@ -62,9 +62,9 @@ class TestAlertFrom:
                 "ordering_key": "order_key",
             }
         }
-        alert_instance = pittgoogle.Alert.from_cloud_run(envelope, schema_name="default_schema")
+        alert_instance = pittgoogle.Alert.from_cloud_run(envelope, schema_name="default")
         assert isinstance(alert_instance, pittgoogle.Alert)
-        assert alert_instance.schema_name == "default_schema"
+        assert alert_instance.schema_name == "default"
         assert alert_instance.msg.data == base64.b64decode(
             envelope["message"]["data"].encode("utf-8")
         )
@@ -82,9 +82,9 @@ class TestAlertFrom:
             message_id="12345",
             publish_time=datetime.datetime(2023, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc),
         )
-        alert_instance = pittgoogle.Alert.from_msg(msg, schema_name="default_schema")
+        alert_instance = pittgoogle.Alert.from_msg(msg, schema_name="default")
         assert isinstance(alert_instance, pittgoogle.Alert)
-        assert alert_instance.schema_name == "default_schema"
+        assert alert_instance.schema_name == "default"
         assert alert_instance.msg == msg
 
 
