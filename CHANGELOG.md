@@ -10,6 +10,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
+### Added
+
+- Testing:
+    - Add test data for schema "lsst.v7_4.alert" that is randomly generated.
+    - Add `TestAlertProperties.test_dataframe`. Currently this only tests alerts with schema "lsst.v7_4.alert".
+
+### Changed
+
+- Testing:
+    - Move `conftest.SampleAlert` -> `load_data.TestAlert`
+    - Split `TestAlert` -> `TestAlertFrom`, `TestAlertProperties`, and `TestAlertMethods`
+
 ### Fixed
 
 - Fix issue #76. Make `Alert.dataframe` succeed even when there are no previous sources.

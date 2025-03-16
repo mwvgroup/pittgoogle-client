@@ -4,33 +4,28 @@ import io
 import json
 from pathlib import Path
 
-import attrs
 import fastavro
 import pytest
 
 import pittgoogle
 
+import load_data
+
+
 TESTS_DATA_DIR = Path(__file__).parent / "data"
 SCHEMAS_DIR = pittgoogle.__package_path__ / "schemas"
 
 
+# [FIXME]
+# I'm fighting with pytest a lot over how to define the fixtures and parameterizations.
+# Maybe I should be using unittest.
 @pytest.fixture
 def survey_names() -> list[str]:
     """List of all survey names supported by pittgoogle."""
-    return ["lsst", "ztf"]
+    return ["lsst", "ztf", "lvk"]
 
 
-@attrs.define(kw_only=True)
-class SampleAlert:
-    """Container for a single sample alert."""
-
-    path: Path = attrs.field()
-    dict_: dict = attrs.field()
-    schema_name: str = attrs.field()
-    schema_version: str = attrs.field()
-    survey: str = attrs.field()
-
-
+# [FIXME] Move most of this to load_data?
 def _get_sample_alert_paths(survey: str) -> list[Path]:
     """Return all paths under 'tests/data/' that look like sample alerts for `survey`."""
     alert_paths = [
@@ -42,7 +37,7 @@ def _get_sample_alert_paths(survey: str) -> list[Path]:
 
 
 @pytest.fixture
-def sample_alerts_lsst() -> list[SampleAlert]:
+def sample_alerts_lsst() -> list[load_data.TestAlert]:
     """List of all LSST sample alerts."""
     survey = "lsst"
     alert_paths = _get_sample_alert_paths(survey)
@@ -57,7 +52,7 @@ def sample_alerts_lsst() -> list[SampleAlert]:
         bytes_io = io.BytesIO(alert_bytes[5:])
         # bytes_io = io.BytesIO(alert_path.read_bytes()[5:])
         alerts.append(
-            SampleAlert(
+            load_data.TestAlert(
                 survey=survey,
                 schema_name=schema_fname.removesuffix(".avsc"),
                 schema_version=schema_version,
@@ -69,7 +64,12 @@ def sample_alerts_lsst() -> list[SampleAlert]:
 
 
 @pytest.fixture
-def sample_alerts_lvk() -> list[SampleAlert]:
+def random_alerts_lsst() -> list[load_data.TestAlert]:
+    return [load_data.RandomLsst().to_testalert(), load_data.RandomLsst().to_minimal_testalert()]
+
+
+@pytest.fixture
+def sample_alerts_lvk() -> list[load_data.TestAlert]:
     survey = "lvk"
     alert_paths = [
         f for f in (TESTS_DATA_DIR / "sample_alerts" / survey).iterdir() if f.suffix == ".json"
@@ -78,7 +78,7 @@ def sample_alerts_lvk() -> list[SampleAlert]:
     for alert_path in alert_paths:
         alert_bytes = alert_path.read_bytes()
         alerts.append(
-            SampleAlert(
+            load_data.TestAlert(
                 survey=survey,
                 schema_name=survey,
                 schema_version="UNKNOWN",
@@ -90,7 +90,7 @@ def sample_alerts_lvk() -> list[SampleAlert]:
 
 
 @pytest.fixture
-def sample_alerts_ztf() -> list[SampleAlert]:
+def sample_alerts_ztf() -> list[load_data.TestAlert]:
     """List of all ZTF sample alerts."""
     survey = "ztf"
     alert_paths = _get_sample_alert_paths(survey)
@@ -98,7 +98,7 @@ def sample_alerts_ztf() -> list[SampleAlert]:
     for alert_path in alert_paths:
         alert_bytes = alert_path.read_bytes()
         alerts.append(
-            SampleAlert(
+            load_data.TestAlert(
                 survey=survey,
                 schema_name=survey,
                 schema_version=alert_path.suffixes[0].strip("."),
@@ -110,11 +110,13 @@ def sample_alerts_ztf() -> list[SampleAlert]:
 
 
 @pytest.fixture
-def sample_alerts(sample_alerts_lsst, sample_alerts_lvk, sample_alerts_ztf) -> list[SampleAlert]:
+def sample_alerts(
+    sample_alerts_lsst, sample_alerts_lvk, sample_alerts_ztf
+) -> list[load_data.TestAlert]:
     return [*sample_alerts_lsst, *sample_alerts_lvk, *sample_alerts_ztf]
 
 
 @pytest.fixture
-def sample_alert(sample_alerts_ztf) -> SampleAlert:
+def sample_alert(sample_alerts_ztf) -> load_data.TestAlert:
     """Single sample alert. Useful when a test needs a sample alert but doesn't care which one."""
     return sample_alerts_ztf[0]
