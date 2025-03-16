@@ -29,10 +29,11 @@ class TestAlertFrom:
             assert isinstance(alert, pittgoogle.Alert)
             assert alert.dict == test_alert.dict_
 
-            # alertid, objectid, and sourceid should have been added as attributes.
+            # alertid, objectid, sourceid, and schema version should have been added as attributes.
             key_gen = (alert.get_key(key) for key in ["alertid", "objectid", "sourceid"])
             _expected_keys = [".".join(key) if isinstance(key, list) else key for key in key_gen]
-            expected_keys = set(key for key in _expected_keys if key)  # get rid of None
+            # Add schema.version and get rid of None.
+            expected_keys = set(key for key in _expected_keys + ["schema.version"] if key)
             assert set(alert.attributes) == expected_keys
 
     def test_from_cloud_functions(self, sample_alert):
