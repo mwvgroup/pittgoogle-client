@@ -132,6 +132,23 @@ class TestAlertProperties:
 
         assert alert.name_in_bucket == "v7_4/2025-03-11/222/3333.avro"
 
+    def test_get_wrappers(self):
+        alert_dict = {
+            "alertid": 12345,
+            "objectid": 67890,
+            "sourceid": 1234567890,
+            "ra": 270.0123456789,
+            "dec": -32.0123456789,
+        }
+        alert = pittgoogle.Alert.from_msg(
+            pittgoogle.types_.PubsubMessageLike(data=json.dumps(alert_dict)), "default"
+        )
+        assert alert.alertid == 12345
+        assert alert.objectid == 67890
+        assert alert.sourceid == 1234567890
+        assert alert.ra == 270.0123456789
+        assert alert.dec == -32.0123456789
+
 
 class TestAlertMethods:
     def test_prep_for_publish(self, sample_alerts):
