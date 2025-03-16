@@ -117,6 +117,11 @@ def sample_alerts(
 
 
 @pytest.fixture
+def random_alerts(random_alerts_lsst) -> list[load_data.TestAlert]:
+    return random_alerts_lsst
+
+
+@pytest.fixture
 def sample_alert(sample_alerts_ztf) -> load_data.TestAlert:
     """Single sample alert. Useful when a test needs a sample alert but doesn't care which one."""
     return sample_alerts_ztf[0]

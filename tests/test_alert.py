@@ -21,13 +21,13 @@ class TestAlertFrom:
             assert alert.path == sample_alert.path
             assert alert.dict == sample_alert.dict_
 
-    def test_from_dict(self, sample_alerts):
-        for sample_alert in sample_alerts:
+    def test_from_dict(self, sample_alerts, random_alerts):
+        for test_alert in sample_alerts + random_alerts:
             alert = pittgoogle.Alert.from_dict(
-                sample_alert.dict_, schema_name=sample_alert.schema_name
+                test_alert.dict_, schema_name=test_alert.schema_name
             )
             assert isinstance(alert, pittgoogle.Alert)
-            assert alert.dict == sample_alert.dict_
+            assert alert.dict == test_alert.dict_
 
             # alertid, objectid, and sourceid should have been added as attributes.
             key_gen = (alert.get_key(key) for key in ["alertid", "objectid", "sourceid"])
