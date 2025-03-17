@@ -234,6 +234,10 @@ class Schema(abc.ABC):
     """A description of the schema."""
     origin: str = attrs.field()
     """Pointer to the schema's origin. Typically this is a URL to a repo maintained by the survey."""
+    serializer: Literal["json", "avro"] = attrs.field()
+    """Whether to serialize the dict to JSON or Avro when, e.g., publishing a Pub/Sub message."""
+    deserializer: Literal["json", "avro"] = attrs.field()
+    """Whether to use a JSON or Avro to deserialize when decoding alert_bytes -> alert_dict."""
     version: str | None = attrs.field(default=None)
     """Version of the schema, or None."""
     version_id: str | None = attrs.field(default=None)
@@ -252,14 +256,14 @@ class Schema(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def _from_yaml(cls, yaml_dict: dict, alert_bytes: bytes | None = None):
+    def _from_yaml(cls, yaml_dict: dict, *, alert_bytes: bytes | None = None):
         """Create a :class:`Schema` object. This class method must be implemented by subclasses.
 
         Args:
             yaml_dict (dict):
                 A dictionary containing the schema information. This should be one entry from the
                 registry's 'schemas.yml' file.
-            alert_bytes (bytes or None):
+            alert_bytes (bytes or None, optional):
                 Message data, if available. Some schemas will use this to infer the schema version.
 
         Returns:
@@ -319,15 +323,22 @@ class Schema(abc.ABC):
 class DefaultSchema(Schema):
     """Default schema to serialize and deserialize alert bytes."""
 
+    serializer: Literal["json", "avro"] = attrs.field(default="json")
+    """Whether to serialize the alert_dict to JSON (default) or Avro when, e.g., publishing a Pub/Sub message.
+    If "avro", the user must supply the schema definition by setting :meth:`Schema.definition`."""
+    deserializer: Literal["json", "avro"] = attrs.field(default="json")
+    """Whether to use a JSON (default) or Avro to deserialize when decoding `alert_bytes` -> `alert_dict`.
+    If "avro", this `pittgoogle.Schema` will expect the Avro schema to be attached to `alert_bytes` in the header."""
+
     @classmethod
-    def _from_yaml(cls, yaml_dict: dict, _alert_bytes: bytes | None = None):
+    def _from_yaml(cls, yaml_dict: dict, *, alert_bytes: bytes | None = None):
         """Create a schema object from `yaml_dict`.
 
         Args:
             yaml_dict (dict):
                 A dictionary containing the schema information. This should be one entry from the
                 registry's 'schemas.yml' file.
-            _alert_bytes (bytes or None):
+            alert_bytes (bytes or None, optional):
                 Message data, if available. This is unused and not necessary for this schema.
 
         Returns:
@@ -350,21 +361,29 @@ class DefaultSchema(Schema):
 
         return schema
 
-    def serialize(self, alert_dict: dict) -> bytes:
-        """Serialize `alert_dict` using the JSON format.
+    def serialize(
+        self, alert_dict: dict, serializer: Literal["json", "avro", None] = None
+    ) -> bytes:
+        """Serialize the `alert_dict`.
 
         Args:
             alert_dict (dict):
                 The dictionary to be serialized.
+            serializer (str or None, optional):
+                Whether to serialize the dict using Avro or JSON. If not None, this will override
+                the `serializer` property and is subject to the same conditions.
 
         Returns:
             bytes:
                 The serialized data in bytes.
         """
-        return Serializers.serialize_json(alert_dict)
+        _serializer = serializer or self.serializer
+        if _serializer == "json":
+            return Serializers.serialize_json(alert_dict)
+        return Serializers.serialize_avro(alert_dict, schema_definition=self.definition)
 
     def deserialize(self, alert_bytes: bytes) -> dict:
-        """Deserialize `alert_bytes`. First try Avro, then JSON.
+        """Deserialize `alert_bytes` using JSON or Avro format as defined by the `deserializer` property.
 
         Args:
             alert_bytes (bytes):
@@ -372,21 +391,10 @@ class DefaultSchema(Schema):
 
         Returns:
             A dictionary representing the deserialized `alert_bytes`.
-
-        Raises:
-            SchemaError:
-                If the deserialization fails after trying both JSON and Avro.
         """
-        try:
-            return Serializers.deserialize_avro(alert_bytes)
-        except ValueError as exc:
-            if str(exc) != "cannot read header - is it an avro file?":
-                raise
-        try:
+        if self.deserializer == "json":
             return Serializers.deserialize_json(alert_bytes)
-        # [FIXME] Can we catch something more specific here?
-        except Exception as excep:
-            raise exceptions.SchemaError("Failed to deserialize the alert bytes") from excep
+        return Serializers.deserialize_avro(alert_bytes)
 
 
 # --------- Survey Schema Definitions --------- #
@@ -394,14 +402,21 @@ class DefaultSchema(Schema):
 class ElasticcSchema(Schema):
     """Schema for ELAsTiCC alerts."""
 
+    serializer: Literal["json", "avro"] = attrs.field(default="avro")
+    """Whether to serialize the dict to Avro (default) or JSON when, e.g., publishing a Pub/Sub message.
+    If "avro", this schema will use the schemaless Avro format."""
+    deserializer: Literal["json", "avro"] = attrs.field(default="avro")
+    """Whether to use a Avro (default) or JSON to deserialize when decoding alert_bytes -> alert_dict.
+    If "avro", this schema will use the schemaless Avro format."""
+
     @classmethod
-    def _from_yaml(cls, yaml_dict: dict, _alert_bytes: bytes | None = None):
+    def _from_yaml(cls, yaml_dict: dict, *, alert_bytes: bytes | None = None):
         """Create a schema object from `yaml_dict`.
 
         Args:
             yaml_dict (dict):
                 A dictionary containing the schema information, loaded from the registry's 'schemas.yml' file.
-        _alert_bytes (bytes or None):
+        alert_bytes (bytes or None, optional):
             Message data, if available. This is unused and not necessary for this schema.
 
         Returns:
@@ -412,21 +427,29 @@ class ElasticcSchema(Schema):
         schema.definition = fastavro.schema.load_schema(schema.path)
         return schema
 
-    def serialize(self, alert_dict: dict) -> bytes:
-        """Serialize `alert_dict` using the schemaless Avro format.
+    def serialize(
+        self, alert_dict: dict, serializer: Literal["json", "avro", None] = None
+    ) -> bytes:
+        """Serialize the `alert_dict`.
 
         Args:
             alert_dict (dict):
                 The dictionary to be serialized.
+            serializer (str or None, optional):
+                Whether to serialize the dict using Avro or JSON. If not None, this will override
+                :meth:`ElasticcSchema.serializer` and is subject to the same conditions.
 
         Returns:
             bytes:
                 The serialized data in bytes.
         """
+        _serializer = serializer or self.serializer
+        if _serializer == "json":
+            return Serializers.serialize_json(alert_dict)
         return Serializers.serialize_schemaless_avro(alert_dict, schema_definition=self.definition)
 
     def deserialize(self, alert_bytes: bytes) -> dict:
-        """Deserialize `alert_bytes` using the schemaless Avro format.
+        """Deserialize `alert_bytes` using JSON or Avro format as defined by :meth:`ElasticcSchema.deserializer`.
 
         Args:
             alert_bytes (bytes):
@@ -435,6 +458,8 @@ class ElasticcSchema(Schema):
         Returns:
             A dictionary representing the deserialized `alert_bytes`.
         """
+        if self.deserializer == "json":
+            return Serializers.deserialize_json(alert_bytes)
         return Serializers.deserialize_schemaless_avro(
             alert_bytes, schema_definition=self.definition
         )
@@ -444,20 +469,38 @@ class ElasticcSchema(Schema):
 class LsstSchema(Schema):
     """Schema for LSST alerts."""
 
+    serializer: Literal["json", "avro"] = attrs.field(default="avro")
+    """Whether to serialize the dict to Avro (default) or JSON when, e.g., publishing a Pub/Sub message.
+    If "avro", this schema will use the Avro Confluent Wire Format
+    (https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format)."""
+    deserializer: Literal["json", "avro"] = attrs.field(default="avro")
+    """Whether to use Avro (default) or JSON to deserialize when decoding alert_bytes -> alert_dict.
+    If "avro", this schema will use the Avro Confluent Wire Format
+    (https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format)."""
+
     @classmethod
-    def _from_yaml(cls, yaml_dict: dict, alert_bytes: bytes):
+    def _from_yaml(cls, yaml_dict: dict, alert_bytes: bytes | None = None):
         """Create a schema object from `yaml_dict`.
 
         Args:
             yaml_dict (dict):
                 A dictionary containing the schema information, loaded from the registry's 'schemas.yml' file.
-            alert_bytes (bytes):
-                Message data. This is needed in order to infer the schema version.
+            alert_bytes (bytes or None, optional):
+                Message data. This is needed in order to infer the schema version. If not provided,
+                methods such as :meth:`LsstSchema.serialize` (if avro), :meth:`LsstSchema.deserialize` (if avro),
+                and :meth:`LsstSchema._name_in_bucket` will raise a :class:`pittgoogle.exceptions.SchemaError`.
 
         Returns:
             Schema
         """
         schema = cls(**yaml_dict)
+
+        if alert_bytes is None:
+            LOGGER.warning(
+                "No alert_bytes provided. Cannot infer schema version. "
+                "Methods that rely on it will be unavailable."
+            )
+            return schema
 
         # Get the schema ID out of the avro header and use it to construct the schema version.
         # LSST's syntax is: schema-id = 703 (int) --> schema-version = 'v7_3'
@@ -476,19 +519,35 @@ class LsstSchema(Schema):
 
         return schema
 
-    def serialize(self, alert_dict: dict) -> bytes:
-        """Serialize `alert_dict` using the Avro Confluent Wire Format.
-
-        https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format
+    def serialize(
+        self, alert_dict: dict, serializer: Literal["json", "avro", None] = None
+    ) -> bytes:
+        """Serialize the `alert_dict`.
 
         Args:
             alert_dict (dict):
                 The dictionary to be serialized.
+            serializer (str or None, optional):
+                Whether to serialize the dict using Avro or JSON. If not None, this will override
+                :meth:`LsstSchema.serializer` and is subject to the same conditions.
 
         Returns:
             bytes:
                 The serialized data in bytes.
+
+        Raises:
+            exceptions.SchemaError:
+                If the schema version or definition are unavailable and Avro serialization is requested.
         """
+        _serializer = serializer or self.serializer
+        if _serializer == "json":
+            return Serializers.serialize_json(alert_dict)
+
+        if self.version is None or self.definition is None:
+            raise exceptions.SchemaError(
+                "No Avro schema information is available. Cannot serialize to Avro."
+            )
+
         # Reconstruct LSST's schema ID from the version string. Convert, eg, 'v7_3' -> 703.
         schema_id = int("0".join(self.version.strip("v").split("_")))
         return Serializers.serialize_confluent_wire_avro(
@@ -496,9 +555,7 @@ class LsstSchema(Schema):
         )
 
     def deserialize(self, alert_bytes: bytes) -> dict:
-        """Deserialize `alert_bytes` using the Avro Confluent Wire Format.
-
-        https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format
+        """Deserialize `alert_bytes` using JSON or Avro format as defined by :meth:`LsstSchema.deserializer`.
 
         Args:
             alert_bytes (bytes):
@@ -507,12 +564,25 @@ class LsstSchema(Schema):
         Returns:
             A dictionary representing the deserialized `alert_bytes`.
         """
+        if self.deserializer == "json":
+            return Serializers.deserialize_json(alert_bytes)
+
+        if self.definition is None:
+            raise exceptions.SchemaError(
+                "No schema definition available. Cannot deserialize Avro."
+            )
+
         return Serializers.deserialize_confluent_wire_avro(
             alert_bytes, schema_definition=self.definition
         )
 
     @staticmethod
     def _name_in_bucket(alert: "Alert"):
+        if alert.schema.version is None:
+            raise exceptions.SchemaError(
+                "No version information available. Cannot construct object name."
+            )
+
         import astropy.time  # always lazy-load astropy
 
         _date = astropy.time.Time(alert.get("mjd"), format="mjd").datetime.strftime("%Y-%m-%d")
@@ -527,3 +597,7 @@ class LvkSchema(DefaultSchema):
 @attrs.define(kw_only=True)
 class ZtfSchema(DefaultSchema):
     """Schema for ZTF alerts."""
+
+    deserializer: Literal["json", "avro"] = attrs.field(default="avro")
+    """Whether to use a Avro (default) or JSON to deserialize when decoding `alert_bytes` -> `alert_dict`.
+    If "avro", this `pittgoogle.Schema` will expect the Avro schema to be attached to `alert_bytes` in the header."""
