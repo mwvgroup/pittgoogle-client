@@ -14,7 +14,7 @@ import logging
 import struct
 import types
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Literal
 
 import attrs
 import fastavro
@@ -27,6 +27,142 @@ if TYPE_CHECKING:
     from . import Alert
 
 LOGGER = logging.getLogger(__name__)
+
+
+# [TODO] write unit test to compare serialize(alert_dict) to alert.msg.data if serializers are same.
+
+
+@attrs.define
+class Serializers:
+    @staticmethod
+    def serialize_json(alert_dict: dict) -> bytes:
+        """Serialize `alert_dict` using the JSON format.
+
+        Args:
+            alert_dict (dict):
+                The dictionary to be serialized.
+
+        Returns:
+            bytes:
+                The serialized data in bytes.
+        """
+        return json.dumps(Serializers._clean_for_json(alert_dict)).encode("utf-8")
+
+    @staticmethod
+    def deserialize_json(alert_bytes: bytes) -> dict:
+        """Deserialize `alert_bytes` using the JSON format.
+
+        Args:
+            alert_bytes (bytes):
+                The bytes to be deserialized. This is expected to be serialized as JSON.
+
+        Returns:
+            dict:
+                The deserialized data in a dictionary.
+        """
+        return json.loads(alert_bytes)
+
+    @staticmethod
+    def deserialize_avro(alert_bytes: bytes) -> dict:
+        """Deserialize `alert_bytes` using the Avro format.
+
+        Args:
+            alert_bytes (bytes):
+                The bytes to be deserialized. This is expected to be serialized as Avro with the
+                schema attached in the header.
+
+        Returns:
+            dict:
+                The deserialized data in a dictionary.
+        """
+        with io.BytesIO(alert_bytes) as fin:
+            alert_dicts = list(fastavro.reader(fin))  # list with single dict
+        if len(alert_dicts) != 1:
+            LOGGER.warning(f"Expected 1 Avro record. Found {len(alert_dicts)}.")
+        return alert_dicts[0]
+
+    @staticmethod
+    def serialize_schemaless_avro(alert_dict: dict, *, schema_definition: dict) -> bytes:
+        """Serialize `alert_dict` using the schemaless Avro format.
+
+        Args:
+            alert_dict (dict):
+                The dictionary to be serialized. The schema is expected to match `schema_definition`.
+            schema_definition (dict):
+                The Avro schema definition to use for serialization.
+
+        Returns:
+            bytes:
+                The serialized data in bytes.
+        """
+        fout = io.BytesIO()
+        fastavro.schemaless_writer(fout, schema_definition, alert_dict)
+        return fout.getvalue()
+
+    @staticmethod
+    def deserialize_schemaless_avro(alert_bytes: bytes, *, schema_definition: dict) -> dict:
+        """Deserialize `alert_bytes` using the schemaless Avro format.
+
+        Args:
+            alert_bytes (bytes):
+                The bytes to be deserialized. This is expected to be serialized as Avro without the
+                schema attached in the header. The schema is expected to match `schema_definition`.
+            schema_definition (dict):
+                The Avro schema definition to use for deserialization.
+
+        Returns:
+            dict:
+                The deserialized data in a dictionary.
+        """
+        bytes_io = io.BytesIO(alert_bytes)
+        return fastavro.schemaless_reader(bytes_io, schema_definition)
+
+    @staticmethod
+    def serialize_confluent_wire_avro(
+        alert_dict: dict, *, schema_definition: dict, version_id: int
+    ) -> bytes:
+        """Serialize `alert_dict` using the Avro Confluent Wire Format.
+
+        https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format
+
+        Args:
+            alert_dict (dict):
+                The dictionary to be serialized. The schema is expected to match `schema_definition`.
+            schema_definition (dict):
+                The Avro schema definition to use for serialization.
+            version_id (int):
+                The version ID of the schema. This is a 4-byte integer in big-endian format.
+                It will be attached to the header of the serialized data.
+
+        Returns:
+            bytes:
+                The serialized data in bytes.
+        """
+        fout = io.BytesIO()
+        fout.write(b"\x00")
+        fout.write(struct.pack(">i", version_id))
+        fastavro.schemaless_writer(fout, schema_definition, alert_dict)
+        return fout.getvalue()
+
+    @staticmethod
+    def deserialize_confluent_wire_avro(alert_bytes: bytes, *, schema_definition: dict) -> dict:
+        """Deserialize `alert_bytes` using the Avro Confluent Wire Format.
+
+        https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format
+
+        Args:
+            alert_bytes (bytes):
+                The bytes to be deserialized. This is expected to be serialized in Avro Confluent
+                Wire Format. The schema is expected to match `schema_definition`.
+            schema_definition (dict):
+                The Avro schema definition to use for deserialization.
+
+        Returns:
+            dict:
+                The deserialized data in a dictionary.
+        """
+        bytes_io = io.BytesIO(alert_bytes[5:])
+        return fastavro.schemaless_reader(bytes_io, schema_definition)
 
 
 @attrs.define(kw_only=True)
