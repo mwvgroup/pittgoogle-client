@@ -9,15 +9,13 @@
 ----
 """
 import logging
-from typing import TYPE_CHECKING, Final, Literal
+from typing import Final, Literal, Type
 
 import attrs
 import yaml
 
-from . import __package_path__, exceptions, schema, types_
+from . import __package_path__, exceptions, schema
 
-if TYPE_CHECKING:
-    import google.cloud.pubsub_v1
 
 LOGGER = logging.getLogger(__name__)
 
@@ -67,18 +65,16 @@ class Schemas:
 
     @staticmethod
     def get(
-        schema_name: Literal[
-            "elasticc", "lsst", "lvk", "ztf", "default_schema", None
-        ] = "default_schema",
-        msg: "google.cloud.pubsub_v1.types.PubsubMessage | types_.PubsubMessageLike | None" = None,
+        schema_name: Literal["elasticc", "lsst", "lvk", "ztf", "default", None] = "default",
+        alert_bytes: bytes | None = None,
     ) -> schema.Schema:
         """Return the schema with name matching `schema_name`.
 
         Args:
-            schema_name (Literal["elasticc", "lsst", "lvk", "ztf", "default_schema"]):
-                Name of the schema to return. Default is ``"default_schema"``.
-            msg ("google.cloud.pubsub_v1.types.PubsubMessage | types_.PubsubMessageLike | None"):
-                Pub/Sub message to be used to infer the schema version, if provided.
+            schema_name (str or None, optional):
+                Name of the schema to return. If None, the default schema is returned.
+            alert_bytes (bytes or None, optional):
+                Message data, if available. Some schemas will use this to infer the schema version.
 
         Returns:
             schema.Schema:
@@ -91,18 +87,41 @@ class Schemas:
         if schema_name is None:
             schema_name = "default"
 
-        try:
-            Schema = getattr(schema, schema_name[0].upper() + schema_name[1:] + "Schema")
-        except AttributeError:
-            raise exceptions.SchemaError(
-                f"{schema_name} not found. For valid names, see `pittgoogle.Schemas().names`."
-            )
-
-        for manifest in SCHEMA_MANIFEST:
-            name = manifest["name"].split(".")[0]  # [FIXME] This is a hack for elasticc.
+        for yaml_dict in SCHEMA_MANIFEST:
+            name = yaml_dict["name"].split(".")[0]  # [FIXME] This is a hack for elasticc.
             if name == schema_name:
-                return Schema._from_yaml(yaml_dict=manifest)
-                # return Schema._from_yaml(yaml_dict=manifest, msg=msg)
+                _Schema = Schemas._get_class(schema_name)
+                return _Schema._from_yaml(yaml_dict=yaml_dict, alert_bytes=alert_bytes)
+
+        raise exceptions.SchemaError(
+            f"'{schema_name}' not found. For valid names, see `pittgoogle.Schemas().names`."
+        )
+
+    @staticmethod
+    def _get_class(schema_name: str) -> Type[schema.Schema]:
+        """Return the schema class with name matching `schema_name`.
+
+        Args:
+            schema_name (str):
+                Name of the schema to return.
+
+        Returns:
+            schema.Schema:
+                Schema from the registry with name matching `schema_name`.
+
+        Raises:
+            exceptions.SchemaError:
+                If a schema named `schema_name` is not found in the registry or cannot be loaded.
+        """
+        class_name = schema_name[0].upper() + schema_name[1:] + "Schema"
+        err_msg = (
+            f"{class_name} not found for schema_name='{schema_name}'. ",
+            "For valid names, see `pittgoogle.Schemas().names`.",
+        )
+        try:
+            return getattr(schema, class_name)
+        except AttributeError as exc:
+            raise exceptions.SchemaError(err_msg) from exc
 
     @property
     def names(self) -> list[str]:
