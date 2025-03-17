@@ -9,12 +9,15 @@
 ----
 """
 import logging
-from typing import Final
+from typing import TYPE_CHECKING, Final, Literal
 
 import attrs
 import yaml
 
-from . import __package_path__, exceptions, schema
+from . import __package_path__, exceptions, schema, types_
+
+if TYPE_CHECKING:
+    import google.cloud.pubsub_v1
 
 LOGGER = logging.getLogger(__name__)
 
@@ -63,42 +66,43 @@ class Schemas:
     """
 
     @staticmethod
-    def get(schema_name: str | None) -> schema.Schema:
+    def get(
+        schema_name: Literal[
+            "elasticc", "lsst", "lvk", "ztf", "default_schema", None
+        ] = "default_schema",
+        msg: "google.cloud.pubsub_v1.types.PubsubMessage | types_.PubsubMessageLike | None" = None,
+    ) -> schema.Schema:
         """Return the schema with name matching `schema_name`.
 
+        Args:
+            schema_name (Literal["elasticc", "lsst", "lvk", "ztf", "default_schema"]):
+                Name of the schema to return. Default is ``"default_schema"``.
+            msg ("google.cloud.pubsub_v1.types.PubsubMessage | types_.PubsubMessageLike | None"):
+                Pub/Sub message to be used to infer the schema version, if provided.
+
         Returns:
-            Schema:
+            schema.Schema:
                 Schema from the registry with name matching `schema_name`.
 
         Raises:
-            SchemaError:
-                If a schema with name matching `schema_name` is not found in the registry.
-            SchemaError:
-                If a schema definition cannot be loaded but one will be required to read the alert bytes.
+            exceptions.SchemaError:
+                If a schema named `schema_name` is not found in the registry or cannot be loaded.
         """
-        # If no schema_name provided, return the default.
         if schema_name is None:
-            LOGGER.warning("No schema name provided. Returning a default schema.")
-            mft_schema = [schema for schema in SCHEMA_MANIFEST if schema["name"] == "default"][0]
-            return schema.Schema._from_yaml(schema_dict=mft_schema)
+            schema_name = "default"
 
-        # Return the schema with name == schema_name, if one exists.
-        for mft_schema in SCHEMA_MANIFEST:
-            if mft_schema["name"] == schema_name:
-                return schema.Schema._from_yaml(schema_dict=mft_schema)
+        try:
+            Schema = getattr(schema, schema_name[0].upper() + schema_name[1:] + "Schema")
+        except AttributeError:
+            raise exceptions.SchemaError(
+                f"{schema_name} not found. For valid names, see `pittgoogle.Schemas().names`."
+            )
 
-        # Return the schema with name ~= schema_name, if one exists.
-        for mft_schema in SCHEMA_MANIFEST:
-            # Case 1: Split by "." and check whether first and last parts match.
-            # Catches names like 'lsst.v<MAJOR>_<MINOR>.alert' where users replace '<..>' with custom values.
-            split_name, split_mft_name = schema_name.split("."), mft_schema["name"].split(".")
-            if all([split_mft_name[i] == split_name[i] for i in [0, -1]]):
-                return schema.Schema._from_yaml(schema_dict=mft_schema, name=schema_name)
-
-        # That's all we know how to check so far.
-        raise exceptions.SchemaError(
-            f"{schema_name} not found. For valid names, see `pittgoogle.Schemas().names`."
-        )
+        for manifest in SCHEMA_MANIFEST:
+            name = manifest["name"].split(".")[0]  # [FIXME] This is a hack for elasticc.
+            if name == schema_name:
+                return Schema._from_yaml(yaml_dict=manifest)
+                # return Schema._from_yaml(yaml_dict=manifest, msg=msg)
 
     @property
     def names(self) -> list[str]:
