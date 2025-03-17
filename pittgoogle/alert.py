@@ -19,9 +19,9 @@ import attrs
 import google.cloud.pubsub_v1
 
 from . import exceptions, registry, types_
-from .schema import (
-    Schema,  # so 'schema' module doesn't clobber 'Alert.schema' attribute
-)
+
+# so 'schema' module doesn't clobber 'Alert.schema' attribute
+from .schema import Schema
 
 if TYPE_CHECKING:
     import astropy.table
@@ -96,7 +96,7 @@ class Alert:
                 describes the service API endpoint pubsub.googleapis.com, the triggering topic's name,
                 and the triggering event type `type.googleapis.com/google.pubsub.v1.PubsubMessage`.
         """
-        return cls(
+        alert = cls(
             msg=types_.PubsubMessageLike(
                 # data is required. the rest should be present in the message, but use get to be lenient
                 data=base64.b64decode(event["data"]),
@@ -107,6 +107,8 @@ class Alert:
             context=context,
             schema_name=schema_name,
         )
+        alert.schema._init_from_msg(alert)
+        return alert
 
     @classmethod
     def from_cloud_run(cls, envelope: Mapping, schema_name: str | None = None) -> "Alert":
@@ -162,7 +164,7 @@ class Alert:
         if not isinstance(envelope, dict) or "message" not in envelope:
             raise exceptions.BadRequest("Bad Request: invalid Pub/Sub message format")
 
-        return cls(
+        alert = cls(
             msg=types_.PubsubMessageLike(
                 # data is required. the rest should be present in the message, but use get to be lenient
                 data=base64.b64decode(envelope["message"]["data"].encode("utf-8")),
@@ -173,6 +175,8 @@ class Alert:
             ),
             schema_name=schema_name,
         )
+        alert.schema._init_from_msg(alert)
+        return alert
 
     @classmethod
     def from_dict(
@@ -213,7 +217,9 @@ class Alert:
             Alert:
                 The created `Alert` object.
         """
-        return cls(msg=msg, schema_name=schema_name)
+        alert = cls(msg=msg, schema_name=schema_name)
+        alert.schema._init_from_msg(alert)
+        return alert
 
     @classmethod
     def from_path(cls, path: str | Path, schema_name: str | None = None) -> "Alert":
@@ -237,9 +243,11 @@ class Alert:
         """
         with open(path, "rb") as f:
             bytes_ = f.read()
-        return cls(
+        alert = cls(
             msg=types_.PubsubMessageLike(data=bytes_), schema_name=schema_name, path=Path(path)
         )
+        alert.schema._init_from_msg(alert)
+        return alert
 
     def to_mock_input(self, cloud_functions: bool = False):
         if not cloud_functions:
@@ -341,6 +349,22 @@ class Alert:
         return self.get("sourceid")
 
     @property
+    def ra(self) -> float:
+        """Return the source's right ascension. Convenience wrapper around :attr:`Alert.get`.
+
+        The "source" is the detection that triggered the alert.
+        """
+        return self.get("ra")
+
+    @property
+    def dec(self) -> float:
+        """Return the source's declination. Convenience wrapper around :attr:`Alert.get`.
+
+        The "source" is the detection that triggered the alert.
+        """
+        return self.get("dec")
+
+    @property
     def schema(self) -> Schema:
         """Return the schema from the :class:`pittgoogle.registry.Schemas` registry.
 
@@ -412,22 +436,29 @@ class Alert:
 
         return self._skymap
 
+    @property
+    def name_in_bucket(self) -> str:
+        """Name of the alert object (file) in Google Cloud Storage."""
+        return self.schema._name_in_bucket(alert=self)
+
     # ---- methods ---- #
     def _add_id_attributes(self) -> None:
-        """Add the IDs ("alertid", "objectid", "sourceid") to :attr:`Alert.attributes`."""
+        """Add the IDs 'alertid', 'objectid', 'sourceid' and 'schema.version' to :attr:`Alert.attributes`."""
+        # Get the data IDs and corresponding survey-specific field names. If the field is nested, the
+        # key will be a list. Join list -> string. These are likely to become Pub/Sub message attributes.
         ids = ["alertid", "objectid", "sourceid"]
+        _names = [self.get_key(id) for id in ids]
+        names = [".".join(id) if isinstance(id, list) else id for id in _names]
         values = [self.get(id) for id in ids]
+        attributes = dict(zip(names, values))
 
-        # get the survey-specific field names
-        survey_names = [self.get_key(id) for id in ids]
-        # if the field is nested, the key will be a list
-        # but pubsub message attributes must be strings. join to avoid a future error on publish
-        names = [".".join(id) if isinstance(id, list) else id for id in survey_names]
+        # Add the schema version.
+        attributes["schema.version"] = self.schema.version
 
-        # only add to attributes if the survey has defined this field and it's not already in the attributes
-        for idname, idvalue in zip(names, values):
-            if idname is not None and idname not in self._attributes:
-                self._attributes[idname] = idvalue
+        # Add attributes to self, but only if the survey has defined the field and it's not already there.
+        for name, value in attributes.items():
+            if name is not None and name not in self._attributes:
+                self._attributes[name] = value
 
     def get(self, field: str, default: Any = None) -> Any:
         """Return the value of a field from the alert data.

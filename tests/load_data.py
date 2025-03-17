@@ -29,7 +29,8 @@ class RandomLsst:
         """Return an alert with non-null values for all fields."""
         return TestAlert(
             survey="lsst",
-            schema_name="lsst.v7_4.alert",
+            schema_name="lsst",
+            schema_version="v7_4",
             dict_={
                 "alertId": random.randint(1, 1000),
                 "diaSource": self.dia_source(),
@@ -48,7 +49,8 @@ class RandomLsst:
         """Return an alert with `None` for all fields that are allowed to be null."""
         return TestAlert(
             survey="lsst",
-            schema_name="lsst.v7_4.alert",
+            schema_name="lsst",
+            schema_version="v7_4",
             dict_={
                 "alertId": random.randint(1, 1000),
                 "diaSource": self.dia_source(),

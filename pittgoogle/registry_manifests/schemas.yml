@@ -13,9 +13,9 @@
 #     2: ''
 #
 # DEFAULT
-- name: 'default_schema'
+- name: 'default'
   description: 'Default schema used when no other schema is specified.'
-  origin: '(null)'
+  origin: null
   helper: 'default_schema_helper'
 #
 # ELASTICC alerts
@@ -33,63 +33,8 @@
   path: 'schemas/elasticc/elasticc.v0_9_1.brokerClassification.avsc'
 #
 # LSST alerts
-# [FIXME] Hacking in v7.x for now. Need to figure out install lsst-alert-packet to use lsst_auto_schema_helper
-# - name: 'lsst.v<MAJOR>_<MINOR>.alert'
-  # helper: 'lsst_auto_schema_helper'
-- name: 'lsst.v7_4.alert'
-  path: 'schemas/lsst/7/4/lsst.v7_4.alert.avsc'
-  description: 'Schema for LSST alerts.'
-  origin: 'https://github.com/lsst/alert_packet/tree/main/python/lsst/alert/packet/schema'
-  helper: 'lsst_schema_helper'
-  filter_map:
-    1: 'u'
-    2: 'g'
-    3: 'r'
-    4: 'i'
-    5: 'z'
-    6: 'y'
-#
-- name: 'lsst.v7_3.alert'
-  path: 'schemas/lsst/7/3/lsst.v7_3.alert.avsc'
-  description: 'Schema for LSST alerts.'
-  origin: 'https://github.com/lsst/alert_packet/tree/main/python/lsst/alert/packet/schema'
-  helper: 'lsst_schema_helper'
-  filter_map:
-    1: 'u'
-    2: 'g'
-    3: 'r'
-    4: 'i'
-    5: 'z'
-    6: 'y'
-#
-- name: 'lsst.v7_2.alert'
-  path: 'schemas/lsst/7/2/lsst.v7_2.alert.avsc'
-  description: 'Schema for LSST alerts.'
-  origin: 'https://github.com/lsst/alert_packet/tree/main/python/lsst/alert/packet/schema'
-  helper: 'lsst_schema_helper'
-  filter_map:
-    1: 'u'
-    2: 'g'
-    3: 'r'
-    4: 'i'
-    5: 'z'
-    6: 'y'
-#
-- name: 'lsst.v7_1.alert'
-  path: 'schemas/lsst/7/1/lsst.v7_1.alert.avsc'
-  description: 'Schema for LSST alerts.'
-  origin: 'https://github.com/lsst/alert_packet/tree/main/python/lsst/alert/packet/schema'
-  helper: 'lsst_schema_helper'
-  filter_map:
-    1: 'u'
-    2: 'g'
-    3: 'r'
-    4: 'i'
-    5: 'z'
-    6: 'y'
-#
-- name: 'lsst.v7_0.alert'
-  path: 'schemas/lsst/7/0/lsst.v7_0.alert.avsc'
+- name: 'lsst'
+  path: 'schemas/lsst/MAJOR/MINOR/lsst.vMAJOR_MINOR.alert.avsc'
   description: 'Schema for LSST alerts.'
   origin: 'https://github.com/lsst/alert_packet/tree/main/python/lsst/alert/packet/schema'
   helper: 'lsst_schema_helper'

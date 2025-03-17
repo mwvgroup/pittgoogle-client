@@ -1,0 +1,32 @@
+# Survey name and schema origin.
+SURVEY: 'default'
+SCHEMA_ORIGIN: ''
+# IDs.
+alertid: alertid
+objectid: objectid
+sourceid: sourceid
+# Sources and Objects.
+source: source
+object: object
+prv_forced_sources: prv_forced_sources
+prv_sources: prv_sources
+prv_nondetect_limits: prv_nondetect_limits
+ss_object: ss_object
+# Everything else.
+cutout_difference: cutout_difference
+cutout_science: cutout_science
+cutout_template: cutout_template
+dec: dec
+dec_err: dec_err
+filter: filter
+flux: flux
+flux_err: flux_err
+mag: mag
+mag_err: mag_err
+mag_zp: mag_zp
+mjd: mjd
+ra: ra
+ra_err: ra_err
+skymap: skymap
+snr: snr
+urls: urls

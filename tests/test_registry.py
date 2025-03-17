@@ -1,12 +1,15 @@
 # -*- coding: UTF-8 -*-
 """Unit tests for the registry module."""
+import io
+import struct
+
 import pytest
 import yaml
 
 import pittgoogle
 
 # Load the schema manifest as a list of dicts sorted by key.
-manifest_yaml = pittgoogle.__package_path__ / "registry_manifests/schemas.yml"
+manifest_yaml = pittgoogle.__package_path__ / "registry_manifests" / "schemas.yml"
 SCHEMA_MANIFEST = yaml.safe_load(manifest_yaml.read_text())
 
 
@@ -42,3 +45,21 @@ class TestRegistrySchemas:
         for survey in survey_names:
             with pytest.raises(pittgoogle.exceptions.SchemaError):
                 self.schemas.get(schema_name=f"{survey}.vNONE.alert")
+
+    def test_serialize_without_definition(self):
+        schema = self.schemas.get(schema_name="lsst")
+        with pytest.raises(pittgoogle.exceptions.SchemaError, match="Schema definition unknown."):
+            schema.serialize({})
+
+    def test_unsupported_version_lsst(self):
+        # LSST schema versions are retrieved from the avro header.
+        # Write an avro header with an unsupported version_id.
+        unsuported_version_id = 601
+        fout = io.BytesIO()
+        fout.write(b"\x00")
+        fout.write(struct.pack(">i", unsuported_version_id))
+        # Try to load the schema definition and show that it raises an error.
+        with pytest.raises(pittgoogle.exceptions.SchemaError, match="Schema definition not found"):
+            pittgoogle.Alert.from_msg(
+                pittgoogle.types_.PubsubMessageLike(data=fout.getvalue()), schema_name="lsst"
+            )

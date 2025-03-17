@@ -11,15 +11,20 @@
 import io
 import json
 import logging
-import re
 import struct
+import types
 from pathlib import Path
+from typing import TYPE_CHECKING, Callable
 
 import attrs
 import fastavro
+import numpy as np
 import yaml
 
 from . import __package_path__, exceptions, utils
+
+if TYPE_CHECKING:
+    from . import Alert
 
 LOGGER = logging.getLogger(__name__)
 
@@ -75,67 +80,36 @@ class SchemaHelpers:
 
     @staticmethod
     def lsst_schema_helper(schema_dict: dict) -> "_ConfluentWireAvroSchema":
-        """Load the Avro schema definition for lsst.v7_x.alert."""
-        # [FIXME] This is hack to get the latest schema version into pittgoogle-client
-        # until we can get :meth:`SchemaHelpers.lsst_auto_schema_helper` working.
+        """Load the class:`Schema` for LSST alerts."""
 
-        supported_versions = [
-            "lsst.v7_0.alert",
-            "lsst.v7_1.alert",
-            "lsst.v7_2.alert",
-            "lsst.v7_3.alert",
-            "lsst.v7_4.alert",
-        ]
+        def _init_from_msg(alert: "Alert") -> None:
+            _, version_id = struct.Struct(">bi").unpack(alert.msg.data[:5])
 
-        if schema_dict.get("name") not in supported_versions:
-            raise exceptions.SchemaError(
-                f"Only {', '.join(supported_versions)} are supported for LSST."
-            )
+            # Convert, eg, 703 -> 'v7_3'
+            alert.schema.version_id = version_id
+            major, minor = str(version_id).split("0", maxsplit=1)
+            alert.schema.version = f"v{major}_{minor}"
 
-        schema = _ConfluentWireAvroSchema(**schema_dict)
+            if alert.schema.version not in ["v7_0", "v7_1", "v7_2", "v7_3", "v7_4"]:
+                raise exceptions.SchemaError(
+                    f"Schema definition not found for {alert.schema.version}."
+                )
 
-        # Resolve the path and load the schema
-        schema.path = __package_path__ / schema.path
-        schema.definition = fastavro.schema.load_schema(schema.path)
+            # Resolve the path and load the schema
+            schema_path = alert.schema.path.replace("MAJOR", major).replace("MINOR", minor)
+            alert.schema.path = __package_path__ / schema_path
+            alert.schema.definition = fastavro.schema.load_schema(alert.schema.path)
 
-        return schema
+        # [FIXME] The helpers need to be restructured so that these callables are not so hidden.
+        def _name_in_bucket(alert: "Alert"):
+            import astropy.time  # always lazy-load astropy
 
-    @staticmethod
-    def lsst_auto_schema_helper(schema_dict: dict) -> "_ConfluentWireAvroSchema":
-        """Load the Avro schema definition using the ``lsst.alert.packet`` package.
+            _date = astropy.time.Time(alert.get("mjd"), format="mjd").datetime.strftime("%Y-%m-%d")
+            return f"{alert.schema.version}/{_date}/{alert.objectid}/{alert.sourceid}.avro"
 
-        Raises:
-            SchemaError:
-                If an LSST schema called ``schema.name`` cannot be loaded. An error is raised
-                because the LSST alert bytes are schemaless, so ``schema.definition`` will be
-                required in order to deserialize the alert.
-        """
-        import lsst.alert.packet.schema
-
-        schema = _ConfluentWireAvroSchema(**schema_dict)
-
-        version_msg = f"For valid versions, see {schema.origin}."
-
-        # Parse major and minor versions out of schema.name. Expecting syntax "lsst.v<MAJOR>_<MINOR>.alert".
-        try:
-            major, minor = map(int, re.findall(r"\d+", schema.name))
-        except ValueError as excep:
-            msg = (
-                f"Unable to identify major and minor version. Please use the syntax "
-                "'lsst.v<MAJOR>_<MINOR>.alert', replacing '<MAJOR>' and '<MINOR>' with integers. "
-                f"{version_msg}"
-            )
-            raise exceptions.SchemaError(msg) from excep
-
-        schema_dir = Path(lsst.alert.packet.schema.get_schema_path(major, minor))
-        schema.path = schema_dir / f"{schema.name}.avsc"
-
-        try:
-            schema.definition = lsst.alert.packet.schema.Schema.from_file(schema.path).definition
-        except fastavro.repository.SchemaRepositoryError as excep:
-            msg = f"Unable to load the schema. {version_msg}"
-            raise exceptions.SchemaError(msg) from excep
-
+        schema = _ConfluentWireAvroSchema(
+            init_from_msg=_init_from_msg, name_in_bucket=_name_in_bucket, **schema_dict
+        )
         return schema
 
 
@@ -151,11 +125,15 @@ class Schema:
 
     # String _under_ field definition will cause field to appear as a property in rendered docs.
     name: str = attrs.field()
-    """Name of the schema."""
+    """Name of the schema. This is typically the name of the survey as well."""
     description: str = attrs.field()
     """A description of the schema."""
     origin: str = attrs.field()
     """Pointer to the schema's origin. Typically this is a URL to a repo maintained by the survey."""
+    version: str | None = attrs.field(default=None)
+    """Version of the schema, or None."""
+    version_id: str | None = attrs.field(default=None)
+    """Version ID of the schema, or None. Currently only used for class:`_ConfluentWireAvroSchema`."""
     definition: dict | None = attrs.field(default=None)
     """The schema definition used to serialize and deserialize the alert bytes, if one is required."""
     _helper: str = attrs.field(default="default_schema_helper")
@@ -164,7 +142,12 @@ class Schema:
     """Path where the helper can find the schema, if needed."""
     filter_map: dict = attrs.field(factory=dict)
     """Mapping of the filter name as stored in the alert (often an int) to the common name (often a string)."""
-    _header_bytes: bytes | None = attrs.field(default=None)
+    _init_from_msg: Callable = attrs.field(default=lambda _: None)
+    """Callable that will finish initializing the schema using data in :meth:`Alert.msg`.
+    It should have a signature like `_init_from_msg(alert: Alert) -> None`."""
+    _name_in_bucket: Callable = attrs.field(default=lambda _: str())
+    """Callable that will construct the name of the Google Cloud Storage object.
+    It should have a signature like `_name_in_bucket(alert: Alert) -> str`."""
     # The rest don't need string descriptions because we will define them as explicit properties.
     # _map is important, but don't accept it as an init arg. We'll load it from a yaml file later.
     _map: dict | None = attrs.field(default=None, init=False)
@@ -193,28 +176,54 @@ class Schema:
 
     @property
     def survey(self) -> str:
-        """Name of the survey."""
-        return self.name.split(".")[0]
-
-    @property
-    def version(self) -> str:
-        """Version of the schema."""
-        return self.name.split(".")[1]
+        return self.name
 
     @property
     def map(self) -> dict:
         """Mapping of Pitt-Google's generic field names to survey-specific field names."""
         if self._map is None:
-            yml = __package_path__ / f"schemas/maps/{self.survey}.yml"
+            yml = __package_path__ / "schemas" / "maps" / f"{self.survey}.yml"
             try:
                 self._map = yaml.safe_load(yml.read_text())
             except FileNotFoundError:
                 raise ValueError(f"no schema map found for schema name '{self.name}'")
         return self._map
 
+    def _clean_for_json(
+        self, value: str | int | float | list | dict | None
+    ) -> str | int | float | list | dict | None:
+        """Recursively replace NaN values with None.
+
+        Args:
+            value (str, int, float, list, or dict):
+                The bytes to be deserialized. This is expected to be serialized as either
+                Avro with the schema attached in the header or JSON.
+
+        Returns:
+            str, int, float, list, dict, or None
+                `value` with NaN replaced by None. Replacement is recursive if `value` is a list or dict.
+
+        Raises:
+            TypeError:
+                If `value` is not a str, int, float, list, or dict.
+        """
+        if isinstance(value, (str, int, types.NoneType)):
+            return value
+        if isinstance(value, float):
+            return value if not np.isnan(value) else None
+        if isinstance(value, list):
+            return [self._clean_for_json(v) for v in value]
+        if isinstance(value, dict):
+            return {k: self._clean_for_json(v) for k, v in value.items()}
+        # That's all we know how to deal with right now.
+        raise TypeError(f"Unrecognized type '{type(value)}' ({value})")
+
 
 class _DefaultSchema(Schema):
-    """Default schema to serialize and deserialize alert bytes."""
+    """Default schema to serialize and deserialize alert bytes.
+
+    `deserialize` tries Avro, then JSON. `serialize` uses JSON.
+    """
 
     def serialize(self, alert_dict: dict) -> bytes:
         """Serialize `alert_dict` using the JSON format.
@@ -227,7 +236,7 @@ class _DefaultSchema(Schema):
             bytes:
                 The serialized data in bytes.
         """
-        return json.dumps(alert_dict).encode("utf-8")
+        return json.dumps(self._clean_for_json(alert_dict)).encode("utf-8")
 
     def deserialize(self, alert_bytes: bytes) -> dict:
         """Deserialize `alert_bytes`.
@@ -275,14 +284,13 @@ class _ConfluentWireAvroSchema(Schema):
     https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format
     """
 
-    def serialize(self, alert_dict: dict, schema_id: int = 12345) -> bytes:
+    def serialize(self, alert_dict: dict) -> bytes:
+        if self.definition is None:
+            raise exceptions.SchemaError("Schema definition unknown. Unable to serialize.")
         fout = io.BytesIO()
         # Write the header
-        if self._header_bytes:
-            fout.write(self._header_bytes)
-        else:
-            fout.write(b"\x00")  # magic byte
-            fout.write(struct.pack(">i", schema_id))  # schema ID (4 bytes, big-endian)
+        fout.write(b"\x00")  # magic byte
+        fout.write(struct.pack(">i", self.version_id))  # schema ID (4 bytes, big-endian)
         # Serialize data and return
         fastavro.schemaless_writer(fout, self.definition, alert_dict)
         return fout.getvalue()
@@ -293,6 +301,7 @@ class _ConfluentWireAvroSchema(Schema):
         #     fout.write(message)
 
     def deserialize(self, alert_bytes: bytes) -> dict:
-        self._header_bytes = alert_bytes[:5]
+        if self.definition is None:
+            raise exceptions.SchemaError("Schema definition unknown. Unable to deserialize.")
         bytes_io = io.BytesIO(alert_bytes[5:])
         return fastavro.schemaless_reader(bytes_io, self.definition)

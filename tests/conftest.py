@@ -43,18 +43,18 @@ def sample_alerts_lsst() -> list[load_data.TestAlert]:
     alert_paths = _get_sample_alert_paths(survey)
     alerts = []
     for alert_path in alert_paths:
+        # Expecting alert_path names like "lsst.v7_4.avro".
         schema_fname = alert_path.with_suffix(".alert.avsc").name
         schema_version = alert_path.suffixes[0].strip(".")
-        _version = schema_version.strip("v").split("_")
-        schema_path = SCHEMAS_DIR / survey / _version[0] / _version[1] / schema_fname
+        major, minor = schema_version.strip("v").split("_")
+        schema_path = SCHEMAS_DIR / survey / major / minor / schema_fname
         schema = fastavro.schema.load_schema(schema_path)
         alert_bytes = alert_path.read_bytes()
         bytes_io = io.BytesIO(alert_bytes[5:])
-        # bytes_io = io.BytesIO(alert_path.read_bytes()[5:])
         alerts.append(
             load_data.TestAlert(
                 survey=survey,
-                schema_name=schema_fname.removesuffix(".avsc"),
+                schema_name=survey,
                 schema_version=schema_version,
                 path=alert_path,
                 dict_=fastavro.schemaless_reader(bytes_io, schema),
@@ -114,6 +114,11 @@ def sample_alerts(
     sample_alerts_lsst, sample_alerts_lvk, sample_alerts_ztf
 ) -> list[load_data.TestAlert]:
     return [*sample_alerts_lsst, *sample_alerts_lvk, *sample_alerts_ztf]
+
+
+@pytest.fixture
+def random_alerts(random_alerts_lsst) -> list[load_data.TestAlert]:
+    return random_alerts_lsst
 
 
 @pytest.fixture

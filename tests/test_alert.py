@@ -2,6 +2,7 @@
 """Unit tests for the alert module."""
 import base64
 import datetime
+import json
 
 import astropy.table
 import google.cloud.pubsub_v1
@@ -20,18 +21,19 @@ class TestAlertFrom:
             assert alert.path == sample_alert.path
             assert alert.dict == sample_alert.dict_
 
-    def test_from_dict(self, sample_alerts):
-        for sample_alert in sample_alerts:
+    def test_from_dict(self, sample_alerts, random_alerts):
+        for test_alert in sample_alerts + random_alerts:
             alert = pittgoogle.Alert.from_dict(
-                sample_alert.dict_, schema_name=sample_alert.schema_name
+                test_alert.dict_, schema_name=test_alert.schema_name
             )
             assert isinstance(alert, pittgoogle.Alert)
-            assert alert.dict == sample_alert.dict_
+            assert alert.dict == test_alert.dict_
 
-            # alertid, objectid, and sourceid should have been added as attributes.
+            # alertid, objectid, sourceid, and schema version should have been added as attributes.
             key_gen = (alert.get_key(key) for key in ["alertid", "objectid", "sourceid"])
             _expected_keys = [".".join(key) if isinstance(key, list) else key for key in key_gen]
-            expected_keys = set(key for key in _expected_keys if key)  # get rid of None
+            # Add schema.version and get rid of None.
+            expected_keys = set(key for key in _expected_keys + ["schema.version"] if key)
             assert set(alert.attributes) == expected_keys
 
     def test_from_cloud_functions(self, sample_alert):
@@ -39,10 +41,10 @@ class TestAlertFrom:
             sample_alert.path, schema_name=sample_alert.schema_name
         ).to_mock_input(cloud_functions=True)
         alert_instance = pittgoogle.Alert.from_cloud_functions(
-            event, context, schema_name="test_schema"
+            event, context, schema_name="default"
         )
         assert isinstance(alert_instance, pittgoogle.Alert)
-        assert alert_instance.schema_name == "test_schema"
+        assert alert_instance.schema_name == "default"
         assert alert_instance.msg.data == base64.b64decode(event["data"])
         assert alert_instance.msg.attributes == event["attributes"]
         assert alert_instance.msg.message_id == context.event_id
@@ -60,9 +62,9 @@ class TestAlertFrom:
                 "ordering_key": "order_key",
             }
         }
-        alert_instance = pittgoogle.Alert.from_cloud_run(envelope, schema_name="test_schema")
+        alert_instance = pittgoogle.Alert.from_cloud_run(envelope, schema_name="default")
         assert isinstance(alert_instance, pittgoogle.Alert)
-        assert alert_instance.schema_name == "test_schema"
+        assert alert_instance.schema_name == "default"
         assert alert_instance.msg.data == base64.b64decode(
             envelope["message"]["data"].encode("utf-8")
         )
@@ -80,9 +82,9 @@ class TestAlertFrom:
             message_id="12345",
             publish_time=datetime.datetime(2023, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc),
         )
-        alert_instance = pittgoogle.Alert.from_msg(msg, schema_name="test_schema")
+        alert_instance = pittgoogle.Alert.from_msg(msg, schema_name="default")
         assert isinstance(alert_instance, pittgoogle.Alert)
-        assert alert_instance.schema_name == "test_schema"
+        assert alert_instance.schema_name == "default"
         assert alert_instance.msg == msg
 
 
@@ -115,11 +117,46 @@ class TestAlertProperties:
             assert isinstance(pgdf, pd.DataFrame)
             assert set(pgdf.columns) == mandatory_cols or set(pgdf.columns) == all_cols
 
+    def test_name_in_bucket(self):
+        alert_dict = {
+            "diaObject": {"diaObjectId": 222},
+            "diaSource": {"diaSourceId": 3333, "midpointMjdTai": 60745.0031},
+        }
+        alert = pittgoogle.Alert.from_msg(
+            pittgoogle.types_.PubsubMessageLike(data=json.dumps(alert_dict))
+        )
+        alert.schema_name = "lsst"
+        alert._schema = None
+        alert.schema.version = "v7_4"
+        alert.schema.deserialize = json.loads
+
+        assert alert.name_in_bucket == "v7_4/2025-03-11/222/3333.avro"
+
+    def test_get_wrappers(self):
+        alert_dict = {
+            "alertid": 12345,
+            "objectid": 67890,
+            "sourceid": 1234567890,
+            "ra": 270.0123456789,
+            "dec": -32.0123456789,
+        }
+        alert = pittgoogle.Alert.from_msg(
+            pittgoogle.types_.PubsubMessageLike(data=json.dumps(alert_dict)), "default"
+        )
+        assert alert.alertid == 12345
+        assert alert.objectid == 67890
+        assert alert.sourceid == 1234567890
+        assert alert.ra == 270.0123456789
+        assert alert.dec == -32.0123456789
+
 
 class TestAlertMethods:
     def test_prep_for_publish(self, sample_alerts):
         for sample_alert in sample_alerts:
-            message, attributes = sample_alert.pgalert._prep_for_publish()
+            alert = pittgoogle.Alert.from_path(
+                sample_alert.path, schema_name=sample_alert.schema_name
+            )
+            message, attributes = alert._prep_for_publish()
             assert isinstance(message, bytes)
             assert isinstance(attributes, dict)
             assert all(isinstance(k, str) and isinstance(v, str) for k, v in attributes.items())

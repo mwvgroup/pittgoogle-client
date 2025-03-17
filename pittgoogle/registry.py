@@ -19,7 +19,7 @@ from . import __package_path__, exceptions, schema
 LOGGER = logging.getLogger(__name__)
 
 # Load the schema manifest as a list of dicts sorted by key.
-manifest_yaml = (__package_path__ / "registry_manifests/schemas.yml").read_text()
+manifest_yaml = (__package_path__ / "registry_manifests" / "schemas.yml").read_text()
 SCHEMA_MANIFEST = sorted(yaml.safe_load(manifest_yaml), key=lambda schema: schema["name"])
 
 
@@ -79,9 +79,7 @@ class Schemas:
         # If no schema_name provided, return the default.
         if schema_name is None:
             LOGGER.warning("No schema name provided. Returning a default schema.")
-            mft_schema = [
-                schema for schema in SCHEMA_MANIFEST if schema["name"] == "default_schema"
-            ][0]
+            mft_schema = [schema for schema in SCHEMA_MANIFEST if schema["name"] == "default"][0]
             return schema.Schema._from_yaml(schema_dict=mft_schema)
 
         # Return the schema with name == schema_name, if one exists.
