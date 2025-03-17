@@ -107,7 +107,6 @@ class Alert:
             context=context,
             schema_name=schema_name,
         )
-        alert.schema._init_from_msg(alert)
         return alert
 
     @classmethod
@@ -175,7 +174,6 @@ class Alert:
             ),
             schema_name=schema_name,
         )
-        alert.schema._init_from_msg(alert)
         return alert
 
     @classmethod
@@ -218,7 +216,6 @@ class Alert:
                 The created `Alert` object.
         """
         alert = cls(msg=msg, schema_name=schema_name)
-        alert.schema._init_from_msg(alert)
         return alert
 
     @classmethod
@@ -246,7 +243,6 @@ class Alert:
         alert = cls(
             msg=types_.PubsubMessageLike(data=bytes_), schema_name=schema_name, path=Path(path)
         )
-        alert.schema._init_from_msg(alert)
         return alert
 
     def to_mock_input(self, cloud_functions: bool = False):
@@ -373,7 +369,8 @@ class Alert:
                 If the `schema_name` is not supplied or a schema with this name is not found.
         """
         if self._schema is None:
-            self._schema = registry.Schemas.get(self.schema_name)
+            alert_bytes = self.msg.data if self.msg else None
+            self._schema = registry.Schemas.get(self.schema_name, alert_bytes=alert_bytes)
         return self._schema
 
     @property
