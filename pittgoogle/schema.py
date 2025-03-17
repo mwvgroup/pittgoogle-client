@@ -164,6 +164,36 @@ class Serializers:
         bytes_io = io.BytesIO(alert_bytes[5:])
         return fastavro.schemaless_reader(bytes_io, schema_definition)
 
+    @staticmethod
+    def _clean_for_json(
+        value: str | int | float | list | dict | None,
+    ) -> str | int | float | list | dict | None:
+        """Recursively replace NaN values with None.
+
+        Args:
+            value (str, int, float, list, dict, or None):
+                The bytes to be deserialized. This is expected to be serialized as either
+                Avro with the schema attached in the header or JSON.
+
+        Returns:
+            str, int, float, list, dict, or None
+                `value` with NaN replaced by None. Replacement is recursive if `value` is a list or dict.
+
+        Raises:
+            TypeError:
+                If `value` is not a str, int, float, list, or dict.
+        """
+        if isinstance(value, (str, int, types.NoneType)):
+            return value
+        if isinstance(value, float):
+            return value if not np.isnan(value) else None
+        if isinstance(value, list):
+            return [Schema._clean_for_json(v) for v in value]
+        if isinstance(value, dict):
+            return {k: Schema._clean_for_json(v) for k, v in value.items()}
+        # That's all we know how to deal with right now.
+        raise TypeError(f"Unrecognized type '{type(value)}' ({value})")
+
 
 @attrs.define(kw_only=True)
 class SchemaHelpers:
@@ -324,35 +354,6 @@ class Schema:
             except FileNotFoundError:
                 raise ValueError(f"no schema map found for schema name '{self.name}'")
         return self._map
-
-    def _clean_for_json(
-        self, value: str | int | float | list | dict | None
-    ) -> str | int | float | list | dict | None:
-        """Recursively replace NaN values with None.
-
-        Args:
-            value (str, int, float, list, or dict):
-                The bytes to be deserialized. This is expected to be serialized as either
-                Avro with the schema attached in the header or JSON.
-
-        Returns:
-            str, int, float, list, dict, or None
-                `value` with NaN replaced by None. Replacement is recursive if `value` is a list or dict.
-
-        Raises:
-            TypeError:
-                If `value` is not a str, int, float, list, or dict.
-        """
-        if isinstance(value, (str, int, types.NoneType)):
-            return value
-        if isinstance(value, float):
-            return value if not np.isnan(value) else None
-        if isinstance(value, list):
-            return [self._clean_for_json(v) for v in value]
-        if isinstance(value, dict):
-            return {k: self._clean_for_json(v) for k, v in value.items()}
-        # That's all we know how to deal with right now.
-        raise TypeError(f"Unrecognized type '{type(value)}' ({value})")
 
 
 class _DefaultSchema(Schema):
