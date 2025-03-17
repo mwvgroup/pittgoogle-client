@@ -271,21 +271,24 @@ class Schema(abc.ABC):
         Returns:
             Schema
         """
-        pass
 
     @abc.abstractmethod
-    def serialize(self, alert_dict: dict) -> bytes:
+    def serialize(
+        self, alert_dict: dict, *, serializer: Literal["json", "avro", None] = None
+    ) -> bytes:
         """Serialize `alert_dict`. This method must be implemented by subclasses.
 
         Args:
             alert_dict (dict):
                 The dictionary to be serialized.
+            serializer (str or None, optional):
+                Whether to serialize the dict using Avro or JSON. If not None, this will override
+                the `serializer` property and is subject to the same conditions.
 
         Returns:
             bytes:
                 The serialized data in bytes.
         """
-        pass
 
     @abc.abstractmethod
     def deserialize(self, alert_bytes: bytes) -> dict:
@@ -299,11 +302,10 @@ class Schema(abc.ABC):
             dict:
                 A dictionary representing the deserialized `alert_bytes`.
         """
-        pass
 
+    @abc.abstractmethod
     def _name_in_bucket(_alert: "Alert") -> None:
         """Construct the name of the Google Cloud Storage object."""
-        pass
 
     @property
     def survey(self) -> str:
@@ -356,15 +358,12 @@ class DefaultSchema(Schema):
         invalid_path = (
             (schema.path is None) or (schema.path.suffix != ".avsc") or (not schema.path.is_file())
         )
-        if invalid_path:
-            schema.definition = None
-        else:
-            schema.definition = fastavro.schema.load_schema(schema.path)
+        schema.definition = None if invalid_path else fastavro.schema.load_schema(schema.path)
 
         return schema
 
     def serialize(
-        self, alert_dict: dict, serializer: Literal["json", "avro", None] = None
+        self, alert_dict: dict, *, serializer: Literal["json", "avro", None] = None
     ) -> bytes:
         """Serialize the `alert_dict`.
 
@@ -398,6 +397,10 @@ class DefaultSchema(Schema):
             return Serializers.deserialize_json(alert_bytes)
         return Serializers.deserialize_avro(alert_bytes)
 
+    def _name_in_bucket(_alert: "Alert") -> None:
+        """Construct the name of the Google Cloud Storage object."""
+        raise NotImplementedError("Name syntax is unknown.")
+
 
 # --------- Survey Schema Definitions --------- #
 @attrs.define(kw_only=True)
@@ -430,7 +433,7 @@ class ElasticcSchema(Schema):
         return schema
 
     def serialize(
-        self, alert_dict: dict, serializer: Literal["json", "avro", None] = None
+        self, alert_dict: dict, *, serializer: Literal["json", "avro", None] = None
     ) -> bytes:
         """Serialize the `alert_dict`.
 
@@ -466,6 +469,10 @@ class ElasticcSchema(Schema):
             alert_bytes, schema_definition=self.definition
         )
 
+    def _name_in_bucket(_alert: "Alert") -> None:
+        """Construct the name of the Google Cloud Storage object."""
+        raise NotImplementedError("Name syntax is unknown.")
+
 
 @attrs.define(kw_only=True)
 class LsstSchema(Schema):
@@ -481,7 +488,7 @@ class LsstSchema(Schema):
     (https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format)."""
 
     @classmethod
-    def _from_yaml(cls, yaml_dict: dict, alert_bytes: bytes | None = None):
+    def _from_yaml(cls, yaml_dict: dict, *, alert_bytes: bytes | None = None):
         """Create a schema object from `yaml_dict`.
 
         Args:
@@ -522,7 +529,7 @@ class LsstSchema(Schema):
         return schema
 
     def serialize(
-        self, alert_dict: dict, serializer: Literal["json", "avro", None] = None
+        self, alert_dict: dict, *, serializer: Literal["json", "avro", None] = None
     ) -> bytes:
         """Serialize the `alert_dict`.
 
