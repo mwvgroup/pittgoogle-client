@@ -3,8 +3,13 @@
 
 .. autosummary::
 
+    Serializers
     Schema
-    SchemaHelpers
+    DefaultSchema
+    ElasticcSchema
+    LsstSchema
+    LvkSchema
+    ZtfSchema
 
 ----
 """
@@ -244,14 +249,11 @@ class Schema(abc.ABC):
     """Version ID of the schema, or None. Currently only used for class:`_ConfluentWireAvroSchema`."""
     definition: dict | None = attrs.field(default=None)
     """The schema definition used to serialize and deserialize the alert bytes, if one is required."""
-    _helper: str = attrs.field(default="default_schema_helper")
-    """Name of the method in :class:`SchemaHelpers` used to load this schema."""
     path: Path | None = attrs.field(default=None)
-    """Path where the helper can find the schema, if needed."""
+    """Path to a file containing the schema definition."""
     filter_map: dict = attrs.field(factory=dict)
     """Mapping of the filter name as stored in the alert (often an int) to the common name (often a string)."""
     # The rest don't need string descriptions because we will define them as explicit properties.
-    # _map is important, but don't accept it as an init arg. We'll load it from a yaml file later.
     _map: dict | None = attrs.field(default=None, init=False)
 
     @classmethod
