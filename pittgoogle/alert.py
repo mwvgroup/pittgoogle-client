@@ -13,7 +13,7 @@ import io
 import logging
 import random
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Mapping, Union
+from typing import TYPE_CHECKING, Any, Literal, Mapping, Union
 
 import attrs
 import google.cloud.pubsub_v1
@@ -238,8 +238,7 @@ class Alert:
             IOError:
                 If there is an error reading the file.
         """
-        with open(path, "rb") as f:
-            bytes_ = f.read()
+        bytes_ = Path(path).read_bytes()
         alert = cls(
             msg=types_.PubsubMessageLike(data=bytes_), schema_name=schema_name, path=Path(path)
         )
@@ -257,6 +256,7 @@ class Alert:
 
         If this was not provided (typical case), this attribute will contain a copy of
         the incoming :attr:`Alert.msg.attributes`.
+        Alert IDs and schema version will be added if not already present.
 
         You may update this dictionary as desired. If you publish this alert using
         :attr:`pittgoogle.Topic.publish`, this dictionary will be sent as the outgoing
@@ -535,9 +535,17 @@ class Alert:
 
         return survey_field
 
-    def _prep_for_publish(self) -> tuple[bytes, Mapping[str, str]]:
-        """Serialize the alert dict and convert all attribute keys and values to strings."""
-        message = self.schema.serialize(self.drop_cutouts())
+    def _prep_for_publish(
+        self, serializer: Literal["json", "avro", None] = None
+    ) -> tuple[bytes, Mapping[str, str]]:
+        """Serialize the alert dict and convert all attribute keys and values to strings.
+
+        Args:
+            serializer (str or None, optional):
+                Whether to serialize the dict using Avro or JSON. If not None, this will override
+                :meth:`pittgoogle.Alert.schema.serializer` and is subject to the same requirements.
+        """
+        message = self.schema.serialize(self.drop_cutouts(), serializer=serializer)
         # Pub/Sub requires attribute keys and values to be strings. Sort the keys while we're at it.
         attributes = {str(key): str(self.attributes[key]) for key in sorted(self.attributes)}
         return message, attributes
