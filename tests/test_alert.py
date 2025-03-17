@@ -99,8 +99,9 @@ class TestAlertProperties:
             else:
                 assert alert.skymap is None
 
-    def test_dataframe(self, random_alerts_lsst, sample_alerts_lsst):
-        # [FIXME] This is only testing schema "lsst.v7_4.alert"
+    def test_dataframe(self, random_alerts_lsst, sample_alert_lsst_latest):
+        # [FIXME] Only testing the latest LSST schema version for now.
+
         full, minimal = random_alerts_lsst
 
         mandatory_cols = set(full.pgalert.get("source").keys())
@@ -110,9 +111,7 @@ class TestAlertProperties:
         assert minimal.pgalert.get("prv_sources") is None
         assert minimal.pgalert.get("prv_forced_sources") is None
 
-        for testalert in random_alerts_lsst + sample_alerts_lsst:
-            if testalert.schema_name != "lsst.v7_4.alert":
-                continue
+        for testalert in random_alerts_lsst + [sample_alert_lsst_latest]:
             pgdf = testalert.pgalert.dataframe
             assert isinstance(pgdf, pd.DataFrame)
             assert set(pgdf.columns) == mandatory_cols or set(pgdf.columns) == all_cols
@@ -122,14 +121,9 @@ class TestAlertProperties:
             "diaObject": {"diaObjectId": 222},
             "diaSource": {"diaSourceId": 3333, "midpointMjdTai": 60745.0031},
         }
-        alert = pittgoogle.Alert.from_msg(
-            pittgoogle.types_.PubsubMessageLike(data=json.dumps(alert_dict))
-        )
+        alert = pittgoogle.Alert.from_dict(alert_dict, "lsst")
         alert.schema_name = "lsst"
-        alert._schema = None
         alert.schema.version = "v7_4"
-        alert.schema.deserialize = json.loads
-
         assert alert.name_in_bucket == "v7_4/2025-03-11/222/3333.avro"
 
     def test_get_wrappers(self):
@@ -141,7 +135,8 @@ class TestAlertProperties:
             "dec": -32.0123456789,
         }
         alert = pittgoogle.Alert.from_msg(
-            pittgoogle.types_.PubsubMessageLike(data=json.dumps(alert_dict)), "default"
+            pittgoogle.types_.PubsubMessageLike(data=json.dumps(alert_dict).encode("utf-8")),
+            "default",
         )
         assert alert.alertid == 12345
         assert alert.objectid == 67890

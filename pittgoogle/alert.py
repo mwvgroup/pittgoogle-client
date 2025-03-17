@@ -13,7 +13,7 @@ import io
 import logging
 import random
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Mapping, Union
+from typing import TYPE_CHECKING, Any, Literal, Mapping, Union
 
 import attrs
 import google.cloud.pubsub_v1
@@ -107,7 +107,6 @@ class Alert:
             context=context,
             schema_name=schema_name,
         )
-        alert.schema._init_from_msg(alert)
         return alert
 
     @classmethod
@@ -175,7 +174,6 @@ class Alert:
             ),
             schema_name=schema_name,
         )
-        alert.schema._init_from_msg(alert)
         return alert
 
     @classmethod
@@ -218,7 +216,6 @@ class Alert:
                 The created `Alert` object.
         """
         alert = cls(msg=msg, schema_name=schema_name)
-        alert.schema._init_from_msg(alert)
         return alert
 
     @classmethod
@@ -241,12 +238,10 @@ class Alert:
             IOError:
                 If there is an error reading the file.
         """
-        with open(path, "rb") as f:
-            bytes_ = f.read()
+        bytes_ = Path(path).read_bytes()
         alert = cls(
             msg=types_.PubsubMessageLike(data=bytes_), schema_name=schema_name, path=Path(path)
         )
-        alert.schema._init_from_msg(alert)
         return alert
 
     def to_mock_input(self, cloud_functions: bool = False):
@@ -261,6 +256,7 @@ class Alert:
 
         If this was not provided (typical case), this attribute will contain a copy of
         the incoming :attr:`Alert.msg.attributes`.
+        Alert IDs and schema version will be added if not already present.
 
         You may update this dictionary as desired. If you publish this alert using
         :attr:`pittgoogle.Topic.publish`, this dictionary will be sent as the outgoing
@@ -373,7 +369,8 @@ class Alert:
                 If the `schema_name` is not supplied or a schema with this name is not found.
         """
         if self._schema is None:
-            self._schema = registry.Schemas.get(self.schema_name)
+            alert_bytes = self.msg.data if self.msg else None
+            self._schema = registry.Schemas.get(self.schema_name, alert_bytes=alert_bytes)
         return self._schema
 
     @property
@@ -538,9 +535,17 @@ class Alert:
 
         return survey_field
 
-    def _prep_for_publish(self) -> tuple[bytes, Mapping[str, str]]:
-        """Serialize the alert dict and convert all attribute keys and values to strings."""
-        message = self.schema.serialize(self.drop_cutouts())
+    def _prep_for_publish(
+        self, serializer: Literal["json", "avro", None] = None
+    ) -> tuple[bytes, Mapping[str, str]]:
+        """Serialize the alert dict and convert all attribute keys and values to strings.
+
+        Args:
+            serializer (str or None, optional):
+                Whether to serialize the dict using Avro or JSON. If not None, this will override
+                :meth:`pittgoogle.Alert.schema.serializer` and is subject to the same requirements.
+        """
+        message = self.schema.serialize(self.drop_cutouts(), serializer=serializer)
         # Pub/Sub requires attribute keys and values to be strings. Sort the keys while we're at it.
         attributes = {str(key): str(self.attributes[key]) for key in sorted(self.attributes)}
         return message, attributes
