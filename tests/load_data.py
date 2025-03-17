@@ -2,22 +2,30 @@ import random
 from pathlib import Path
 
 import attrs
+import yaml
 
 import pittgoogle
+
+# Load the schema manifest as a list of dicts sorted by key.
+manifest_yaml = pittgoogle.__package_path__ / "registry_manifests" / "schemas.yml"
+SCHEMA_MANIFEST = yaml.safe_load(manifest_yaml.read_text())
 
 
 @attrs.define(kw_only=True)
 class TestAlert:
     """Container for a single sample alert."""
 
-    path: Path | None = attrs.field(default=None)
-    dict_: dict | None = attrs.field(default=None)
     schema_name: str | None = attrs.field(default=None)
     schema_version: str | None = attrs.field(default=None)
     survey: str | None = attrs.field(default=None)
+    path: Path | None = attrs.field(default=None)
+    bytes_: dict | None = attrs.field(default=None)
+    dict_: dict | None = attrs.field(default=None)
 
     @property
     def pgalert(self) -> pittgoogle.Alert:
+        if self.path:
+            return pittgoogle.Alert.from_path(self.path, schema_name=self.schema_name)
         return pittgoogle.Alert.from_dict(self.dict_, schema_name=self.schema_name)
 
 

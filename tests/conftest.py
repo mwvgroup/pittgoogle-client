@@ -53,14 +53,23 @@ def sample_alerts_lsst() -> list[load_data.TestAlert]:
         bytes_io = io.BytesIO(alert_bytes[5:])
         alerts.append(
             load_data.TestAlert(
-                survey=survey,
                 schema_name=survey,
                 schema_version=schema_version,
+                survey=survey,
                 path=alert_path,
+                bytes_=alert_bytes,
                 dict_=fastavro.schemaless_reader(bytes_io, schema),
             )
         )
     return alerts
+
+
+@pytest.fixture
+def sample_alert_lsst_latest(sample_alerts_lsst) -> load_data.TestAlert:
+    latest_version = sorted(sa.schema_version for sa in sample_alerts_lsst)[-1]
+    for sample_alert in sample_alerts_lsst:
+        if sample_alert.schema_version == latest_version:
+            return sample_alert
 
 
 @pytest.fixture
@@ -83,6 +92,7 @@ def sample_alerts_lvk() -> list[load_data.TestAlert]:
                 schema_name=survey,
                 schema_version="UNKNOWN",
                 path=alert_path,
+                bytes_=alert_bytes,
                 dict_=json.loads(alert_bytes),
             )
         )
@@ -103,6 +113,7 @@ def sample_alerts_ztf() -> list[load_data.TestAlert]:
                 schema_name=survey,
                 schema_version=alert_path.suffixes[0].strip("."),
                 path=alert_path,
+                bytes_=alert_bytes,
                 dict_=list(fastavro.reader(io.BytesIO(alert_bytes)))[0],
             )
         )
