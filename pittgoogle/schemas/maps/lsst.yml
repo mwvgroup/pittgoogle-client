@@ -5,6 +5,7 @@ SCHEMA_ORIGIN: 'https://github.com/lsst/alert_packet/tree/main/python/lsst/alert
 alertid: alertId
 sourceid: [diaSource, diaSourceId]
 objectid: [diaObject, diaObjectId]
+ssobjectid: [ssObject, ssObjectId]
 # Sources and Objects
 source: diaSource
 object: diaObject

@@ -22,6 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
     - Tests for new `Alert` properties.
     - Tests for LSST version and serialization.
     - Randomly generated data for schema "lsst.v7_4.alert".
+- Schema maps
+    - LSST support for `ssObjectId`
 
 ### Changed
 
