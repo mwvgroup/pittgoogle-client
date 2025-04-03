@@ -535,21 +535,6 @@ class Alert:
 
         return survey_field
 
-    def _prep_for_publish(
-        self, serializer: Literal["json", "avro", None] = None
-    ) -> tuple[bytes, Mapping[str, str]]:
-        """Serialize the alert dict and convert all attribute keys and values to strings.
-
-        Args:
-            serializer (str or None, optional):
-                Whether to serialize the dict using Avro or JSON. If not None, this will override
-                :meth:`pittgoogle.Alert.schema.serializer` and is subject to the same requirements.
-        """
-        message = self.schema.serialize(self.drop_cutouts(), serializer=serializer)
-        # Pub/Sub requires attribute keys and values to be strings. Sort the keys while we're at it.
-        attributes = {str(key): str(self.attributes[key]) for key in sorted(self.attributes)}
-        return message, attributes
-
     def drop_cutouts(self) -> dict:
         """Drop the cutouts from the alert dictionary.
 
@@ -594,7 +579,12 @@ class MockInput:
                 describes the service API endpoint pubsub.googleapis.com, the triggering topic's name,
                 and the triggering event type `type.googleapis.com/google.pubsub.v1.PubsubMessage`.
         """
-        message, attributes = self.alert._prep_for_publish()
+        message = self.alert.schema.serialize(self.alert.dict)
+        # Pub/Sub requires attribute keys and values to be strings. Sort by key while we're at it.
+        attributes = {
+            str(key): str(self.alert.attributes[key]) for key in sorted(self.alert.attributes)
+        }
+        # message, attributes = self.alert._prep_for_publish()
         event_type = "type.googleapis.com/google.pubsub.v1.PubsubMessage"
         now = (
             datetime.datetime.now(datetime.timezone.utc)
