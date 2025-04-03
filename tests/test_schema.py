@@ -2,6 +2,9 @@
 """Unit tests for the registry module."""
 import json
 
+import numpy as np
+import pytest
+
 import pittgoogle
 
 
@@ -55,3 +58,44 @@ class TestDeserialize:
                 deserialized_bytes = schema.deserialize(alert_bytes)
                 assert deserialized_bytes == alert_dict
             # Skipping json -> avro for now.
+
+
+class TestCleanForJson:
+    def test_clean_for_json_str(self):
+        assert pittgoogle.schema.Serializers._clean_for_json("test") == "test"
+
+    def test_clean_for_json_int(self):
+        assert pittgoogle.schema.Serializers._clean_for_json(123) == 123
+
+    def test_clean_for_json_float(self):
+        assert pittgoogle.schema.Serializers._clean_for_json(1.23) == 1.23
+
+    def test_clean_for_json_nan(self):
+        assert pittgoogle.schema.Serializers._clean_for_json(np.nan) is None
+
+    def test_clean_for_json_bytes(self):
+        assert pittgoogle.schema.Serializers._clean_for_json(b"test") == "dGVzdA=="
+
+    def test_clean_for_json_list(self):
+        input, expected_output = [1, 2.3, "test", np.nan], [1, 2.3, "test", None]
+        assert pittgoogle.schema.Serializers._clean_for_json(input) == expected_output
+
+    def test_clean_for_json_dict(self):
+        input = {"a": 1, "b": 2.3, "c": "test", "d": np.nan}
+        expected_output = {"a": 1, "b": 2.3, "c": "test", "d": None}
+        assert pittgoogle.schema.Serializers._clean_for_json(input) == expected_output
+
+    def test_clean_for_json_none(self):
+        assert pittgoogle.schema.Serializers._clean_for_json(None) is None
+
+    def test_clean_for_json_nested(self):
+        input = {"a": [1, np.nan, {"b": b"test"}]}
+        expected = {"a": [1, None, {"b": "dGVzdA=="}]}
+        assert pittgoogle.schema.Serializers._clean_for_json(input) == expected
+
+    def test_clean_for_json_unrecognized_type(self):
+        class UnrecognizedType:
+            pass
+
+        with pytest.raises(TypeError):
+            pittgoogle.schema.Serializers._clean_for_json(UnrecognizedType())

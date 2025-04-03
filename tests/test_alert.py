@@ -146,16 +146,6 @@ class TestAlertProperties:
 
 
 class TestAlertMethods:
-    def test_prep_for_publish(self, sample_alerts):
-        for sample_alert in sample_alerts:
-            alert = pittgoogle.Alert.from_path(
-                sample_alert.path, schema_name=sample_alert.schema_name
-            )
-            message, attributes = alert._prep_for_publish()
-            assert isinstance(message, bytes)
-            assert isinstance(attributes, dict)
-            assert all(isinstance(k, str) and isinstance(v, str) for k, v in attributes.items())
-
     def test_str_to_datetime(self):
         str_time = "2023-01-01T00:00:00.000000Z"
         dt = pittgoogle.Alert._str_to_datetime(str_time)
