@@ -14,6 +14,7 @@
 ----
 """
 import abc
+import base64
 import io
 import json
 import logging
@@ -192,31 +193,39 @@ class Serializers:
 
     @staticmethod
     def _clean_for_json(
-        value: str | int | float | list | dict | None,
+        value: str | int | float | bytes | list | dict | None,
     ) -> str | int | float | list | dict | None:
-        """Recursively replace NaN values with None.
+        """Coerce `value` to a format suitable for json serialization.
 
         Args:
-            value (str, int, float, list, dict, or None):
-                The bytes to be deserialized. This is expected to be serialized as either
-                Avro with the schema attached in the header or JSON.
+            value (str, int, float, bytes, list, dict, or None):
+                The value to be cleaned. str, int, float (except NaN), and None types are
+                returned unchanged. `None` is returned if `value` is consistent with NaN.
+                bytes types are returned as base64-encoded strings. If list or dict, this
+                method will be called recursively on each element/item.
 
         Returns:
-            str, int, float, list, dict, or None
+            str, int, float, list, dict, or None:
                 `value` with NaN replaced by None. Replacement is recursive if `value` is a list or dict.
 
         Raises:
             TypeError:
-                If `value` is not a str, int, float, list, or dict.
+                If `value` is not a str, int, float, bytes, list, or dict.
         """
+        # Return value suitable for json serialization.
         if isinstance(value, (str, int, types.NoneType)):
             return value
         if isinstance(value, float):
             return value if not np.isnan(value) else None
+        if isinstance(value, bytes):
+            return base64.b64encode(value).decode("utf-8")
+
+        # Recurse.
         if isinstance(value, list):
             return [Serializers._clean_for_json(v) for v in value]
         if isinstance(value, dict):
             return {k: Serializers._clean_for_json(v) for k, v in value.items()}
+
         # That's all we know how to deal with right now.
         raise TypeError(f"Unrecognized type '{type(value)}' ({value})")
 
