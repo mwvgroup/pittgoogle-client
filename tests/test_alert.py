@@ -29,11 +29,19 @@ class TestAlertFrom:
             assert isinstance(alert, pittgoogle.Alert)
             assert alert.dict == test_alert.dict_
 
-            # alertid, objectid, sourceid, and schema version should have been added as attributes.
-            key_gen = (alert.get_key(key) for key in ["alertid", "objectid", "sourceid"])
-            _expected_keys = [".".join(key) if isinstance(key, list) else key for key in key_gen]
-            # Add schema.version and get rid of None.
-            expected_keys = set(key for key in _expected_keys + ["schema.version"] if key)
+    def test_attributes(self, sample_alerts, random_alerts):
+        for test_alert in sample_alerts + random_alerts:
+            alert = pittgoogle.Alert.from_dict(
+                test_alert.dict_, schema_name=test_alert.schema_name
+            )
+            # We expect that the following keys were added to alert.attributes.
+            #  to  alertid, objectid, sourceid, and schema version should have been added as attributes.
+            _id_keys = (alert.get_key(key) for key in ["alertid", "objectid", "sourceid"])
+            id_keys = [".".join(key) if isinstance(key, list) else key for key in _id_keys]
+            index_keys = ["healpix9", "healpix19", "healpix29"]
+            metadata_keys = ["schema.version"]
+            # 'if key' to drop None.
+            expected_keys = set(key for key in id_keys + index_keys + metadata_keys if key)
             assert set(alert.attributes) == expected_keys
 
     def test_from_cloud_functions(self, sample_alert):
@@ -115,6 +123,13 @@ class TestAlertProperties:
             pgdf = testalert.pgalert.dataframe
             assert isinstance(pgdf, pd.DataFrame)
             assert set(pgdf.columns) == mandatory_cols or set(pgdf.columns) == all_cols
+
+    def test_healpix(self):
+        alert_dict = {"ra": 270.1, "dec": -30.2}
+        alert = pittgoogle.Alert.from_dict(alert_dict, schema_name="default")
+        assert alert.healpix9 == 1_839_101
+        assert alert.healpix19 == 1_928_437_384_743
+        assert alert.healpix29 == 2_022_113_159_144_974_258
 
     def test_name_in_bucket(self):
         alert_dict = {
