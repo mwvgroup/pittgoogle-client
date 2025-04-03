@@ -70,7 +70,7 @@ class Serializers:
 
     @staticmethod
     def serialize_avro(alert_dict: dict, *, schema_definition: dict) -> bytes:
-        """Serialize `alert_dict` using the JSON format.
+        """Serialize `alert_dict` using the Avro format.
 
         Args:
             alert_dict (dict):
