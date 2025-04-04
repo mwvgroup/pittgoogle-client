@@ -20,7 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
       switch between JSON and Avro on the fly.
     - Methods to support the LSST schema consolidation.
     - Schema map for the default schema.
- - `Topic.publish()`: new keyword arg `drop_cutouts`.
+- `Topic.publish()`: new keyword arg `drop_cutouts`.
 - Dedicated classes for all schemas, including `DefaultSchema`, `ElasticcSchema`, `LsstSchema`,
   `LvkSchema`, and `ZtfSchema`. These are subclasses of `pittgoogle.Schema`.
 - `schema.Serializers` class to hold all serializers and deserializers used by the schemas.

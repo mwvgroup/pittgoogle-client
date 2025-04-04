@@ -77,21 +77,21 @@ class TestCleanForJson:
         assert pittgoogle.schema.Serializers._clean_for_json(b"test") == "dGVzdA=="
 
     def test_clean_for_json_list(self):
-        input, expected_output = [1, 2.3, "test", np.nan], [1, 2.3, "test", None]
-        assert pittgoogle.schema.Serializers._clean_for_json(input) == expected_output
+        input_, expected_output = [1, 2.3, "test", np.nan], [1, 2.3, "test", None]
+        assert pittgoogle.schema.Serializers._clean_for_json(input_) == expected_output
 
     def test_clean_for_json_dict(self):
-        input = {"a": 1, "b": 2.3, "c": "test", "d": np.nan}
+        input_ = {"a": 1, "b": 2.3, "c": "test", "d": np.nan}
         expected_output = {"a": 1, "b": 2.3, "c": "test", "d": None}
-        assert pittgoogle.schema.Serializers._clean_for_json(input) == expected_output
+        assert pittgoogle.schema.Serializers._clean_for_json(input_) == expected_output
 
     def test_clean_for_json_none(self):
         assert pittgoogle.schema.Serializers._clean_for_json(None) is None
 
     def test_clean_for_json_nested(self):
-        input = {"a": [1, np.nan, {"b": b"test"}]}
+        input_ = {"a": [1, np.nan, {"b": b"test"}]}
         expected = {"a": [1, None, {"b": "dGVzdA=="}]}
-        assert pittgoogle.schema.Serializers._clean_for_json(input) == expected
+        assert pittgoogle.schema.Serializers._clean_for_json(input_) == expected
 
     def test_clean_for_json_unrecognized_type(self):
         class UnrecognizedType:
