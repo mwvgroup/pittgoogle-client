@@ -3,57 +3,57 @@ Add a new schema to the registry
 
 This page contains instructions for adding a new schema to the registry so that it can be loaded
 using :meth:`pittgoogle.Schemas.get` and used to serialize and deserialize the alert bytes.
-Only Avro and JSON schemas have been implemented so far.
+There are three steps:
 
-First, a naming guideline:
+1. Add an entry in the registry manifest with basic info about the new schema.
+2. Add a subclass of :class:`pittgoogle.schema.Schema` that defines the schema methods and behavior.
+3. Add schema map yaml file for translating between generic and survey-specific field names.
 
-- Schema names are expected to start with the name of the survey. If the survey has more than one schema,
-  the survey name should be followed by a "." and then schema-specific specifier(s).
-
-pittgoogle/registry_manifests/schemas.yml
------------------------------------------
+1. pittgoogle/registry_manifests/schemas.yml
+--------------------------------------------
 
 *pittgoogle/registry_manifests/schemas.yml* is the manifest of registered schemas.
 
 Add a new section to the manifest following the template provided there. The fields are the same as
-those of a :class:`pittgoogle.schema.Schema`.
+those of a :class:`pittgoogle.schema.Schema`. Schema names are expected to start with the name of
+the survey. If the survey has more than one schema, the survey name should be followed by a "." and
+then schema-specific specifier(s).
 
 Case 1: The schema definition is not needed in order to deserialize the alert bytes. This is true for
-all Json, and the Avro streams which attach the schema in the data header. You should be able to use the
-default helper (see below).
+Avro which have the schema attached in the data header and all JSON. You should be able to subclass
+:class:`pittgoogle.schema.DefaultSchema` (see below). Follow :class:`pittgoogle.schema.ZtfSchema` as
+a guide.
 
-The rest of the cases assume the schema definition is required. This is true for "schemaless" Avro streams
-which do not attach the schema to the data packet.
+Case 2: The schema definition is required in order to deserialize the alert bytes. This is true for
+all "schemaless" Avro formats which do not attach the schema to the data packet. You should be able
+to subclass :class:`pittgoogle.schema.Schema` (see below). Follow :class:`pittgoogle.schema.LsstSchema`
+as a guide. You you will need to provide the schema definition either by (preferred) calling an external
+library (e.g., `lsst.alert.packet.schema`) or by including the schema definition files with the
+pittgoogle-client package. If the latter: (1) Commit the files to the repo under the *pittgoogle/schemas*
+directory. It is recommended that the main filename follow the syntax "<schema_name>.<schema_version>.avsc"
+or similar. (2) Point 'path' at the main file, relative to the package root. If the Avro schema is
+split into multiple files, you usually only need to point to the main one.
 
-Case 2: You can write some code that will get the schema definition from an external repository. You will
-probably need to write your own helper method (more below). Follow LSST as an example. This is
-preferable to Case 3 because it's usually easier to access new schema versions as soon as the survey
-releases them.
+2. pittgoogle/schema.py
+-----------------------
 
-Case 3: You want to include schema definition files with the pittgoogle-client package. Follow
-ELAsTiCC as an example. (1) Commit the files to the repo under the *pittgoogle/schemas* directory. It
-is recommended that the main filename follow the syntax "<schema_name>.avsc". (2) Point 'path'
-at the main file, relative to the package root. If the Avro schema is split into multiple files, you
-usually only need to point to the main one. (3) If you've followed the recommendations then the default
-helper should work, but you should check (more below). If you need to implement your own helper
-or update the existing, do it.
+*pittgoogle/schema.py* is the file containing the :class:`pittgoogle.schema.Schema` classes and the
+serializers they depend on.
 
-pittgoogle/schema.py
---------------------
+You must add a new schema class that is based on :class:`pittgoogle.schema.Schema` (or
+:class:`pittgoogle.schema.DefaultSchema`) and named like "NameSchema", where "Name" is the name of
+your schema in the registry manifest in camel case (capitalize the first letter only). Your schema must
+implement the required methods such as `_from_yaml`, `serialize` and `deserialize`. Follow the existing
+classes as examples. Use the serializers that are defined in the class
+:class:`pittgoogle.schema.Serializers` or add your own to that class if a suitable one is not already
+present. Be sure to add the name of your class under 'autosummary' in the module-level docsctring
+so that it will show up in the rendered docs. If your class requires a new dependency, be sure to add
+it following :doc:`manage-dependencies-poetry`.
 
-*pittgoogle/schema.py* is the file containing the :class:`pittgoogle.schema.Schema` class and helpers.
+3. pittgoogle/schemas/maps/
+---------------------------
 
-A "helper" method must exist in :class:`pittgoogle.schema.SchemaHelpers` that can find and load your new schema
-definition. The 'helper' field in the yaml manifest (above) must be set to the name of this method. If a
-suitable helper method does not already already exist for your schema, add one to this file by following
-existing helpers like :meth:`pittgoogle.schema.SchemaHelpers.default_schema_helper` as examples. **If your helper
-method requires a new dependency, be sure to add it following
-:doc:`/main/for-developers/manage-dependencies-poetry`.**
-
-pittgoogle/schemas/maps/
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-*pittgoogle/schemas/maps/* is the directory containing our schema maps.
+*pittgoogle/schemas/maps/* is the directory containing the schema maps.
 
 If you are adding a schema for a survey that does not yet have a schema map defined, you will need to add
 a yaml file to define it. See :doc:`add-new-schema-map`.

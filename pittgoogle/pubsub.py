@@ -15,7 +15,7 @@ import datetime
 import logging
 import queue
 import time
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, Callable, List, Literal, Optional, Union
 
 import attrs
 import attrs.validators
@@ -271,10 +271,34 @@ class Topic:
         else:
             LOGGER.info(f"deleted topic: {self.path}")
 
-    def publish(self, alert: "Alert") -> int:
+    def publish(
+        self,
+        alert: "Alert",
+        serializer: Literal["json", "avro", None] = None,
+        drop_cutouts: bool = False,
+    ) -> int:
         """Publish a message with :attr:`pittgoogle.Alert.dict` as the payload and
-        :attr:`pittgoogle.Alert.attributes` as the attributes."""
-        message, attributes = alert._prep_for_publish()
+        :attr:`pittgoogle.Alert.attributes` as the attributes.
+
+        Args:
+            alert (Alert):
+                The alert to be published.
+            serializer (str or None, optional):
+                Whether to serialize the dict using Avro or JSON. If not None, this will override
+                :meth:`pittgoogle.Alert.schema.serializer` and is subject to the same conditions.
+            drop_cutouts (bool):
+                Whether to drop cutouts from the alert dict before publishing. This is useful for
+                reducing the size of the message when cutouts are not needed.
+
+        Returns:
+            int:
+                Pub/Sub message ID of the published message.
+        """
+        _serializer = serializer or alert.schema.serializer
+        alert_dict = alert.dict if not drop_cutouts else alert.drop_cutouts()
+        message = alert.schema.serialize(alert_dict, serializer=_serializer)
+        # Pub/Sub requires attribute keys and values to be strings. Sort by key while we're at it.
+        attributes = {str(key): str(self.attributes[key]) for key in sorted(self.attributes)}
         future = self.client.publish(self.path, data=message, **attributes)
         return future.result()
 

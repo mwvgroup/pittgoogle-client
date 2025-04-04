@@ -13,14 +13,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Added
 
 - `Alert`:
-    - Properties: `ra`, `dec`, `name_in_bucket`.
+    - Properties: `ra`, `dec`, `healpix9`, `healpix19`, `healpix29`, `name_in_bucket`.
+    - Add healpix properties to `Alert.attributes`.
 - `Schema`:
-    - Property: `_name_in_bucket`.
-    - Methods to support LSST schema consolidation.
+    - Properties: `_name_in_bucket`, `serializer`, and `deserializer`. The last two can be used to
+      switch between JSON and Avro on the fly.
+    - Methods to support the LSST schema consolidation.
     - Schema map for the default schema.
+- `Topic.publish()`: new keyword arg `drop_cutouts`.
+- Dedicated classes for all schemas, including `DefaultSchema`, `ElasticcSchema`, `LsstSchema`,
+  `LvkSchema`, and `ZtfSchema`. These are subclasses of `pittgoogle.Schema`.
+- `schema.Serializers` class to hold all serializers and deserializers used by the schemas.
 - Unit tests:
     - Tests for new `Alert` properties.
-    - Tests for LSST version and serialization.
+    - Tests for `Schema` and `Serializers`.
     - Randomly generated data for schema "lsst.v7_4.alert".
 - Schema maps
     - LSST support for `ssObjectId`
@@ -33,6 +39,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - `Schema`:
     - Consolidate LSST schemas into one. Name is "lsst".
     - Change default schema name "default_schema" -> "default".
+    - `serialize` and `deserialize` methods moved to `schema.Serializers`.
+    - JSON serializer now accepts dicts containing bytes values.
+- `Topic.publish()` now handles the duties of `Alert._prep_for_publish()` (which is removed).
+- Documentation updated with new instructions for developers to implement support for a new schema.
 - Unit tests:
     - Move `conftest.SampleAlert` -> `load_data.TestAlert`
     - Split `TestAlert` -> `TestAlertFrom`, `TestAlertProperties`, and `TestAlertMethods`
@@ -40,6 +50,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Fixed
 
 - Fix issue #76. Make `Alert.dataframe` succeed even when there are no previous sources.
+
+### Removed
+
+- `Alert._prep_for_publish()`. Equivalent functionality was added to `Topic.publish()`.
+- `SchemaHelpers` class removed. These have been promoted to full `Schema` classes.
+- `Schema._init_from_msg`. This functionality was moved to the `Schema._from_yaml` class methods.
 
 ## \[v0.3.12\] - 2025-03-07
 

@@ -70,6 +70,9 @@ class Alert:
     _dataframe: Union["pd.DataFrame", None] = attrs.field(default=None)
     _skymap: Union["astropy.table.Qtable", None] = attrs.field(default=None)
     _schema: Schema | None = attrs.field(default=None, init=False)
+    _healpix9: int | None = attrs.field(default=None, init=False)
+    _healpix19: int | None = attrs.field(default=None, init=False)
+    _healpix29: int | None = attrs.field(default=None, init=False)
 
     # ---- class methods ---- #
     @classmethod
@@ -107,7 +110,6 @@ class Alert:
             context=context,
             schema_name=schema_name,
         )
-        alert.schema._init_from_msg(alert)
         return alert
 
     @classmethod
@@ -175,7 +177,6 @@ class Alert:
             ),
             schema_name=schema_name,
         )
-        alert.schema._init_from_msg(alert)
         return alert
 
     @classmethod
@@ -218,7 +219,6 @@ class Alert:
                 The created `Alert` object.
         """
         alert = cls(msg=msg, schema_name=schema_name)
-        alert.schema._init_from_msg(alert)
         return alert
 
     @classmethod
@@ -241,12 +241,10 @@ class Alert:
             IOError:
                 If there is an error reading the file.
         """
-        with open(path, "rb") as f:
-            bytes_ = f.read()
+        bytes_ = Path(path).read_bytes()
         alert = cls(
             msg=types_.PubsubMessageLike(data=bytes_), schema_name=schema_name, path=Path(path)
         )
-        alert.schema._init_from_msg(alert)
         return alert
 
     def to_mock_input(self, cloud_functions: bool = False):
@@ -261,6 +259,7 @@ class Alert:
 
         If this was not provided (typical case), this attribute will contain a copy of
         the incoming :attr:`Alert.msg.attributes`.
+        Alert IDs and schema version will be added if not already present.
 
         You may update this dictionary as desired. If you publish this alert using
         :attr:`pittgoogle.Topic.publish`, this dictionary will be sent as the outgoing
@@ -365,6 +364,117 @@ class Alert:
         return self.get("dec")
 
     @property
+    def healpix9(self) -> int:
+        """Return the HEALPix order 9 pixel index at the source's right ascension (RA) and declination.
+
+        See :meth:`healpix29` for a more detailed explanation and an example of how HEALPix indexes
+        can be used. The difference here is that order 9 means the pixels are much larger, with
+        a resolution (square root of area) of about 400 arcseconds (~0.1 degrees).
+        The following list of pixels covers the same area of sky as the one in the healpix29 example
+        (and probably more), but the total number of pixels is reduced by a factor of ~10^9
+        down to a single pixel.
+
+            .. code-block:: python
+
+                # The length of this list is 1 (given radius=5", nside9 analogous to nside29).
+                ex_dra_cone = hpgeom.query_circle(nside9, *ex_dra_coords, radius, inclusive=True)
+
+        If this resolution is still too fine for your use case, try :meth:`healpix9`.
+        If it is too coarse, try :meth:`healpix29`.
+        """
+        if self._healpix9 is None:
+            import hpgeom
+
+            self._healpix9 = hpgeom.angle_to_pixel(
+                a=self.ra,
+                b=self.dec,
+                nside=hpgeom.order_to_nside(9),
+                nest=True,
+                lonlat=True,
+                degrees=True,
+            )
+        return self._healpix9
+
+    @property
+    def healpix19(self) -> int:
+        """Return the HEALPix order 19 pixel index at the source's right ascension (RA) and declination.
+
+        See :meth:`healpix29` for a more detailed explanation and an example of how HEALPix indexes
+        can be used. The difference here is that order 19 means the pixels are larger, with
+        a resolution (square root of area) of about 0.4 arcseconds.
+        The following list of pixels covers the same area of sky as the one in the healpix29 example
+        (and perhaps a little more), but the total number of pixels is reduced by a factor of ~10^6
+        down to 549.
+
+            .. code-block:: python
+
+                # The length of this list is 549 (given radius=5", nside19 analogous to nside29).
+                ex_dra_cone = hpgeom.query_circle(nside19, *ex_dra_coords, radius, inclusive=True)
+
+        If this resolution is too coarse for your use case, try :meth:`healpix19` or :meth:`healpix29`.
+        """
+        if self._healpix19 is None:
+            import hpgeom
+
+            self._healpix19 = hpgeom.angle_to_pixel(
+                a=self.ra,
+                b=self.dec,
+                nside=hpgeom.order_to_nside(19),
+                nest=True,
+                lonlat=True,
+                degrees=True,
+            )
+        return self._healpix19
+
+    @property
+    def healpix29(self) -> int:
+        """Return the HEALPix order 29 pixel index at the source's right ascension (RA) and declination.
+
+        Uses the nested numbering scheme for pixel indexes. Assumes RA and dec are in degrees.
+
+        This can be useful for spatial searches and cross matches because it collapses two floats
+        (RA and dec) into one integer (pixel index), which can be much easier to work with. There
+        is some loss of precision but it will be insignificant for many use cases --
+        the pixel resolution (square root of area) at order 29 is about 4e-4 arcseconds.
+        This resolution may even be higher than preferred for many use cases because it can result
+        in a very large set of pixels that are needed to cover the area of interest.
+        In that case, try :meth:`healpix19`.
+
+        Example:
+
+        Check whether this alert is within 5 arcsec of the eclipsing cataclysmic variable EX Draconis.
+        We recommend [hpgeom](https://hpgeom.readthedocs.io/) for working with HEALPix.
+
+            .. code-block:: python
+
+                import hpgeom
+
+                ex_dra_coords = (271.05995, 67.90355)  # deg
+                radius = 5 / 3600  # deg
+                nside29 = hpgeom.order_to_nside(29)
+
+                # Find the set of HEALPix order 29 pixels that cover a 5" cone centered on the target.
+                # The length of this list is 508,185,237.
+                ex_dra_cone = hpgeom.query_circle(nside29, *ex_dra_coords, radius, inclusive=True, fact=1)
+
+                # Check whether this alert is within 5" of the target.
+                alert.healpix29 in ex_dra_cone
+
+        """
+        if self._healpix29 is None:
+            import hpgeom
+
+            self._healpix29 = hpgeom.angle_to_pixel(
+                a=self.ra,
+                b=self.dec,
+                nside=hpgeom.order_to_nside(29),
+                nest=True,
+                lonlat=True,
+                degrees=True,
+            )
+        return self._healpix29
+
+    @property
     def schema(self) -> Schema:
         """Return the schema from the :class:`pittgoogle.registry.Schemas` registry.
 
@@ -373,7 +483,8 @@ class Alert:
                 If the `schema_name` is not supplied or a schema with this name is not found.
         """
         if self._schema is None:
-            self._schema = registry.Schemas.get(self.schema_name)
+            alert_bytes = self.msg.data if self.msg else None
+            self._schema = registry.Schemas.get(self.schema_name, alert_bytes=alert_bytes)
         return self._schema
 
     @property
@@ -443,19 +554,34 @@ class Alert:
 
     # ---- methods ---- #
     def _add_id_attributes(self) -> None:
-        """Add the IDs 'alertid', 'objectid', 'sourceid' and 'schema.version' to :attr:`Alert.attributes`."""
+        """Add IDs and indexes to :attr:`Alert.attributes`.
+
+        The added keys include:
+            - alertid
+            - objectid
+            - sourceid
+            - healpix9
+            - healpix19
+            - healpix29
+            - schema.version
+        """
         # Get the data IDs and corresponding survey-specific field names. If the field is nested, the
-        # key will be a list. Join list -> string. These are likely to become Pub/Sub message attributes.
+        # key will be a list. Join list -> string since these are likely to become Pub/Sub message attributes.
         ids = ["alertid", "objectid", "sourceid"]
         _names = [self.get_key(id) for id in ids]
         names = [".".join(id) if isinstance(id, list) else id for id in _names]
         values = [self.get(id) for id in ids]
         attributes = dict(zip(names, values))
 
-        # Add the schema version.
+        # Add derived properties.
+        attributes["healpix9"] = self.healpix9
+        attributes["healpix19"] = self.healpix19
+        attributes["healpix29"] = self.healpix29
+
+        # Add metadata.
         attributes["schema.version"] = self.schema.version
 
-        # Add attributes to self, but only if the survey has defined the field and it's not already there.
+        # Add the collected attributes to self, but only if not None and don't clobber existing.
         for name, value in attributes.items():
             if name is not None and name not in self._attributes:
                 self._attributes[name] = value
@@ -538,13 +664,6 @@ class Alert:
 
         return survey_field
 
-    def _prep_for_publish(self) -> tuple[bytes, Mapping[str, str]]:
-        """Serialize the alert dict and convert all attribute keys and values to strings."""
-        message = self.schema.serialize(self.drop_cutouts())
-        # Pub/Sub requires attribute keys and values to be strings. Sort the keys while we're at it.
-        attributes = {str(key): str(self.attributes[key]) for key in sorted(self.attributes)}
-        return message, attributes
-
     def drop_cutouts(self) -> dict:
         """Drop the cutouts from the alert dictionary.
 
@@ -589,7 +708,12 @@ class MockInput:
                 describes the service API endpoint pubsub.googleapis.com, the triggering topic's name,
                 and the triggering event type `type.googleapis.com/google.pubsub.v1.PubsubMessage`.
         """
-        message, attributes = self.alert._prep_for_publish()
+        message = self.alert.schema.serialize(self.alert.dict)
+        # Pub/Sub requires attribute keys and values to be strings. Sort by key while we're at it.
+        attributes = {
+            str(key): str(self.alert.attributes[key]) for key in sorted(self.alert.attributes)
+        }
+        # message, attributes = self.alert._prep_for_publish()
         event_type = "type.googleapis.com/google.pubsub.v1.PubsubMessage"
         now = (
             datetime.datetime.now(datetime.timezone.utc)

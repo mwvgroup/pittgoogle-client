@@ -32,15 +32,16 @@ Alter the new file, keeping these important things to keep in mind:
   Broker developers to end-user scientists) to write one piece of code that can process multiple surveys.
 - The keys should be used as-is (but see below for excluding or adding keys). Changing a key's
   spelling could make things difficult for the user.
-- Our schema maps support nested fields. The values in your new yaml file should be given as strings
-  (for top-level fields) or lists of strings (for nested fields).
 - Values given in the *TEMPLATE.yml* file are only examples or descriptions and should be substituted
   with new values appropriate for the new survey.
+- Our schema maps support nested fields. The values in your yaml file should be given as strings
+  for top-level fields and lists of strings for nested fields.
 - While a key's *name* is fixed, we do not explicitly define how the key is to be interpreted --
   there is no ground-truth answer to the question, "Which LSST field should I assign as the 'flux'?".
-- Comments are left in *TEMPLATE.yml* that note the typical data types and interpretations for each field
-  to help guide your decisions.
-- Try to make decisions that result in schema maps that are conceptually consistent across surveys.
+
+    - Comments are left in *TEMPLATE.yml* that note the typical data types and interpretations for each field
+      to help guide your decisions.
+    - Try to make decisions that result in schema maps that are conceptually consistent across surveys.
 
 Excluding or adding field names (keys) from the set of Pitt-Google generics
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

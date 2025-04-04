@@ -4,13 +4,10 @@ import io
 import struct
 
 import pytest
-import yaml
 
 import pittgoogle
 
-# Load the schema manifest as a list of dicts sorted by key.
-manifest_yaml = pittgoogle.__package_path__ / "registry_manifests" / "schemas.yml"
-SCHEMA_MANIFEST = yaml.safe_load(manifest_yaml.read_text())
+import load_data
 
 
 class TestRegistrySchemas:
@@ -18,12 +15,12 @@ class TestRegistrySchemas:
 
     def test_names(self):
         assert isinstance(self.schemas.names, list)
-        truth_names = sorted(schema["name"] for schema in SCHEMA_MANIFEST)
+        truth_names = sorted(schema["name"] for schema in load_data.SCHEMA_MANIFEST)
         assert self.schemas.names == truth_names
 
     def test_manifest(self):
         assert isinstance(self.schemas.manifest, list)
-        truth_manifest = sorted(SCHEMA_MANIFEST, key=lambda schema: schema["name"])
+        truth_manifest = sorted(load_data.SCHEMA_MANIFEST, key=lambda schema: schema["name"])
         assert self.schemas.manifest == truth_manifest
         required_properties = ["name", "description", "origin"]
         for schema in self.schemas.manifest:
@@ -34,9 +31,12 @@ class TestRegistrySchemas:
         schema = self.schemas.get(schema_name=None)
         assert isinstance(schema, pittgoogle.schema.Schema)
 
-    @pytest.mark.parametrize("schema_name", [schema["name"] for schema in SCHEMA_MANIFEST])
+    @pytest.mark.parametrize(
+        "schema_name", [schema["name"] for schema in load_data.SCHEMA_MANIFEST]
+    )
     def test_get_schema_by_name(self, schema_name):
-        schema = self.schemas.get(schema_name=schema_name)
+        name = schema_name.split(".")[0]  # [FIXME] This is a hack for elasticc.
+        schema = self.schemas.get(schema_name=name)
         assert isinstance(schema, pittgoogle.schema.Schema)
 
     def test_get_schema_with_bad_name(self, survey_names):
@@ -48,7 +48,10 @@ class TestRegistrySchemas:
 
     def test_serialize_without_definition(self):
         schema = self.schemas.get(schema_name="lsst")
-        with pytest.raises(pittgoogle.exceptions.SchemaError, match="Schema definition unknown."):
+        with pytest.raises(
+            pittgoogle.exceptions.SchemaError,
+            match="No Avro schema information is available. Cannot serialize to Avro.",
+        ):
             schema.serialize({})
 
     def test_unsupported_version_lsst(self):
@@ -58,8 +61,7 @@ class TestRegistrySchemas:
         fout = io.BytesIO()
         fout.write(b"\x00")
         fout.write(struct.pack(">i", unsuported_version_id))
+
         # Try to load the schema definition and show that it raises an error.
         with pytest.raises(pittgoogle.exceptions.SchemaError, match="Schema definition not found"):
-            pittgoogle.Alert.from_msg(
-                pittgoogle.types_.PubsubMessageLike(data=fout.getvalue()), schema_name="lsst"
-            )
+            self.schemas.get(schema_name="lsst", alert_bytes=fout.getvalue())

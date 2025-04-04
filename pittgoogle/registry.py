@@ -9,12 +9,13 @@
 ----
 """
 import logging
-from typing import Final
+from typing import Final, Literal, Type
 
 import attrs
 import yaml
 
 from . import __package_path__, exceptions, schema
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -63,42 +64,64 @@ class Schemas:
     """
 
     @staticmethod
-    def get(schema_name: str | None) -> schema.Schema:
+    def get(
+        schema_name: Literal["elasticc", "lsst", "lvk", "ztf", "default", None] = "default",
+        alert_bytes: bytes | None = None,
+    ) -> schema.Schema:
         """Return the schema with name matching `schema_name`.
 
+        Args:
+            schema_name (str or None, optional):
+                Name of the schema to return. If None, the default schema is returned.
+            alert_bytes (bytes or None, optional):
+                Message data, if available. Some schemas will use this to infer the schema version.
+
         Returns:
-            Schema:
+            schema.Schema:
                 Schema from the registry with name matching `schema_name`.
 
         Raises:
-            SchemaError:
-                If a schema with name matching `schema_name` is not found in the registry.
-            SchemaError:
-                If a schema definition cannot be loaded but one will be required to read the alert bytes.
+            exceptions.SchemaError:
+                If a schema named `schema_name` is not found in the registry or cannot be loaded.
         """
-        # If no schema_name provided, return the default.
         if schema_name is None:
-            LOGGER.warning("No schema name provided. Returning a default schema.")
-            mft_schema = [schema for schema in SCHEMA_MANIFEST if schema["name"] == "default"][0]
-            return schema.Schema._from_yaml(schema_dict=mft_schema)
+            schema_name = "default"
 
-        # Return the schema with name == schema_name, if one exists.
-        for mft_schema in SCHEMA_MANIFEST:
-            if mft_schema["name"] == schema_name:
-                return schema.Schema._from_yaml(schema_dict=mft_schema)
+        for yaml_dict in SCHEMA_MANIFEST:
+            name = yaml_dict["name"].split(".")[0]  # [FIXME] This is a hack for elasticc.
+            if name == schema_name:
+                _Schema = Schemas._get_class(schema_name)
+                return _Schema._from_yaml(yaml_dict=yaml_dict, alert_bytes=alert_bytes)
 
-        # Return the schema with name ~= schema_name, if one exists.
-        for mft_schema in SCHEMA_MANIFEST:
-            # Case 1: Split by "." and check whether first and last parts match.
-            # Catches names like 'lsst.v<MAJOR>_<MINOR>.alert' where users replace '<..>' with custom values.
-            split_name, split_mft_name = schema_name.split("."), mft_schema["name"].split(".")
-            if all([split_mft_name[i] == split_name[i] for i in [0, -1]]):
-                return schema.Schema._from_yaml(schema_dict=mft_schema, name=schema_name)
-
-        # That's all we know how to check so far.
         raise exceptions.SchemaError(
-            f"{schema_name} not found. For valid names, see `pittgoogle.Schemas().names`."
+            f"'{schema_name}' not found. For valid names, see `pittgoogle.Schemas().names`."
         )
+
+    @staticmethod
+    def _get_class(schema_name: str) -> Type[schema.Schema]:
+        """Return the schema class with name matching `schema_name`.
+
+        Args:
+            schema_name (str):
+                Name of the schema to return.
+
+        Returns:
+            schema.Schema:
+                Schema from the registry with name matching `schema_name`.
+
+        Raises:
+            exceptions.SchemaError:
+                If a schema named `schema_name` is not found in the registry or cannot be loaded.
+        """
+        class_name = schema_name[0].upper() + schema_name[1:] + "Schema"
+        err_msg = (
+            f"{class_name} not found for schema_name='{schema_name}'. ",
+            "For valid names, see `pittgoogle.Schemas().names`.",
+        )
+        try:
+            return getattr(schema, class_name)
+        except AttributeError as exc:
+            raise exceptions.SchemaError(err_msg) from exc
 
     @property
     def names(self) -> list[str]:

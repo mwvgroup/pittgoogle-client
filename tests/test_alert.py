@@ -29,11 +29,19 @@ class TestAlertFrom:
             assert isinstance(alert, pittgoogle.Alert)
             assert alert.dict == test_alert.dict_
 
-            # alertid, objectid, sourceid, and schema version should have been added as attributes.
-            key_gen = (alert.get_key(key) for key in ["alertid", "objectid", "sourceid"])
-            _expected_keys = [".".join(key) if isinstance(key, list) else key for key in key_gen]
-            # Add schema.version and get rid of None.
-            expected_keys = set(key for key in _expected_keys + ["schema.version"] if key)
+    def test_attributes(self, sample_alerts, random_alerts):
+        for test_alert in sample_alerts + random_alerts:
+            alert = pittgoogle.Alert.from_dict(
+                test_alert.dict_, schema_name=test_alert.schema_name
+            )
+            # We expect that the following keys were added to alert.attributes.
+            #  to  alertid, objectid, sourceid, and schema version should have been added as attributes.
+            _id_keys = (alert.get_key(key) for key in ["alertid", "objectid", "sourceid"])
+            id_keys = [".".join(key) if isinstance(key, list) else key for key in _id_keys]
+            index_keys = ["healpix9", "healpix19", "healpix29"]
+            metadata_keys = ["schema.version"]
+            # 'if key' to drop None.
+            expected_keys = set(key for key in id_keys + index_keys + metadata_keys if key)
             assert set(alert.attributes) == expected_keys
 
     def test_from_cloud_functions(self, sample_alert):
@@ -99,8 +107,9 @@ class TestAlertProperties:
             else:
                 assert alert.skymap is None
 
-    def test_dataframe(self, random_alerts_lsst, sample_alerts_lsst):
-        # [FIXME] This is only testing schema "lsst.v7_4.alert"
+    def test_dataframe(self, random_alerts_lsst, sample_alert_lsst_latest):
+        # [FIXME] Only testing the latest LSST schema version for now.
+
         full, minimal = random_alerts_lsst
 
         mandatory_cols = set(full.pgalert.get("source").keys())
@@ -110,26 +119,26 @@ class TestAlertProperties:
         assert minimal.pgalert.get("prv_sources") is None
         assert minimal.pgalert.get("prv_forced_sources") is None
 
-        for testalert in random_alerts_lsst + sample_alerts_lsst:
-            if testalert.schema_name != "lsst.v7_4.alert":
-                continue
+        for testalert in random_alerts_lsst + [sample_alert_lsst_latest]:
             pgdf = testalert.pgalert.dataframe
             assert isinstance(pgdf, pd.DataFrame)
             assert set(pgdf.columns) == mandatory_cols or set(pgdf.columns) == all_cols
+
+    def test_healpix(self):
+        alert_dict = {"ra": 270.1, "dec": -30.2}
+        alert = pittgoogle.Alert.from_dict(alert_dict, schema_name="default")
+        assert alert.healpix9 == 1_839_101
+        assert alert.healpix19 == 1_928_437_384_743
+        assert alert.healpix29 == 2_022_113_159_144_974_258
 
     def test_name_in_bucket(self):
         alert_dict = {
             "diaObject": {"diaObjectId": 222},
             "diaSource": {"diaSourceId": 3333, "midpointMjdTai": 60745.0031},
         }
-        alert = pittgoogle.Alert.from_msg(
-            pittgoogle.types_.PubsubMessageLike(data=json.dumps(alert_dict))
-        )
+        alert = pittgoogle.Alert.from_dict(alert_dict, "lsst")
         alert.schema_name = "lsst"
-        alert._schema = None
         alert.schema.version = "v7_4"
-        alert.schema.deserialize = json.loads
-
         assert alert.name_in_bucket == "v7_4/2025-03-11/222/3333.avro"
 
     def test_get_wrappers(self):
@@ -141,7 +150,8 @@ class TestAlertProperties:
             "dec": -32.0123456789,
         }
         alert = pittgoogle.Alert.from_msg(
-            pittgoogle.types_.PubsubMessageLike(data=json.dumps(alert_dict)), "default"
+            pittgoogle.types_.PubsubMessageLike(data=json.dumps(alert_dict).encode("utf-8")),
+            "default",
         )
         assert alert.alertid == 12345
         assert alert.objectid == 67890
@@ -151,16 +161,6 @@ class TestAlertProperties:
 
 
 class TestAlertMethods:
-    def test_prep_for_publish(self, sample_alerts):
-        for sample_alert in sample_alerts:
-            alert = pittgoogle.Alert.from_path(
-                sample_alert.path, schema_name=sample_alert.schema_name
-            )
-            message, attributes = alert._prep_for_publish()
-            assert isinstance(message, bytes)
-            assert isinstance(attributes, dict)
-            assert all(isinstance(k, str) and isinstance(v, str) for k, v in attributes.items())
-
     def test_str_to_datetime(self):
         str_time = "2023-01-01T00:00:00.000000Z"
         dt = pittgoogle.Alert._str_to_datetime(str_time)

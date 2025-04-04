@@ -6,7 +6,6 @@
 # - name: ''
 #   description: ''
 #   origin: 'https://...'
-#   helper: 'default_schema_helper'
 #   path: ''
 #   filter_map:
 #     1: ''
@@ -16,20 +15,17 @@
 - name: 'default'
   description: 'Default schema used when no other schema is specified.'
   origin: null
-  helper: 'default_schema_helper'
 #
 # ELASTICC alerts
 - name: 'elasticc.v0_9_1.alert'
   description: 'Avro schema of alerts published by ELAsTiCC.'
   origin: 'https://github.com/LSSTDESC/elasticc/tree/main/alert_schema'
-  helper: 'elasticc_schema_helper'
   path: 'schemas/elasticc/elasticc.v0_9_1.alert.avsc'
 #
 # ELASTICC classifications
 - name: 'elasticc.v0_9_1.brokerClassification'
   description: 'Avro schema of alerts to be sent to DESC containing classifications of ELAsTiCC alerts.'
   origin: 'https://github.com/LSSTDESC/elasticc/tree/main/alert_schema'
-  helper: 'elasticc_schema_helper'
   path: 'schemas/elasticc/elasticc.v0_9_1.brokerClassification.avsc'
 #
 # LSST alerts
@@ -37,7 +33,6 @@
   path: 'schemas/lsst/MAJOR/MINOR/lsst.vMAJOR_MINOR.alert.avsc'
   description: 'Schema for LSST alerts.'
   origin: 'https://github.com/lsst/alert_packet/tree/main/python/lsst/alert/packet/schema'
-  helper: 'lsst_schema_helper'
   filter_map:
     1: 'u'
     2: 'g'
@@ -50,14 +45,12 @@
 - name: 'lvk'
   description: 'Schema for LIGO-Virgo-KAGRA (LVK) alerts. JSON format.'
   origin: 'https://emfollow.docs.ligo.org/userguide/content.html#kafka-notice-gcn-scimma'
-  helper: 'default_schema_helper'
   path: null
 #
 # ZTF alerts
 - name: 'ztf'
   description: 'ZTF schema. The ZTF survey publishes alerts in Avro format with the schema attached in the header. Pitt-Google publishes ZTF alerts in json format. This schema covers both cases.'
   origin: 'https://zwickytransientfacility.github.io/ztf-avro-alert/schema.html'
-  helper: 'default_schema_helper'
   path: null
   filter_map:
     1: g
