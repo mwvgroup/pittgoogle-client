@@ -298,7 +298,7 @@ class Topic:
         alert_dict = alert.dict if not drop_cutouts else alert.drop_cutouts()
         message = alert.schema.serialize(alert_dict, serializer=_serializer)
         # Pub/Sub requires attribute keys and values to be strings. Sort by key while we're at it.
-        attributes = {str(key): str(self.attributes[key]) for key in sorted(self.attributes)}
+        attributes = {str(key): str(alert.attributes[key]) for key in sorted(alert.attributes)}
         future = self.client.publish(self.path, data=message, **attributes)
         return future.result()
 
