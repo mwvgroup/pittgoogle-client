@@ -564,10 +564,12 @@ class Alert:
             - healpix19
             - healpix29
             - schema.version
+            - prv_sources
+            - prv_sources.detections
         """
         # Get the data IDs and corresponding survey-specific field names. If the field is nested, the
         # key will be a list. Join list -> string since these are likely to become Pub/Sub message attributes.
-        ids = ["alertid", "objectid", "sourceid"]
+        ids = ["alertid", "objectid", "sourceid", "ssobjectid"]
         _names = [self.get_key(id) for id in ids]
         names = [".".join(id) if isinstance(id, list) else id for id in _names]
         values = [self.get(id) for id in ids]
@@ -580,6 +582,10 @@ class Alert:
 
         # Add metadata.
         attributes["schema.version"] = self.schema.version
+        attributes[self.get_key("prv_sources")] = self.get("prv_sources") is not None
+        attributes[".".join([self.get_key("prv_sources"), "detections"])] = len(
+            self.get("prv_sources") or []
+        )
 
         # Add the collected attributes to self, but only if not None and don't clobber existing.
         for name, value in attributes.items():
