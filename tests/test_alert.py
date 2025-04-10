@@ -36,10 +36,12 @@ class TestAlertFrom:
             )
             # We expect that the following keys were added to alert.attributes.
             #  to  alertid, objectid, sourceid, and schema version should have been added as attributes.
-            _id_keys = (alert.get_key(key) for key in ["alertid", "objectid", "sourceid"])
+            _id_keys = (
+                alert.get_key(key) for key in ["alertid", "objectid", "sourceid", "ssobjectid"]
+            )
             id_keys = [".".join(key) if isinstance(key, list) else key for key in _id_keys]
             index_keys = ["healpix9", "healpix19", "healpix29"]
-            metadata_keys = ["schema.version"]
+            metadata_keys = ["schema.version", "n_previous_detections"]
             # 'if key' to drop None.
             expected_keys = set(key for key in id_keys + index_keys + metadata_keys if key)
             assert set(alert.attributes) == expected_keys
