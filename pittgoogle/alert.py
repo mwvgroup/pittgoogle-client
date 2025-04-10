@@ -560,6 +560,7 @@ class Alert:
             - alertid
             - objectid
             - sourceid
+            - ssobjectid
             - healpix9
             - healpix19
             - healpix29
