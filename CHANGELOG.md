@@ -17,6 +17,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Unit tests:
     - Tests take into account new `Alert.attributes` keys.
 
+### Changed
+
+- Rename `Alert` method `_add_id_attributes()` -> `_add_attributes()` to reflect that more properties are added.
+
 ### Fixed
 
 - `Topic.publish()`: Message attributes were improperly defined

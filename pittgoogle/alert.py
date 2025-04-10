@@ -270,7 +270,7 @@ class Alert:
                 self._attributes = dict(self.msg.attributes)
             else:
                 self._attributes = {}
-            self._add_id_attributes()
+            self._add_attributes()
         return self._attributes
 
     @property
@@ -553,14 +553,14 @@ class Alert:
         return self.schema._name_in_bucket(alert=self)
 
     # ---- methods ---- #
-    def _add_id_attributes(self) -> None:
-        """Add IDs and indexes to :attr:`Alert.attributes`.
+    def _add_attributes(self) -> None:
+        """Add IDs, indexes, and other properties to :attr:`Alert.attributes`.
 
         The added keys include:
-            - alertid
-            - objectid
-            - sourceid
-            - ssobjectid
+            - alertid (if defined by the survey)
+            - objectid (if defined by the survey)
+            - sourceid (if defined by the survey)
+            - ssobjectid (if defined by the survey)
             - healpix9
             - healpix19
             - healpix29
