@@ -35,7 +35,7 @@ class TestAlertFrom:
                 test_alert.dict_, schema_name=test_alert.schema_name
             )
             # We expect that the following keys were added to alert.attributes.
-            #  to  alertid, objectid, sourceid, and schema version should have been added as attributes.
+            #  to  alertid, objectid, sourceid, ssobjectid, and schema version should have been added as attributes.
             _id_keys = (
                 alert.get_key(key) for key in ["alertid", "objectid", "sourceid", "ssobjectid"]
             )
