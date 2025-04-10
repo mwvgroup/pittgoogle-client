@@ -582,7 +582,7 @@ class Alert:
 
         # Add metadata.
         attributes["schema.version"] = self.schema.version
-        attributes["number_previous_detections"] = len(self.get("prv_sources") or [])
+        attributes["n_previous_detections"] = len(self.get("prv_sources") or [])
 
         # Add the collected attributes to self, but only if not None and don't clobber existing.
         for name, value in attributes.items():
