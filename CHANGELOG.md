@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## Added
 
 - `Alert`:
-    - Added the following fields to `Alert.attributes`: `prv_sources`, `prv_sources.detections`, `ssobjectid`.
+    - Added the following fields to `Alert.attributes`: `n_previous_sources` and `ssobjectid`.
 
 ### Fixed
 
