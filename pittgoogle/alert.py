@@ -270,7 +270,7 @@ class Alert:
                 self._attributes = dict(self.msg.attributes)
             else:
                 self._attributes = {}
-            self._add_id_attributes()
+            self._add_attributes()
         return self._attributes
 
     @property
@@ -553,21 +553,23 @@ class Alert:
         return self.schema._name_in_bucket(alert=self)
 
     # ---- methods ---- #
-    def _add_id_attributes(self) -> None:
-        """Add IDs and indexes to :attr:`Alert.attributes`.
+    def _add_attributes(self) -> None:
+        """Add IDs, indexes, and other properties to :attr:`Alert.attributes`.
 
         The added keys include:
-            - alertid
-            - objectid
-            - sourceid
+            - alertid (if defined by the survey)
+            - objectid (if defined by the survey)
+            - sourceid (if defined by the survey)
+            - ssobjectid (if defined by the survey)
             - healpix9
             - healpix19
             - healpix29
             - schema.version
+            - n_previous_detections
         """
         # Get the data IDs and corresponding survey-specific field names. If the field is nested, the
         # key will be a list. Join list -> string since these are likely to become Pub/Sub message attributes.
-        ids = ["alertid", "objectid", "sourceid"]
+        ids = ["alertid", "objectid", "sourceid", "ssobjectid"]
         _names = [self.get_key(id) for id in ids]
         names = [".".join(id) if isinstance(id, list) else id for id in _names]
         values = [self.get(id) for id in ids]
@@ -580,6 +582,7 @@ class Alert:
 
         # Add metadata.
         attributes["schema.version"] = self.schema.version
+        attributes["n_previous_detections"] = len(self.get("prv_sources") or [])
 
         # Add the collected attributes to self, but only if not None and don't clobber existing.
         for name, value in attributes.items():
