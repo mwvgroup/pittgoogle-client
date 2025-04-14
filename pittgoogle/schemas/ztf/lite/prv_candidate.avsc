@@ -1,6 +1,6 @@
 {
 	"namespace": "ztf.alert",
-	"name": "candidate",
+	"name": "prv_candidate",
 	"doc": "avro alert-lite schema",
 	"version": "4.02",
 	"type": "record",
@@ -16,7 +16,6 @@
 		{"name": "diffmaglim", "type": ["null", "float"], "default": null, "doc": "Expected 5-sigma mag limit in difference image based on global noise estimate [mag]"},
 		{"name": "isdiffpos", "type": "string", "doc": "t or 1 => candidate is from positive (sci minus ref) subtraction; f or 0 => candidate is from negative (ref minus sci) subtraction"},
 		{"name": "rb", "type": ["null", "float"], "default": null, "doc": "RealBogus quality score from Random Forest classifier; range is 0 to 1 where closer to 1 is more reliable"},
-		{"name": "drb", "type": ["null", "float"], "default": null, "doc": "RealBogus quality score from Deep-Learning-based classifier; range is 0 to 1 where closer to 1 is more reliable"},
 		{"name": "nbad", "type": ["null", "int"], "default": null, "doc": "number of prior-tagged bad pixels in a 5 x 5 pixel stamp"},
 		{"name": "fwhm", "type": ["null", "float"], "default": null, "doc": "Full Width Half Max assuming a Gaussian core, from SExtractor [pixels]"},
 		{"name": "elong", "type": ["null", "float"], "default": null, "doc": "Ratio: aimage / bimage"},

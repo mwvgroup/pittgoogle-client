@@ -5,7 +5,7 @@
 	"doc": "avro alert-lite schema for ZTF (www.ztf.caltech.edu)",
 	"version": "4.02",
 	"fields": [
-            {"name": "alertIds", "type": "ztf.alert.alertIds", "doc": "schema version used"},
+            {"name": "alertIds", "type": "ztf.alert.alertIds"},
             {"name": "candidate", "type": "ztf.alert.candidate"},
             {"name": "prv_candidates", "type": ["null", {
                         "type": "array",
