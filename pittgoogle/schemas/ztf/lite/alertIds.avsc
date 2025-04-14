@@ -1,0 +1,11 @@
+{
+	"namespace": "ztf.alert",
+	"name": "alertIds",
+	"doc": "avro alert-lite schema",
+	"version": "4.02",
+	"type": "record",
+	"fields": [
+        {"name": "objectId", "type": "string", "doc": "object identifier or name"},
+        {"name": "candid", "type": "long", "doc": "Candidate ID from operations DB"}
+    ]
+}
