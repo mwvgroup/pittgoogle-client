@@ -4,6 +4,11 @@
   "name": "diaObject-lite",
   "fields": [
     {
+      "doc": "Unique identifier of this DiaObject.",
+      "name": "diaObjectId",
+      "type": "long"
+    },
+    {
       "doc": "Id of the closest nearby object.",
       "default": null,
       "name": "nearbyObj1",
