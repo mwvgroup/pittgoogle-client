@@ -3,19 +3,19 @@ SCHEMA_ORIGIN: 'https://github.com/lsst/alert_packet/tree/main/python/lsst/alert
 # [FIXME] Check everything below.
 # IDs
 alertid: alertId
-sourceid: [diaSource, diaSourceId]
-objectid: [diaObject, diaObjectId]
+sourceid: [diaSource-lite, diaSourceId]
+objectid: [diaObject-lite, diaObjectId]
 # Sources and Objects
-source: diaSource
-object: diaObject
-prv_sources: prvDiaSources
+source: diaSource-lite
+object: diaObject-lite
+prv_sources: prvDiaSources-lite
 # Other
-dec: [diaSource, dec]
-dec_err: [diaSource, decErr]
-filter: [diaSource, band]
-flux: [diaSource, psfFlux]
-flux_err: [diaSource, psfFluxErr]
-mjd: [diaSource, midpointMjdTai]
-ra: [diaSource, ra]
-ra_err: [diaSource, raErr]
+dec: [diaSource-lite, dec]
+dec_err: [diaSource-lite, decErr]
+filter: [diaSource-lite, band]
+flux: [diaSource-lite, psfFlux]
+flux_err: [diaSource-lite, psfFluxErr]
+mjd: [diaSource-lite, midpointMjdTai]
+ra: [diaSource-lite, ra]
+ra_err: [diaSource-lite, raErr]
 urls:

@@ -5,10 +5,10 @@
 	"doc": "Rubin Avro alert-lite schema v7.4",
 	"fields": [
 		{"name": "alertId", "type": "long", "doc": "unique alert identifer"},
-		{"name": "diaSource", "type": "lsst.v7_4.diaSource"},
-		{"name": "prvDiaSources", "type": ["null", {
+		{"name": "diaSource-lite", "type": "lsst.v7_4.diaSource-lite"},
+		{"name": "prvDiaSources-lite", "type": ["null", {
 				"type": "array",
-				"items": "lsst.v7_4.diaSource"}], "default": null},
-		{"name": "diaObject", "type": ["null", "lsst.v7_4.diaObject"], "default": null}
+				"items": "lsst.v7_4.diaSource-lite"}], "default": null},
+		{"name": "diaObject-lite", "type": ["null", "lsst.v7_4.diaObject-lite"], "default": null}
      ]
 }
