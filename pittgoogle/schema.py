@@ -608,6 +608,11 @@ class LsstSchema(Schema):
 
 
 @attrs.define(kw_only=True)
+class LsstLiteSchema(DefaultSchema):
+    """Schema for LSST lite alerts."""
+
+
+@attrs.define(kw_only=True)
 class LvkSchema(DefaultSchema):
     """Schema for LVK alerts."""
 
