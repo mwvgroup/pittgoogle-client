@@ -41,6 +41,19 @@
     5: 'z'
     6: 'y'
 #
+# LSST lite alerts
+- name: 'lsst.lite'
+  description: 'Schema for LSST lite alerts.'
+  path: null
+  origin: 'https://github.com/lsst/alert_packet/tree/main/python/lsst/alert/packet/schema'
+  filter_map:
+    1: 'u'
+    2: 'g'
+    3: 'r'
+    4: 'i'
+    5: 'z'
+    6: 'y'
+#
 # LVK alerts
 - name: 'lvk'
   description: 'Schema for LIGO-Virgo-KAGRA (LVK) alerts. JSON format.'

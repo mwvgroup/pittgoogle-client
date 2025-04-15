@@ -16,10 +16,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
     - Added the following fields to `Alert.attributes`: `n_previous_sources` and `ssobjectid`.
 - Unit tests:
     - Tests take into account new `Alert.attributes` keys.
+- `Schema`:
+    - Dedicated classes for lite schemas, specifically `LsstliteSchema`
+    - Schema map for the LSST lite schema.
+- `Registry`
+    - Support for `lsst.lite` schema
 
 ### Changed
 
 - Rename `Alert` method `_add_id_attributes()` -> `_add_attributes()` to reflect that more properties are added.
+- `Registry`:
+    - `_get()` and `_get_class()` methods now handle cases where `schema_name` includes punctuation (e.g., `lsst.lite`)
 
 ### Fixed
 

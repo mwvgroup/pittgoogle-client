@@ -8,6 +8,7 @@
     DefaultSchema
     ElasticcSchema
     LsstSchema
+    LsstliteSchema
     LvkSchema
     ZtfSchema
 
@@ -324,7 +325,7 @@ class Schema(abc.ABC):
     def map(self) -> dict:
         """Mapping of Pitt-Google's generic field names to survey-specific field names."""
         if self._map is None:
-            yml = __package_path__ / "schemas" / "maps" / f"{self.survey}.yml"
+            yml = __package_path__ / "schemas" / "maps" / f"{self.survey.replace('.', '-')}.yml"
             try:
                 self._map = yaml.safe_load(yml.read_text())
             except FileNotFoundError:
@@ -605,6 +606,11 @@ class LsstSchema(Schema):
 
         _date = astropy.time.Time(alert.get("mjd"), format="mjd").datetime.strftime("%Y-%m-%d")
         return f"{alert.schema.version}/{_date}/{alert.objectid}/{alert.sourceid}.avro"
+
+
+@attrs.define(kw_only=True)
+class LsstliteSchema(DefaultSchema):
+    """Schema for LSST lite alerts."""
 
 
 @attrs.define(kw_only=True)
