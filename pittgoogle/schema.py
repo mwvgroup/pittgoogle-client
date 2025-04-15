@@ -8,7 +8,7 @@
     DefaultSchema
     ElasticcSchema
     LsstSchema
-    LsstLiteSchema
+    LsstliteSchema
     LvkSchema
     ZtfSchema
 
@@ -609,7 +609,7 @@ class LsstSchema(Schema):
 
 
 @attrs.define(kw_only=True)
-class LsstLiteSchema(DefaultSchema):
+class LsstliteSchema(DefaultSchema):
     """Schema for LSST lite alerts."""
 
 

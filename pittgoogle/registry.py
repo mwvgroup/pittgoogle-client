@@ -119,7 +119,7 @@ class Schemas:
         schema_name_parts = schema_name.split(".")
         class_name = (
             schema_name_parts[0].capitalize()
-            + "".join(part.capitalize() for part in schema_name_parts[1:])
+            + "".join(part for part in schema_name_parts[1:])
             + "Schema"
         )
         err_msg = (
