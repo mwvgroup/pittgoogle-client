@@ -65,7 +65,9 @@ class Schemas:
 
     @staticmethod
     def get(
-        schema_name: Literal["elasticc", "lsst", "lvk", "ztf", "default", None] = "default",
+        schema_name: Literal[
+            "elasticc", "lsst", "lvk", "ztf", "ztf.lite", "default", None
+        ] = "default",
         alert_bytes: bytes | None = None,
     ) -> schema.Schema:
         """Return the schema with name matching `schema_name`.
@@ -88,8 +90,9 @@ class Schemas:
             schema_name = "default"
 
         for yaml_dict in SCHEMA_MANIFEST:
-            name = yaml_dict["name"].split(".")[0]  # [FIXME] This is a hack for elasticc.
-            if name == schema_name:
+            name = yaml_dict["name"]
+            name_prefix = yaml_dict["name"].split(".")[0]  # [FIXME] This is a hack for elasticc.
+            if name == schema_name or name_prefix == schema_name:
                 _Schema = Schemas._get_class(schema_name)
                 return _Schema._from_yaml(yaml_dict=yaml_dict, alert_bytes=alert_bytes)
 
@@ -113,7 +116,12 @@ class Schemas:
             exceptions.SchemaError:
                 If a schema named `schema_name` is not found in the registry or cannot be loaded.
         """
-        class_name = schema_name[0].upper() + schema_name[1:] + "Schema"
+        schema_name_parts = schema_name.split(".")
+        class_name = (
+            schema_name_parts[0].capitalize()
+            + "".join(part.capitalize() for part in schema_name_parts[1:])
+            + "Schema"
+        )
         err_msg = (
             f"{class_name} not found for schema_name='{schema_name}'. ",
             "For valid names, see `pittgoogle.Schemas().names`.",
