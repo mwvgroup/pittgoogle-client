@@ -10,7 +10,7 @@
     LsstSchema
     LvkSchema
     ZtfSchema
-    ZtfLiteSchema
+    ZtfliteSchema
 
 ----
 """
@@ -623,5 +623,5 @@ class ZtfSchema(DefaultSchema):
 
 
 @attrs.define(kw_only=True)
-class ZtfLiteSchema(DefaultSchema):
+class ZtfliteSchema(DefaultSchema):
     """Schema for ZTF lite alerts."""
