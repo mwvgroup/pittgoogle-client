@@ -364,69 +364,6 @@ class Alert:
         return self.get("dec")
 
     @property
-    def healpix9(self) -> int:
-        """Return the HEALPix order 9 pixel index at the source's right ascension (RA) and declination.
-
-        See :meth:`healpix29` for a more detailed explanation and an example of how HEALPix indexes
-        can be used. The difference here is that order 9 means the pixels are much larger, with
-        a resolution (square root of area) of about 400 arcseconds (~0.1 degrees).
-        The following list of pixels covers the same area of sky as the one in the healpix29 example
-        (and probably more), but the total number of pixels is reduced by a factor of ~10^9
-        down to a single pixel.
-
-            .. code-block:: python
-
-                # The length of this list is 1 (given radius=5", nside9 analogous to nside29).
-                ex_dra_cone = hpgeom.query_circle(nside9, *ex_dra_coords, radius, inclusive=True)
-
-        If this resolution is still too fine for your use case, try :meth:`healpix9`.
-        If it is too coarse, try :meth:`healpix29`.
-        """
-        if self._healpix9 is None:
-            import hpgeom
-
-            self._healpix9 = hpgeom.angle_to_pixel(
-                a=self.ra,
-                b=self.dec,
-                nside=hpgeom.order_to_nside(9),
-                nest=True,
-                lonlat=True,
-                degrees=True,
-            )
-        return self._healpix9
-
-    @property
-    def healpix19(self) -> int:
-        """Return the HEALPix order 19 pixel index at the source's right ascension (RA) and declination.
-
-        See :meth:`healpix29` for a more detailed explanation and an example of how HEALPix indexes
-        can be used. The difference here is that order 19 means the pixels are larger, with
-        a resolution (square root of area) of about 0.4 arcseconds.
-        The following list of pixels covers the same area of sky as the one in the healpix29 example
-        (and perhaps a little more), but the total number of pixels is reduced by a factor of ~10^6
-        down to 549.
-
-            .. code-block:: python
-
-                # The length of this list is 549 (given radius=5", nside19 analogous to nside29).
-                ex_dra_cone = hpgeom.query_circle(nside19, *ex_dra_coords, radius, inclusive=True)
-
-        If this resolution is too coarse for your use case, try :meth:`healpix19` or :meth:`healpix29`.
-        """
-        if self._healpix19 is None:
-            import hpgeom
-
-            self._healpix19 = hpgeom.angle_to_pixel(
-                a=self.ra,
-                b=self.dec,
-                nside=hpgeom.order_to_nside(19),
-                nest=True,
-                lonlat=True,
-                degrees=True,
-            )
-        return self._healpix19
-
-    @property
     def healpix29(self) -> int:
         """Return the HEALPix order 29 pixel index at the source's right ascension (RA) and declination.
 
@@ -434,16 +371,16 @@ class Alert:
 
         This can be useful for spatial searches and cross matches because it collapses two floats
         (RA and dec) into one integer (pixel index), which can be much easier to work with. There
-        is some loss of precision but it will be insignificant for many use cases --
-        the pixel resolution (square root of area) at order 29 is about 4e-4 arcseconds.
+        is some loss of precision but it will be insignificant for most use cases --
+        the pixel resolution (square root of area) at order 29 is ~4e-4 arcseconds.
         This resolution may even be higher than preferred for many use cases because it can result
         in a very large set of pixels that are needed to cover the area of interest.
-        In that case, try :meth:`healpix19`.
+        In that case, try :meth:`healpix19` or :meth:`healpix9`.
 
         Example:
 
-        Check whether this alert is within 5 arcsec of the eclipsing cataclysmic variable EX Draconis.
-        We recommend [hpgeom](https://hpgeom.readthedocs.io/) for working with HEALPix.
+            Check whether this alert is within 5 arcsec of the eclipsing cataclysmic variable EX Draconis.
+            We recommend `hpgeom <https://hpgeom.readthedocs.io/` for working with HEALPix.
 
             .. code-block:: python
 
@@ -473,6 +410,72 @@ class Alert:
                 degrees=True,
             )
         return self._healpix29
+
+    @property
+    def healpix19(self) -> int:
+        """Return the HEALPix order 19 pixel index at the source's right ascension (RA) and declination.
+
+        See :meth:`healpix29` for a more detailed explanation and an example of how HEALPix indexes
+        can be used. The difference here is that order 19 means the pixels are larger, with
+        a resolution (square root of area) of ~0.4 arcseconds.
+        If this resolution is still too fine for your use case, try :meth:`healpix9`.
+        If it is too coarse, try :meth:`healpix29`.
+
+        The following list of pixels covers at least the same area of sky as the one in the healpix29
+        example (and likely more), but the total number of pixels is reduced by a factor of ~10^6
+        down to 549.
+
+            .. code-block:: python
+
+                # See the healpix29 docstring for a complete example. The radius is 5" and
+                # nside19 is analogous to nside29. The length of this list is 549.
+                ex_dra_cone = hpgeom.query_circle(nside19, *ex_dra_coords, radius, inclusive=True)
+
+        """
+        if self._healpix19 is None:
+            import hpgeom
+
+            self._healpix19 = hpgeom.angle_to_pixel(
+                a=self.ra,
+                b=self.dec,
+                nside=hpgeom.order_to_nside(19),
+                nest=True,
+                lonlat=True,
+                degrees=True,
+            )
+        return self._healpix19
+
+    @property
+    def healpix9(self) -> int:
+        """Return the HEALPix order 9 pixel index at the source's right ascension (RA) and declination.
+
+        See :meth:`healpix29` for a more detailed explanation and an example of how HEALPix indexes
+        can be used. The difference here is that order 9 means the pixels are much larger, with
+        a resolution (square root of area) of ~400 arcseconds or ~0.1 degrees.
+        The following list of pixels covers the same area of sky (and more) as the one in the
+        healpix29 example, but the total number of pixels is reduced by a factor of ~10^9
+        down to a single pixel.
+
+            .. code-block:: python
+
+                # See the healpix29 docstring for a complete example. The radius is 5" and
+                # nside9 is analogous to nside29. The length of this list is 1.
+                ex_dra_cone = hpgeom.query_circle(nside9, *ex_dra_coords, radius, inclusive=True)
+
+        If this resolution is too coarse for your use case, try :meth:`healpix19` or :meth:`healpix29`.
+        """
+        if self._healpix9 is None:
+            import hpgeom
+
+            self._healpix9 = hpgeom.angle_to_pixel(
+                a=self.ra,
+                b=self.dec,
+                nside=hpgeom.order_to_nside(9),
+                nest=True,
+                lonlat=True,
+                degrees=True,
+            )
+        return self._healpix9
 
     @property
     def schema(self) -> Schema:
