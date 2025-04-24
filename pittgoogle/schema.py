@@ -10,7 +10,6 @@
     LsstSchema
     LvkSchema
     ZtfSchema
-    ZtfliteSchema
 
 ----
 """
@@ -325,7 +324,7 @@ class Schema(abc.ABC):
     def map(self) -> dict:
         """Mapping of Pitt-Google's generic field names to survey-specific field names."""
         if self._map is None:
-            yml = __package_path__ / "schemas" / "maps" / f"{self.survey.replace('.', '-')}.yml"
+            yml = __package_path__ / "schemas" / "maps" / f"{self.survey}.yml"
             try:
                 self._map = yaml.safe_load(yml.read_text())
             except FileNotFoundError:
@@ -620,8 +619,3 @@ class ZtfSchema(DefaultSchema):
     deserializer: Literal["json", "avro"] = attrs.field(default="avro")
     """Whether to use a Avro (default) or JSON to deserialize when decoding `alert_bytes` -> `alert_dict`.
     If "avro", this `pittgoogle.Schema` will expect the Avro schema to be attached to `alert_bytes` in the header."""
-
-
-@attrs.define(kw_only=True)
-class ZtfliteSchema(DefaultSchema):
-    """Schema for ZTF lite alerts."""

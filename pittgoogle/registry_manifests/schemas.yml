@@ -56,13 +56,3 @@
     1: g
     2: r
     3: i
-#
-# ZTF lite alerts
-- name: 'ztf.lite'
-  description: 'Schema for ZTF lite alerts.'
-  origin: 'https://zwickytransientfacility.github.io/ztf-avro-alert/schema.html'
-  path: null
-  filter_map:
-    1: g
-    2: r
-    3: i
