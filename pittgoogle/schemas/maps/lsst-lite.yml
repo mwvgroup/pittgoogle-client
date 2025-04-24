@@ -2,33 +2,20 @@ SURVEY: lsst
 SCHEMA_ORIGIN: 'https://github.com/lsst/alert_packet/tree/main/python/lsst/alert/packet/schema'
 # IDs
 alertid: alertId
-sourceid: [diaSource-lite, diaSourceId]
-objectid: [diaObject-lite, diaObjectId]
+sourceid: [diaSource, diaSourceId]
+objectid: [diaObject, diaObjectId]
+ssobjectid: [ssObject, ssObjectId]
 # Sources and Objects
-source: diaSource-lite
-object: diaObject-lite
-prv_sources: prvDiaSources-lite
+source: diaSource
+object: diaObject
+prv_sources: prvDiaSources
 # Other
-dec: [diaSource-lite, dec]
-dec_err: [diaSource-lite, decErr]
-filter: [diaSource-lite, band]
-flux: [diaSource-lite, psfFlux]
-flux_err: [diaSource-lite, psfFluxErr]
-mjd: [diaSource-lite, midpointMjdTai]
-ra: [diaSource-lite, ra]
-ra_err: [diaSource-lite, raErr]
-nearby_object1: [diaObject-lite, nearbyObj1]
-nearby_object2: [diaObject-lite, nearbyObj2]
-nearby_object3: [diaObject-lite, nearbyObj3]
-nearby_object1_distance: [diaObject-lite, nearbyObj1Dist]
-nearby_object2_distance: [diaObject-lite, nearbyObj2Dist]
-nearby_object3_distance: [diaObject-lite, nearbyObj3Dist]
-prob_is_object1: [diaObject-lite, nearbyObj1LnP]
-prob_is_object2: [diaObject-lite, nearbyObj2LnP]
-prob_is_object3: [diaObject-lite, nearbyObj3LnP]
-u_flux_err_mean: [diaObject-lite, u_psfFluxErrMean]
-g_flux_err_mean: [diaObject-lite, g_psfFluxErrMean]
-r_flux_err_mean: [diaObject-lite, r_psfFluxErrMean]
-i_flux_err_mean: [diaObject-lite, i_psfFluxErrMean]
-z_flux_err_mean: [diaObject-lite, z_psfFluxErrMean]
-y_flux_err_mean: [diaObject-lite, y_psfFluxErrMean]
+dec: [diaSource, dec]
+dec_err: [diaSource, decErr]
+filter: [diaSource, band]
+flux: [diaSource, psfFlux]
+flux_err: [diaSource, psfFluxErr]
+mjd: [diaSource, midpointMjdTai]
+ra: [diaSource, ra]
+ra_err: [diaSource, raErr]
+snr: [diaSource, snr]

@@ -17,10 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Unit tests:
     - Tests take into account new `Alert.attributes` keys.
 - `Schema`:
-    - Dedicated classes for lite schemas, specifically `LsstliteSchema`
     - Schema map for the LSST lite schema.
-- `Registry`
-    - Support for `lsst.lite` schema
 
 ### Changed
 
