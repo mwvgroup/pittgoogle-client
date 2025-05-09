@@ -39,9 +39,9 @@ class TestAlertFrom:
             _id_keys = (
                 alert.get_key(key) for key in ["alertid", "objectid", "sourceid", "ssobjectid"]
             )
-            id_keys = [".".join(key) if isinstance(key, list) else key for key in _id_keys]
+            id_keys = ["_".join(key) if isinstance(key, list) else key for key in _id_keys]
             index_keys = ["healpix9", "healpix19", "healpix29"]
-            metadata_keys = ["schema.version", "n_previous_detections"]
+            metadata_keys = ["schema_version", "n_previous_detections"]
             # 'if key' to drop None.
             expected_keys = set(key for key in id_keys + index_keys + metadata_keys if key)
             assert set(alert.attributes) == expected_keys

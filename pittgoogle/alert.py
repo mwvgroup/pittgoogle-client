@@ -574,7 +574,7 @@ class Alert:
         # key will be a list. Join list -> string since these are likely to become Pub/Sub message attributes.
         ids = ["alertid", "objectid", "sourceid", "ssobjectid"]
         _names = [self.get_key(id) for id in ids]
-        names = [".".join(id) if isinstance(id, list) else id for id in _names]
+        names = ["_".join(id) if isinstance(id, list) else id for id in _names]
         values = [self.get(id) for id in ids]
         attributes = dict(zip(names, values))
 
@@ -584,7 +584,7 @@ class Alert:
         attributes["healpix29"] = self.healpix29
 
         # Add metadata.
-        attributes["schema.version"] = self.schema.version
+        attributes["schema_version"] = self.schema.version
         attributes["n_previous_detections"] = len(self.get("prv_sources") or [])
 
         # Add the collected attributes to self, but only if not None and don't clobber existing.
