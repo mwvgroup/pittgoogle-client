@@ -10,7 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
-(none)
+### Changed
+
+- `Alert`:
+    - Updated the separator `"."` -> `"_"` used to define attribute key names.
 
 ## \[v0.3.14\] - 2025-04-28
 
