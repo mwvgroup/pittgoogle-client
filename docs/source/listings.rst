@@ -182,8 +182,18 @@ Pub/Sub Alert Streams
       -
 
     * - lsst-alerts
-      - LSST alert stream in Pub/Sub, cleaned of duplicate alerts.
+      - Avro serialized LSST alert stream in Pub/Sub, cleaned of duplicate alerts.
         Messages contain the original alert bytes and metadata.
+
+    * - lsst-alerts-json
+      - JSON serialized LSST alert stream in Pub/Sub, cleaned of duplicate alerts.
+        Messages contain the original alert bytes and metadata.
+
+    * - lsst-lite
+      - Lite version of lsst-alerts (every alert, subset of fields).
+
+    * - lsst-upsilon
+      - lsst-lite plus UPSILoN classification results (multi-class).
 
 BigQuery Tables
 ^^^^^^^^^^^^^^^
@@ -197,12 +207,16 @@ BigQuery Tables
       - Table
       - Description
 
-    * - lsst
+    * - lsst_alerts
       - alerts_v7_4
       - Alert data for LSST schema version 7.4. This table is an archive of the lsst-alerts Pub/Sub stream,
         excluding image cutouts and metadata.
         It has the same schema as the original alert bytes (except cutouts), including nested and repeated fields.
         Equivalent tables exist for previous schema versions: alerts_v7_3,  alerts_v7_1.
+
+    * - lsst_value_added
+      - upsilon
+      - Results from an UPSILoN ((Kim \& Bailer-Jones, 2015)) periodic variable star classification (multi-class).
 
 Cloud Storage Buckets
 ^^^^^^^^^^^^^^^^^^^^^
