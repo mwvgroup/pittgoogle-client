@@ -216,7 +216,7 @@ BigQuery Tables
 
     * - lsst_value_added
       - upsilon
-      - Results from an UPSILoN ((Kim \& Bailer-Jones, 2015)) periodic variable star classification (multi-class).
+      - Results from an UPSILoN (Kim \& Bailer-Jones, 2015) periodic variable star classification (multi-class).
 
 Cloud Storage Buckets
 ^^^^^^^^^^^^^^^^^^^^^
