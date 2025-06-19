@@ -11,3 +11,4 @@ Note that data products may be served in multiple formats -- a complete listing 
     ztf
     lvk
     lsst
+    swift
