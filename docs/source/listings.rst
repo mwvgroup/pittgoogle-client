@@ -182,8 +182,35 @@ Pub/Sub Alert Streams
       -
 
     * - lsst-alerts
-      - LSST alert stream in Pub/Sub, cleaned of duplicate alerts.
+      - Avro serialized LSST alert stream in Pub/Sub, cleaned of duplicate alerts.
         Messages contain the original alert bytes and metadata.
+
+    * - lsst-alerts-json
+      - JSON-serialized LSST alert stream in Pub/Sub, cleaned of duplicate alerts. Non-JSON-serializable values in the
+        original alert data are converted into representations that can be safely serialized to JSON. For example:
+        - ``NaN -> None``
+        -  ``bytes ->`` UTF-8 strings representing the base64-encoded byte values
+
+    * - lsst-lite
+      - Lite version of lsst-alerts-json (every alert, subset of fields).
+
+    * - lsst-upsilon
+      - lsst-lite plus UPSILoN's (Kim \& Bailer-Jones, 2015) classification (multi-class) of periodic variable stars
+        (e.g., RR Lyraes, Cepheids, Type II Cepheids, Delta Scuti stars, eclipsing binaries, and long-period
+        variables) and their subclasses for each band used to observe the source associated with an alert. Messages
+        published to this topic contain the following attributes:
+        - "pg_upsilon_x_label", where "x" specifies the data of the band used to classify the source (e.g., "u", "g",
+          "r", "i", "z", "y").
+        - "pg_upsilon_x_flag", where "x" specifies the data of the band used to classify the source (e.g., "u", "g",
+          "r", "i", "z", "y").
+
+
+    * - lsst-variability
+      - lsst-lite plus the number of detections (i.e., data points) and the StetsonJ statistic for each band used to
+        observe the source associated with an alert. Messages published to this topic contain the attribute:
+        "pg_variable". The value of this Pub/Sub message attribute is set to "likely" if the alert has StetsonJ
+        statistic values of at least 20 and at least 30 detections in the g, r, or u band. The default value is
+        "unlikely".
 
 BigQuery Tables
 ^^^^^^^^^^^^^^^
@@ -197,12 +224,27 @@ BigQuery Tables
       - Table
       - Description
 
-    * - lsst
+    * - lsst_alerts
       - alerts_v7_4
       - Alert data for LSST schema version 7.4. This table is an archive of the lsst-alerts Pub/Sub stream,
         excluding image cutouts and metadata.
         It has the same schema as the original alert bytes (except cutouts), including nested and repeated fields.
         Equivalent tables exist for previous schema versions: alerts_v7_3,  alerts_v7_1.
+
+    * - lsst_value_added
+      - upsilon
+      - Results from UPSILoN's (Kim \& Bailer-Jones, 2015) classification (multi-class) of periodic variable
+        stars (e.g., RR Lyraes, Cepheids, Type II Cepheids, Delta Scuti stars, eclipsing binaries, and long-period
+        variables) and their subclasses for each band used to observe the source associated with an alert. Contains
+        the predicted label (i.e., class) for each band, the probability of the predicted label, and a flag value (0 or
+        1).
+        - 0: Successful classification
+        - 1: Suspicious classification because the period is in period alias or the period SNR is lower than 20
+
+    * - lsst_value_added
+      - variability
+      - This table shows the number of detections (i.e., data points) and the StetsonJ statistic for each band used to
+        observe the source associated with an alert.
 
 Cloud Storage Buckets
 ^^^^^^^^^^^^^^^^^^^^^
