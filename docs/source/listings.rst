@@ -190,7 +190,7 @@ Pub/Sub Alert Streams
         Messages contain the original alert bytes and metadata.
 
     * - lsst-lite
-      - Lite version of lsst-alerts (every alert, subset of fields).
+      - Lite version of lsst-alerts-json (every alert, subset of fields).
 
     * - lsst-upsilon
       - lsst-lite plus UPSILoN classification results (multi-class).
