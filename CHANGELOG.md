@@ -10,9 +10,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
+<<<<<<< u/ch/swift/datalistings
 ## Added
 
 - Data listings and references for Swift/BAT-GUANO
+=======
+### Added
+
+- Data listings for LSST
+>>>>>>> main
 
 ## \[v0.3.15\] - 2025-05-12
 
@@ -23,7 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[v0.3.14\] - 2025-04-28
 
-## Added
+### Added
 
 - `Alert`:
     - Added the following fields to `Alert.attributes`: `n_previous_sources` and `ssobjectid`.
