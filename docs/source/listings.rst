@@ -200,10 +200,10 @@ Pub/Sub Alert Streams
         either "u", "g", "r", "i", "z", or "y" (e.g., `pg_upsilon_u_label`; `pg_upsilon_u_flag`).
 
     * - lsst-variability
-      - lsst-lite plus Stetson J indices for each band used to observe the diaObject. Messages published to this topic
-        contain the attribute: `pg_variable`. The value of this Pub/Sub message attribute is set to "likely" if the
-        alert has a Stetson J index of at least 20 and at least 30 detections in the g, r, or u band. The
-        default value is "unlikely".
+      - lsst-lite plus Stetson J indices for each band used to observe the diaObject associated with an alert.
+        Messages published to this topic contain the attribute: `pg_variable`. The value of this Pub/Sub message
+        attribute is set to "likely" if the alert has a Stetson J index of at least 20 and at least 30 detections in
+        the g, r, or u band. The default value is "unlikely".
 
     * - lsst-SuperNNova
       - lsst-lite plus SuperNNova classification results (Ia vs non-Ia).
