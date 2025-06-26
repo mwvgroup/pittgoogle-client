@@ -182,8 +182,31 @@ Pub/Sub Alert Streams
       -
 
     * - lsst-alerts
-      - LSST alert stream in Pub/Sub, cleaned of duplicate alerts.
+      - Avro serialized LSST alert stream in Pub/Sub, cleaned of duplicate alerts.
         Messages contain the original alert bytes and metadata.
+
+    * - lsst-alerts-json
+      - JSON-serialized LSST alert stream in Pub/Sub, cleaned of duplicate alerts. Non-JSON-serializable values in the
+        original alert data are converted into representations that can be safely serialized to JSON (e.g., ``NaN →
+        None``, ``bytes →`` UTF-8 base64-encoded strings).
+
+    * - lsst-lite
+      - Lite version of lsst-alerts (every alert, subset of fields).
+
+    * - lsst-upsilon
+      - lsst-lite plus UPSILoN's (Kim \& Bailer-Jones, 2015) multi-class classification results (e.g., RR Lyrae,
+        Cepheid, Type II Cepheid, Delta Scuti star, eclipsing binary, long-period variable, etc.). Messages
+        published to this topic contain the attributes: `pg_upsilon_x_label` and `pg_upsilon_x_flag` where "x" is
+        either "u", "g", "r", "i", "z", or "y" (e.g., `pg_upsilon_u_label`; `pg_upsilon_u_flag`).
+
+    * - lsst-variability
+      - lsst-lite plus Stetson J indices for each band used to observe the diaObject associated with an alert.
+        Messages published to this topic contain the attribute: `pg_variable`. The value of this Pub/Sub message
+        attribute is set to "likely" if the alert has a Stetson J index of at least 20 and at least 30 detections in
+        the g, r, or u band. The default value is "unlikely".
+
+    * - lsst-SuperNNova
+      - lsst-lite plus SuperNNova classification results (Ia vs non-Ia).
 
 BigQuery Tables
 ^^^^^^^^^^^^^^^
@@ -203,6 +226,23 @@ BigQuery Tables
         excluding image cutouts and metadata.
         It has the same schema as the original alert bytes (except cutouts), including nested and repeated fields.
         Equivalent tables exist for previous schema versions: alerts_v7_3,  alerts_v7_1.
+
+    * - lsst
+      - upsilon
+      - Results from UPSILoN's (Kim \& Bailer-Jones, 2015) multi-class classification results (e.g., RR Lyrae,
+        Cepheid, Type II Cepheid, Delta Scuti star, eclipsing binary, long-period variable, etc.). Contains
+        the predicted label (i.e., class), the probability of the predicted label, and a flag value: 0
+        (successful classification), 1 (suspicious classification because the period is in period alias or the period
+        SNR is lower than 20) for each band used to observe the diaObject associated with an alert.
+
+    * - lsst
+      - variability
+      - Results from the lsst-variability module. This table contains Stetson J indices and the number of detections (i.e.,
+        data points) for each band used to observe the diaObject associated with an alert.
+
+    * - lsst
+      - SuperNNova
+      - Results from a SuperNNova (Möller \& de Boissière, 2019) Type Ia supernova classification (binary).
 
 Cloud Storage Buckets
 ^^^^^^^^^^^^^^^^^^^^^
