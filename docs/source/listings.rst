@@ -260,3 +260,62 @@ Cloud Storage Buckets
         including image cutouts and metadata. Each alert is stored as a separate Avro file.
         The filename syntax is: `<schema_version>/<alert_date>/<diaObjectId>/<diaSourceId>.avro`.
         For example, `v7_3/2026-10-01/3516505565058564097/3527242976319242284.avro`.
+
+.. _data swift:
+
+Swift/BAT-GUANO
+-------------------------------
+
+:ref:`Neil Gehrels Swift Observatory <survey swift>` is a space-based observatory designed to study gamma-ray bursts and currently produces an alert stream at a rate of less than 1 alert per week.
+
+Pub/Sub Alert Streams
+^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+    :class: tight-table
+    :widths: 25 75
+    :header-rows: 1
+
+    * - Topic
+      - Description
+
+    * - .. centered:: *Data Streams*
+      -
+
+    * - swift-alerts-json
+      - JSON-serialized Swift alert stream in Pub/Sub.
+        Messages contain the original alert bytes and metadata.
+
+BigQuery Tables
+^^^^^^^^^^^^^^^
+
+.. list-table::
+    :class: tight-table
+    :widths: 15 15 70
+    :header-rows: 1
+
+    * - Dataset
+      - Table
+      - Description
+
+    * - swift
+      - alerts_v4_5_0
+      - Alert data for Swift/BAT-GUANO schema version 4.5.0. This table is an archive of the swift-alerts Pub/Sub stream.
+        It has the same schema as the original alert bytes.
+
+Cloud Storage Buckets
+^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+    :class: tight-table
+    :widths: 40 60
+    :header-rows: 1
+
+    * - Bucket
+      - Description
+
+    * - ardent-cycling-243415-swift_alerts
+      - Alert data for Swift/BAT-GUANO. This bucket is a JSON file archive of the swift-alerts-json Pub/Sub stream.
+        Each alert is stored as a separate JSON file.
+        The filename syntax is: `<alert_datetime>/<alert_type>/<id>.avro`.
+        For example, `2023-01-01/initial/694215995.avro`.
