@@ -10,15 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
-<<<<<<< u/ch/swift/datalistings
-## Added
-
-- Data listings and references for Swift/BAT-GUANO
-=======
 ### Added
 
 - Data listings for LSST
->>>>>>> main
+- Data listings and references for Swift/BAT-GUANO
 
 ## \[v0.3.15\] - 2025-05-12
 
