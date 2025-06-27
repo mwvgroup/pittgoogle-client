@@ -282,8 +282,8 @@ Pub/Sub Alert Streams
     * - .. centered:: *Data Streams*
       -
 
-    * - swift-alerts
-      - Swift alert stream in Pub/Sub.
+    * - swift-alerts-json
+      - JSON-serialized Swift alert stream in Pub/Sub.
         Messages contain the original alert bytes and metadata.
 
 BigQuery Tables
@@ -298,7 +298,24 @@ BigQuery Tables
       - Table
       - Description
 
-    * - swift_alerts
+    * - swift
       - alerts_v4_5_0
       - Alert data for Swift/BAT-GUANO schema version 4.5.0. This table is an archive of the swift-alerts Pub/Sub stream.
         It has the same schema as the original alert bytes.
+
+Cloud Storage Buckets
+^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+    :class: tight-table
+    :widths: 40 60
+    :header-rows: 1
+
+    * - Bucket
+      - Description
+
+    * - ardent-cycling-243415-swift_alerts
+      - Alert data for Swift/BAT-GUANO. This bucket is a JSON file archive of the swift-alerts-json Pub/Sub stream.
+        Each alert is stored as a separate JSON file.
+        The filename syntax is: `<alert_datetime>/<alert_type>/<id>.avro`.
+        For example, `2023-01-01/initial/694215995.avro`.
