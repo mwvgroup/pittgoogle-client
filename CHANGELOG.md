@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Added
 
+- Data listings fot ZTF
 - Data listings for LSST
 
 ## \[v0.3.15\] - 2025-05-12
