@@ -1,0 +1,885 @@
+{
+  "type": "record",
+  "namespace": "lsst.v8_0",
+  "name": "diaObject",
+  "fields": [
+    {
+      "doc": "Unique identifier of this DiaObject.",
+      "name": "diaObjectId",
+      "type": "long"
+    },
+    {
+      "doc": "Processing time when validity of this diaObject starts.",
+      "name": "validityStart",
+      "type": {
+        "logicalType": "timestamp-micros",
+        "type": "long"
+      }
+    },
+    {
+      "doc": "Right ascension coordinate of the position of the object.",
+      "name": "ra",
+      "type": "double"
+    },
+    {
+      "default": null,
+      "doc": "Uncertainty of ra.",
+      "name": "raErr",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "doc": "Declination coordinate of the position of the object.",
+      "name": "dec",
+      "type": "double"
+    },
+    {
+      "default": null,
+      "doc": "Uncertainty of dec.",
+      "name": "decErr",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Covariance between ra and dec.",
+      "name": "ra_dec_Cov",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Weighted mean point-source model magnitude for u filter.",
+      "name": "u_psfFluxMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard error of u_psfFluxMean.",
+      "name": "u_psfFluxMeanErr",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard deviation of the distribution of u_psfFlux.",
+      "name": "u_psfFluxSigma",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Chi^2 statistic for the scatter of u_psfFlux around u_psfFluxMean.",
+      "name": "u_psfFluxChi2",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "The number of data points used to compute u_psfFluxChi2.",
+      "name": "u_psfFluxNdata",
+      "type": [
+        "null",
+        "int"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Weighted mean forced photometry flux for u filter.",
+      "name": "u_fpFluxMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard error of u_fpFluxMean.",
+      "name": "u_fpFluxMeanErr",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Weighted mean point-source model magnitude for g filter.",
+      "name": "g_psfFluxMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard error of g_psfFluxMean.",
+      "name": "g_psfFluxMeanErr",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard deviation of the distribution of g_psfFlux.",
+      "name": "g_psfFluxSigma",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Chi^2 statistic for the scatter of g_psfFlux around g_psfFluxMean.",
+      "name": "g_psfFluxChi2",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "The number of data points used to compute g_psfFluxChi2.",
+      "name": "g_psfFluxNdata",
+      "type": [
+        "null",
+        "int"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Weighted mean forced photometry flux for g filter.",
+      "name": "g_fpFluxMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard error of g_fpFluxMean.",
+      "name": "g_fpFluxMeanErr",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Weighted mean point-source model magnitude for r filter.",
+      "name": "r_psfFluxMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard error of r_psfFluxMean.",
+      "name": "r_psfFluxMeanErr",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard deviation of the distribution of r_psfFlux.",
+      "name": "r_psfFluxSigma",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Chi^2 statistic for the scatter of r_psfFlux around r_psfFluxMean.",
+      "name": "r_psfFluxChi2",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "The number of data points used to compute r_psfFluxChi2.",
+      "name": "r_psfFluxNdata",
+      "type": [
+        "null",
+        "int"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Weighted mean forced photometry flux for r filter.",
+      "name": "r_fpFluxMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard error of r_fpFluxMean.",
+      "name": "r_fpFluxMeanErr",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Weighted mean point-source model magnitude for i filter.",
+      "name": "i_psfFluxMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard error of i_psfFluxMean.",
+      "name": "i_psfFluxMeanErr",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard deviation of the distribution of i_psfFlux.",
+      "name": "i_psfFluxSigma",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Chi^2 statistic for the scatter of i_psfFlux around i_psfFluxMean.",
+      "name": "i_psfFluxChi2",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "The number of data points used to compute i_psfFluxChi2.",
+      "name": "i_psfFluxNdata",
+      "type": [
+        "null",
+        "int"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Weighted mean forced photometry flux for i filter.",
+      "name": "i_fpFluxMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard error of i_fpFluxMean.",
+      "name": "i_fpFluxMeanErr",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Weighted mean point-source model magnitude for z filter.",
+      "name": "z_psfFluxMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard error of z_psfFluxMean.",
+      "name": "z_psfFluxMeanErr",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard deviation of the distribution of z_psfFlux.",
+      "name": "z_psfFluxSigma",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Chi^2 statistic for the scatter of z_psfFlux around z_psfFluxMean.",
+      "name": "z_psfFluxChi2",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "The number of data points used to compute z_psfFluxChi2.",
+      "name": "z_psfFluxNdata",
+      "type": [
+        "null",
+        "int"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Weighted mean forced photometry flux for z filter.",
+      "name": "z_fpFluxMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard error of z_fpFluxMean.",
+      "name": "z_fpFluxMeanErr",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Weighted mean point-source model magnitude for y filter.",
+      "name": "y_psfFluxMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard error of y_psfFluxMean.",
+      "name": "y_psfFluxMeanErr",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard deviation of the distribution of y_psfFlux.",
+      "name": "y_psfFluxSigma",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Chi^2 statistic for the scatter of y_psfFlux around y_psfFluxMean.",
+      "name": "y_psfFluxChi2",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "The number of data points used to compute y_psfFluxChi2.",
+      "name": "y_psfFluxNdata",
+      "type": [
+        "null",
+        "int"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Weighted mean forced photometry flux for y filter.",
+      "name": "y_fpFluxMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard error of y_fpFluxMean.",
+      "name": "y_fpFluxMeanErr",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Weighted mean forced photometry flux for u filter.",
+      "name": "u_scienceFluxMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard error of u_scienceFluxMean.",
+      "name": "u_scienceFluxMeanErr",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard deviation of the distribution of u_scienceFlux.",
+      "name": "u_scienceFluxSigma",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Weighted mean forced photometry flux for g filter.",
+      "name": "g_scienceFluxMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard error of g_scienceFluxMean.",
+      "name": "g_scienceFluxMeanErr",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard deviation of the distribution of g_scienceFlux.",
+      "name": "g_scienceFluxSigma",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Weighted mean forced photometry flux for r filter.",
+      "name": "r_scienceFluxMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard error of r_scienceFluxMean.",
+      "name": "r_scienceFluxMeanErr",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard deviation of the distribution of r_scienceFlux.",
+      "name": "r_scienceFluxSigma",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Weighted mean forced photometry flux for i filter.",
+      "name": "i_scienceFluxMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard error of i_scienceFluxMean.",
+      "name": "i_scienceFluxMeanErr",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard deviation of the distribution of i_scienceFlux.",
+      "name": "i_scienceFluxSigma",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Weighted mean forced photometry flux for z filter.",
+      "name": "z_scienceFluxMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard error of z_scienceFluxMean.",
+      "name": "z_scienceFluxMeanErr",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard deviation of the distribution of z_scienceFlux.",
+      "name": "z_scienceFluxSigma",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Weighted mean forced photometry flux for y filter.",
+      "name": "y_scienceFluxMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard error of y_scienceFluxMean.",
+      "name": "y_scienceFluxMeanErr",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Standard deviation of the distribution of y_scienceFlux.",
+      "name": "y_scienceFluxSigma",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Skewness of the u band fluxes.",
+      "name": "u_psfFluxSkew",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Minimum observed u band fluxes.",
+      "name": "u_psfFluxMin",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Maximum observed u band fluxes.",
+      "name": "u_psfFluxMax",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Maximum slope between u band flux obsevations max(delta_flux/delta_time).",
+      "name": "u_psfFluxMaxSlope",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Mean of the u band flux errors.",
+      "name": "u_psfFluxErrMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Skewness of the g band fluxes.",
+      "name": "g_psfFluxSkew",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Minimum observed g band fluxes.",
+      "name": "g_psfFluxMin",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Maximum observed g band fluxes.",
+      "name": "g_psfFluxMax",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Maximum slope between g band flux obsevations max(delta_flux/delta_time).",
+      "name": "g_psfFluxMaxSlope",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Mean of the g band flux errors.",
+      "name": "g_psfFluxErrMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Skewness of the r band fluxes.",
+      "name": "r_psfFluxSkew",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Minimum observed r band fluxes.",
+      "name": "r_psfFluxMin",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Maximum observed r band fluxes.",
+      "name": "r_psfFluxMax",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Maximum slope between r band flux obsevations max(delta_flux/delta_time).",
+      "name": "r_psfFluxMaxSlope",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Mean of the r band flux errors.",
+      "name": "r_psfFluxErrMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Skewness of the i band fluxes.",
+      "name": "i_psfFluxSkew",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Minimum observed i band fluxes.",
+      "name": "i_psfFluxMin",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Maximum observed i band fluxes.",
+      "name": "i_psfFluxMax",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Maximum slope between i band flux obsevations max(delta_flux/delta_time).",
+      "name": "i_psfFluxMaxSlope",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Mean of the i band flux errors.",
+      "name": "i_psfFluxErrMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Skewness of the z band fluxes.",
+      "name": "z_psfFluxSkew",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Minimum observed z band fluxes.",
+      "name": "z_psfFluxMin",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Maximum observed z band fluxes.",
+      "name": "z_psfFluxMax",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Maximum slope between z band flux obsevations max(delta_flux/delta_time).",
+      "name": "z_psfFluxMaxSlope",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Mean of the z band flux errors.",
+      "name": "z_psfFluxErrMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Skewness of the y band fluxes.",
+      "name": "y_psfFluxSkew",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Minimum observed y band fluxes.",
+      "name": "y_psfFluxMin",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Maximum observed y band fluxes.",
+      "name": "y_psfFluxMax",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Maximum slope between y band flux obsevations max(delta_flux/delta_time).",
+      "name": "y_psfFluxMaxSlope",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "default": null,
+      "doc": "Mean of the y band flux errors.",
+      "name": "y_psfFluxErrMean",
+      "type": [
+        "null",
+        "float"
+      ]
+    },
+    {
+      "doc": "Last time when non-forced DIASource was seen for this object.",
+      "name": "lastNonForcedSource",
+      "type": {
+        "logicalType": "timestamp-micros",
+        "type": "long"
+      }
+    },
+    {
+      "doc": "Time of the first diaSource, expressed as Modified Julian Date, International Atomic Time.",
+      "name": "firstDiaSourceMjdTai",
+      "type": "double"
+    },
+    {
+      "doc": "Total number of DiaSources associated with this DiaObject.",
+      "name": "nDiaSources",
+      "type": "int"
+    }
+  ]
+}
