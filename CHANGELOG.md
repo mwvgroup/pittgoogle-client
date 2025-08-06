@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
      - `lsst.v8_0.MPCORB.avsc`
 
 ### Changed
+
 - `schemas/maps/lsst.yml`
      - updated field name: `ssObject` -> `ssSource`
 - `pittgoogle/schema.py`
