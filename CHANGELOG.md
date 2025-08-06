@@ -14,21 +14,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 - Data listings for LSST
 - `schemas/lsst/8/0/`
-     - `lsst.v8_0.alert.avsc`
-     - `lsst.v8_0.diaForcedSources.avsc`
-     - `lsst.v8_0.diaSource.avsc`
-     - `lsst.v8_0.diaObject.avsc`
-     - `lsst.v8_0.ssSource.avsc`
-     - `lsst.v8_0.MPCORB.avsc`
+    - `lsst.v8_0.alert.avsc`
+    - `lsst.v8_0.diaForcedSources.avsc`
+    - `lsst.v8_0.diaSource.avsc`
+    - `lsst.v8_0.diaObject.avsc`
+    - `lsst.v8_0.ssSource.avsc`
+    - `lsst.v8_0.MPCORB.avsc`
 
 ### Changed
 
 - `schemas/maps/lsst.yml`
-     - updated field name: `ssObject` -> `ssSource`
+    - updated field name: `ssObject` -> `ssSource`
 - `pittgoogle/schema.py`
-     - adds v8_0 to the list of supported schema versions for LSST alerts
-     - the `_name_in_bucket` function uses the `ssObjectId` instead of the `diaObjectId` when the value of `diaObjectId` is null
-          - each `diaSource` will be associated with either a `diaObject` OR `ssObject`
+    - adds v8_0 to the list of supported schema versions for LSST alerts
+    - the `_name_in_bucket` function uses the `ssObjectId` instead of the `diaObjectId` when the value of `diaObjectId`
+    is null. This is necessary because each `diaSource` will be associated with either a `diaObject` or `ssObject`
 
 ## \[v0.3.15\] - 2025-05-12
 
