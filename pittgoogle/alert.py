@@ -554,7 +554,6 @@ class Alert:
         The added keys include:
             - objectid (if defined by the survey)
             - sourceid (if defined by the survey)
-            - ssobjectid (if defined by the survey)
             - healpix9
             - healpix19
             - healpix29
@@ -563,7 +562,7 @@ class Alert:
         """
         # Get the data IDs and corresponding survey-specific field names. If the field is nested, the
         # key will be a list. Join list -> string since these are likely to become Pub/Sub message attributes.
-        ids = ["objectid", "sourceid", "ssobjectid"]
+        ids = ["objectid", "sourceid"]
         _names = [self.get_key(id) for id in ids]
         names = ["_".join(id) if isinstance(id, list) else id for id in _names]
         values = [self.get(id) for id in ids]
@@ -598,13 +597,22 @@ class Alert:
             any:
                 The value in the :attr:`Alert.dict` corresponding to the field.
         """
-        survey_field = self.schema.map.get(field)  # str, list[str], or None
+        survey_field = self.schema.map.get(field)  # str, list[str], dict[str, list[str]], or None
 
         if survey_field is None:
             return default
 
         if isinstance(survey_field, str):
             return self.dict.get(survey_field, default)
+
+        if isinstance(survey_field, dict):
+            # This was implemented specifically for LSST objectid.
+            # We assume that the dict values are lists with exactly two elements
+            # and that only one of these will point to a non-null value in the alert.
+            for survey_fields in survey_field.values():
+                alert_value = self.dict.get(survey_fields[0], {}).get(survey_fields[1], None)
+                if alert_value:
+                    return alert_value
 
         # if survey_field is not one of the expected types, the schema map is malformed
         # maybe this was intentional, but we don't know how to handle it here
@@ -651,13 +659,25 @@ class Alert:
                 list[str] if this is a nested field and `name_only` is False, else str with the
                 final field name only.
         """
-        survey_field = self.schema.map.get(field)  # str, list[str], or None
+        survey_field = self.schema.map.get(field)  # str, list[str], dict[str, list[str]], or None
 
         if survey_field is None:
             return default
 
         if name_only and isinstance(survey_field, list):
             return survey_field[-1]
+
+        if isinstance(survey_field, dict):
+            # This was implemented specifically for LSST objectid.
+            # We assume that the dict values are lists with exactly two elements
+            # and that only one of these will point to a non-null value in the alert.
+            for survey_fields in survey_field.values():
+                # Check whether this item points to a non-null value in the alert. If so, return the key.
+                alert_value = self.dict.get(survey_fields[0], {}).get(survey_fields[1], None)
+                if alert_value:
+                    if name_only:
+                        return survey_fields[-1]
+                    return survey_fields
 
         return survey_field
 

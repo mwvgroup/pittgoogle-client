@@ -29,6 +29,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
     - adds v8_0 to the list of supported schema versions for LSST alerts
     - the `_name_in_bucket` function uses the `ssObjectId` instead of the `diaObjectId` when the value of `diaObjectId`
     is null. This is necessary because each `diaSource` will be associated with either a `diaObject` or `ssObject`
+- Solar system objects are no longer treated separately.
+  Properties like `Alert.objectid` now return either the DIA or SS object ID, as appropriate for the given alert.
 
 ### Removed
 

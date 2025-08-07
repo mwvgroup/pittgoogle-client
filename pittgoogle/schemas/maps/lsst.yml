@@ -2,9 +2,15 @@ SURVEY: lsst
 SCHEMA_ORIGIN: 'https://github.com/lsst/alert_packet/tree/main/python/lsst/alert/packet/schema'
 # [FIXME] Check everything below.
 # IDs
+objectid:
+  - dia: [diaObject, diaObjectId]
+  - ss: [ssSource, ssObjectId]
+# Starting with schema version 8.0, there is a top-level field 'diaSourceId' in addition to 'diaSource.diaSourceId'.
+# We're leaving this as [diaSource, diaSourceId] so that it still works for v<8 alerts.
+# [FIXME] There is also a field called 'ssSource.diaSourceId'. Find out if it always has the same value as
+# 'diaSource.diaSourceId' (unless null). If it has a different value, we need to figure out how to handle
+# that in Alert.get() and Alert.get_key() so that we return 'ssSource.diaSourceId' for SS alerts.
 sourceid: [diaSource, diaSourceId]
-objectid: [diaObject, diaObjectId]
-ssobjectid: [ssSource, ssObjectId]
 # Sources and Objects
 source: diaSource
 object: diaObject
