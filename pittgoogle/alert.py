@@ -324,14 +324,6 @@ class Alert:
         return self._dataframe
 
     @property
-    def alertid(self) -> str | int:
-        """Return the alert ID. Convenience wrapper around :attr:`Alert.get`.
-
-        If the survey does not define an alert ID, this returns the `sourceid`.
-        """
-        return self.get("alertid", self.sourceid)
-
-    @property
     def objectid(self) -> str | int:
         """Return the object ID. Convenience wrapper around :attr:`Alert.get`.
 
@@ -560,7 +552,6 @@ class Alert:
         """Add IDs, indexes, and other properties to :attr:`Alert.attributes`.
 
         The added keys include:
-            - alertid (if defined by the survey)
             - objectid (if defined by the survey)
             - sourceid (if defined by the survey)
             - ssobjectid (if defined by the survey)
@@ -572,7 +563,7 @@ class Alert:
         """
         # Get the data IDs and corresponding survey-specific field names. If the field is nested, the
         # key will be a list. Join list -> string since these are likely to become Pub/Sub message attributes.
-        ids = ["alertid", "objectid", "sourceid", "ssobjectid"]
+        ids = ["objectid", "sourceid", "ssobjectid"]
         _names = [self.get_key(id) for id in ids]
         names = ["_".join(id) if isinstance(id, list) else id for id in _names]
         values = [self.get(id) for id in ids]

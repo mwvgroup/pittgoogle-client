@@ -30,6 +30,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
     - the `_name_in_bucket` function uses the `ssObjectId` instead of the `diaObjectId` when the value of `diaObjectId`
     is null. This is necessary because each `diaSource` will be associated with either a `diaObject` or `ssObject`
 
+### Removed
+
+- `Alert.alertid` property and related schema map entries.
+
 ## \[v0.3.15\] - 2025-05-12
 
 ### Changed

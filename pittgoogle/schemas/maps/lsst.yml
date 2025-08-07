@@ -2,7 +2,6 @@ SURVEY: lsst
 SCHEMA_ORIGIN: 'https://github.com/lsst/alert_packet/tree/main/python/lsst/alert/packet/schema'
 # [FIXME] Check everything below.
 # IDs
-alertid: alertId
 sourceid: [diaSource, diaSourceId]
 objectid: [diaObject, diaObjectId]
 ssobjectid: [ssSource, ssObjectId]

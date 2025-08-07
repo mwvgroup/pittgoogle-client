@@ -1,7 +1,6 @@
 SURVEY: elasticc
 SCHEMA_ORIGIN: https://github.com/LSSTDESC/elasticc/tree/main/alert_schema
 SCHEMA_VERSION: v0_9_1
-alertid: alertId
 objectid: [diaObject, diaObjectId]
 source: diaSource
 sourceid: [diaSource, diaSourceId]
