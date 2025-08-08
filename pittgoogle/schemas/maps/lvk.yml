@@ -3,6 +3,7 @@ SCHEMA_ORIGIN: 'https://emfollow.docs.ligo.org/userguide/content.html#kafka-noti
 #
 # IDs.
 alertid: superevent_id  # str
+objectid: superevent_id  # str
 sourceid: superevent_id  # str
 #
 # Sources and Objects
