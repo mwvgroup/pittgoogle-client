@@ -17,7 +17,7 @@ object: diaObject
 prv_sources: prvDiaSources
 prv_forced_sources: prvDiaForcedSources
 prv_nondetect_limits: prvDiaNondetectionLimits
-ss_object: ssSource
+ss_source: ssSource
 # Other
 cutout_science: cutoutScience
 cutout_template: cutoutTemplate
