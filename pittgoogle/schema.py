@@ -313,7 +313,7 @@ class Schema(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _name_in_bucket(_alert: "Alert") -> None:
+    def _name_in_bucket(_alert: "Alert") -> str:
         """Construct the name of the Google Cloud Storage object."""
 
     @property
@@ -595,7 +595,8 @@ class LsstSchema(Schema):
         )
 
     @staticmethod
-    def _name_in_bucket(alert: "Alert"):
+    def _name_in_bucket(alert: "Alert") -> str:
+        """Construct the name of the Google Cloud Storage object."""
         if alert.schema.version is None:
             raise exceptions.SchemaError(
                 "No version information available. Cannot construct object name."
