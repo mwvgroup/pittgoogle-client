@@ -13,6 +13,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Added
 
 - Data listings for LSST
+- `LvkSchema` properties `_from_yaml` and `_name_in_bucket`.
+- "objectid" added to LVK schema map. Both "objectid" and "sourceid" now point to the
+  LVK field "superevent_id" since there is no distinction between an LVK "object" and "source".
+- Added a unit test for `LvkSchema._name_in_bucket`. Added a "schema_version" field to the test data in
+  tests/data/sample_alerts/lvk/ to mimic our broker's ps_to_storage module (required for `_name_in_bucket`).
 
 ## \[v0.3.15\] - 2025-05-12
 

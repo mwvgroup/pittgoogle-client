@@ -99,3 +99,18 @@ class TestCleanForJson:
 
         with pytest.raises(TypeError):
             pittgoogle.schema.Serializers._clean_for_json(UnrecognizedType())
+
+
+class TestLvkSchema:
+    def test_name_in_bucket(self, sample_alerts_lvk):
+        for sample_alert in sample_alerts_lvk:
+            alert = sample_alert.pgalert
+            filename = alert.schema._name_in_bucket(alert=alert)
+            assert isinstance(filename, str)
+            assert filename.startswith("v")
+            assert len(filename.split("/")) == 3
+            assert filename.endswith(".json")
+
+        alert.schema.version = None
+        with pytest.raises(pittgoogle.exceptions.SchemaError):
+            alert.schema._name_in_bucket(alert=alert)
