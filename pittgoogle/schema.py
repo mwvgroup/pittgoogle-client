@@ -313,7 +313,7 @@ class Schema(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _name_in_bucket(_alert: "Alert") -> None:
+    def _name_in_bucket(_alert: "Alert") -> str:
         """Construct the name of the Google Cloud Storage object."""
 
     @property
@@ -595,7 +595,8 @@ class LsstSchema(Schema):
         )
 
     @staticmethod
-    def _name_in_bucket(alert: "Alert"):
+    def _name_in_bucket(alert: "Alert") -> str:
+        """Construct the name of the Google Cloud Storage object."""
         if alert.schema.version is None:
             raise exceptions.SchemaError(
                 "No version information available. Cannot construct object name."
@@ -612,6 +613,34 @@ class LsstSchema(Schema):
 @attrs.define(kw_only=True)
 class LvkSchema(DefaultSchema):
     """Schema for LVK alerts."""
+
+    @classmethod
+    def _from_yaml(cls, yaml_dict: dict, *, alert_bytes: bytes | None = None) -> "Schema":
+        """Create a schema object from `yaml_dict`.
+
+        Args:
+            yaml_dict (dict):
+                A dictionary containing the schema information, loaded from the registry's 'schemas.yml' file.
+            alert_bytes (bytes or None, optional):
+                Message data. This is needed in order to get the schema version. If not provided, methods
+                such as :meth:`LvkSchema._name_in_bucket` will raise a :class:`pittgoogle.exceptions.SchemaError`.
+
+        Returns:
+            Schema
+        """
+        schema = super()._from_yaml(yaml_dict)
+        alert_dict = Serializers.deserialize_json(alert_bytes or b"{}")
+        schema.version = alert_dict.get("schema_version")
+        return schema
+
+    @staticmethod
+    def _name_in_bucket(alert: "Alert") -> "str":
+        """Construct the name of the Google Cloud Storage object."""
+        if alert.schema.version is None:
+            raise exceptions.SchemaError("Schema version not found. Cannot construct object name.")
+
+        filename = f"{alert.dict['alert_type']}-{alert.dict['time_created'][0:10]}.json"
+        return f"{alert.schema.version}/{alert.get_key('objectid')}={alert.objectid}/{filename}"
 
 
 @attrs.define(kw_only=True)

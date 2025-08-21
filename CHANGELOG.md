@@ -12,7 +12,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Added
 
-- Data listings for LSST
 - `schemas/lsst/8/0/`
     - `lsst.v8_0.alert.avsc`
     - `lsst.v8_0.diaForcedSources.avsc`
@@ -29,12 +28,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
     - adds v8_0 to the list of supported schema versions for LSST alerts
     - the `_name_in_bucket` function uses the `ssObjectId` instead of the `diaObjectId` when the value of `diaObjectId`
     is null. This is necessary because each `diaSource` will be associated with either a `diaObject` or `ssObject`
-- Solar system objects are no longer treated separately.
-  Properties like `Alert.objectid` now return either the DIA or SS object ID, as appropriate for the given alert.
+- Solar system objects are no longer treated separately. Properties like `Alert.objectid` now return either the DIA or SS object ID, as appropriate for the given alert.
 
-### Removed
+## \[v0.3.16\] - 2025-08-18
 
-- `Alert.alertid` property and related schema map entries.
+### Added
+
+- Data listings for LSST
+- `LvkSchema` properties `_from_yaml` and `_name_in_bucket`.
+- "objectid" added to LVK schema map. Both "objectid" and "sourceid" now point to the
+  LVK field "superevent_id" since there is no distinction between an LVK "object" and "source".
+- Added a unit test for `LvkSchema._name_in_bucket`. Added a "schema_version" field to the test data in
+  tests/data/sample_alerts/lvk/ to mimic our broker's ps_to_storage module (required for `_name_in_bucket`).
 
 ## \[v0.3.15\] - 2025-05-12
 
