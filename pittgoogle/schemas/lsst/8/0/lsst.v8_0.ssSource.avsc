@@ -23,178 +23,7 @@
     },
     {
       "default": null,
-      "doc": "MPC unique identifier of the observation.",
-      "name": "mpcUniqueId",
-      "type": [
-        "null",
-        "long"
-      ]
-    },
-    {
-      "default": null,
-      "doc": "Closest Objects (3 stars and 3 galaxies) in Level 2 database.",
-      "name": "nearbyObj1",
-      "type": [
-        "null",
-        "long"
-      ]
-    },
-    {
-      "default": null,
-      "doc": "Closest Objects (3 stars and 3 galaxies) in Level 2 database.",
-      "name": "nearbyObj2",
-      "type": [
-        "null",
-        "long"
-      ]
-    },
-    {
-      "default": null,
-      "doc": "Closest Objects (3 stars and 3 galaxies) in Level 2 database.",
-      "name": "nearbyObj3",
-      "type": [
-        "null",
-        "long"
-      ]
-    },
-    {
-      "default": null,
-      "doc": "Closest Objects (3 stars and 3 galaxies) in Level 2 database.",
-      "name": "nearbyObj4",
-      "type": [
-        "null",
-        "long"
-      ]
-    },
-    {
-      "default": null,
-      "doc": "Closest Objects (3 stars and 3 galaxies) in Level 2 database.",
-      "name": "nearbyObj5",
-      "type": [
-        "null",
-        "long"
-      ]
-    },
-    {
-      "default": null,
-      "doc": "Closest Objects (3 stars and 3 galaxies) in Level 2 database.",
-      "name": "nearbyObj6",
-      "type": [
-        "null",
-        "long"
-      ]
-    },
-    {
-      "default": null,
-      "doc": "Distances to nearbyObj.",
-      "name": "nearbyObjDist1",
-      "type": [
-        "null",
-        "float"
-      ]
-    },
-    {
-      "default": null,
-      "doc": "Distances to nearbyObj.",
-      "name": "nearbyObjDist2",
-      "type": [
-        "null",
-        "float"
-      ]
-    },
-    {
-      "default": null,
-      "doc": "Distances to nearbyObj.",
-      "name": "nearbyObjDist3",
-      "type": [
-        "null",
-        "float"
-      ]
-    },
-    {
-      "default": null,
-      "doc": "Distances to nearbyObj.",
-      "name": "nearbyObjDist4",
-      "type": [
-        "null",
-        "float"
-      ]
-    },
-    {
-      "default": null,
-      "doc": "Distances to nearbyObj.",
-      "name": "nearbyObjDist5",
-      "type": [
-        "null",
-        "float"
-      ]
-    },
-    {
-      "default": null,
-      "doc": "Distances to nearbyObj.",
-      "name": "nearbyObjDist6",
-      "type": [
-        "null",
-        "float"
-      ]
-    },
-    {
-      "default": null,
-      "doc": "Natural log of the probability that the observed DIAObject is the same as the nearby Object.",
-      "name": "nearbyObjLnP1",
-      "type": [
-        "null",
-        "float"
-      ]
-    },
-    {
-      "default": null,
-      "doc": "Natural log of the probability that the observed DIAObject is the same as the nearby Object.",
-      "name": "nearbyObjLnP2",
-      "type": [
-        "null",
-        "float"
-      ]
-    },
-    {
-      "default": null,
-      "doc": "Natural log of the probability that the observed DIAObject is the same as the nearby Object.",
-      "name": "nearbyObjLnP3",
-      "type": [
-        "null",
-        "float"
-      ]
-    },
-    {
-      "default": null,
-      "doc": "Natural log of the probability that the observed DIAObject is the same as the nearby Object.",
-      "name": "nearbyObjLnP4",
-      "type": [
-        "null",
-        "float"
-      ]
-    },
-    {
-      "default": null,
-      "doc": "Natural log of the probability that the observed DIAObject is the same as the nearby Object.",
-      "name": "nearbyObjLnP5",
-      "type": [
-        "null",
-        "float"
-      ]
-    },
-    {
-      "default": null,
-      "doc": "Natural log of the probability that the observed DIAObject is the same as the nearby Object.",
-      "name": "nearbyObjLnP6",
-      "type": [
-        "null",
-        "float"
-      ]
-    },
-    {
-      "default": null,
-      "doc": "Ecliptic longitude.",
+      "doc": "Ecliptic longitude [deg].",
       "name": "eclipticLambda",
       "type": [
         "null",
@@ -203,7 +32,7 @@
     },
     {
       "default": null,
-      "doc": "Ecliptic latitude.",
+      "doc": "Ecliptic latitude [deg].",
       "name": "eclipticBeta",
       "type": [
         "null",
@@ -212,7 +41,7 @@
     },
     {
       "default": null,
-      "doc": "Galactic longitude.",
+      "doc": "Galactic longitude [deg].",
       "name": "galacticL",
       "type": [
         "null",
@@ -221,7 +50,7 @@
     },
     {
       "default": null,
-      "doc": "Galactic latitute.",
+      "doc": "Galactic latitute [deg].",
       "name": "galacticB",
       "type": [
         "null",
@@ -230,7 +59,7 @@
     },
     {
       "default": null,
-      "doc": "Phase angle.",
+      "doc": "Phase angle [deg].",
       "name": "phaseAngle",
       "type": [
         "null",
@@ -239,7 +68,7 @@
     },
     {
       "default": null,
-      "doc": "Heliocentric distance.",
+      "doc": "Heliocentric distance [AU].",
       "name": "heliocentricDist",
       "type": [
         "null",
@@ -248,7 +77,7 @@
     },
     {
       "default": null,
-      "doc": "Topocentric distace.",
+      "doc": "Topocentric distace [AU].",
       "name": "topocentricDist",
       "type": [
         "null",
@@ -257,8 +86,8 @@
     },
     {
       "default": null,
-      "doc": "Predicted magnitude.",
-      "name": "predictedMagnitude",
+      "doc": "Predicted V-band magnitude [mag].",
+      "name": "predictedVMagnitude",
       "type": [
         "null",
         "float"
@@ -266,16 +95,7 @@
     },
     {
       "default": null,
-      "doc": "Prediction uncertainty (1-sigma).",
-      "name": "predictedMagnitudeSigma",
-      "type": [
-        "null",
-        "float"
-      ]
-    },
-    {
-      "default": null,
-      "doc": "Residual R.A. vs. ephemeris.",
+      "doc": "Residual R.A. vs. ephemeris [deg].",
       "name": "residualRa",
       "type": [
         "null",
@@ -284,7 +104,7 @@
     },
     {
       "default": null,
-      "doc": "Residual Dec vs. ephemeris.",
+      "doc": "Residual Dec vs. ephemeris [deg].",
       "name": "residualDec",
       "type": [
         "null",
@@ -293,34 +113,7 @@
     },
     {
       "default": null,
-      "doc": "Predicted R.A. uncertainty.",
-      "name": "predictedRaSigma",
-      "type": [
-        "null",
-        "float"
-      ]
-    },
-    {
-      "default": null,
-      "doc": "Predicted Dec uncertainty.",
-      "name": "predictedDecSigma",
-      "type": [
-        "null",
-        "float"
-      ]
-    },
-    {
-      "default": null,
-      "doc": "Predicted R.A./Dec covariance.",
-      "name": "predictedRaDecCov",
-      "type": [
-        "null",
-        "float"
-      ]
-    },
-    {
-      "default": null,
-      "doc": "Cartesian heliocentric X coordinate (at the emit time).",
+      "doc": "Cartesian heliocentric X coordinate (at the emit time) [AU].",
       "name": "heliocentricX",
       "type": [
         "null",
@@ -329,7 +122,7 @@
     },
     {
       "default": null,
-      "doc": "Cartesian heliocentric Y coordinate (at the emit time).",
+      "doc": "Cartesian heliocentric Y coordinate (at the emit time) [AU].",
       "name": "heliocentricY",
       "type": [
         "null",
@@ -338,7 +131,7 @@
     },
     {
       "default": null,
-      "doc": "Cartesian heliocentric Z coordinate (at the emit time).",
+      "doc": "Cartesian heliocentric Z coordinate (at the emit time) [AU].",
       "name": "heliocentricZ",
       "type": [
         "null",
@@ -347,7 +140,7 @@
     },
     {
       "default": null,
-      "doc": "Cartesian heliocentric X velocity (at the emit time).",
+      "doc": "Cartesian heliocentric X velocity (at the emit time) [AU/d].",
       "name": "heliocentricVX",
       "type": [
         "null",
@@ -356,7 +149,7 @@
     },
     {
       "default": null,
-      "doc": "Cartesian heliocentric Y velocity (at the emit time).",
+      "doc": "Cartesian heliocentric Y velocity (at the emit time) [AU/d].",
       "name": "heliocentricVY",
       "type": [
         "null",
@@ -365,7 +158,7 @@
     },
     {
       "default": null,
-      "doc": "Cartesian heliocentric Z velocity (at the emit time).",
+      "doc": "Cartesian heliocentric Z velocity (at the emit time) [AU/d].",
       "name": "heliocentricVZ",
       "type": [
         "null",
@@ -374,7 +167,7 @@
     },
     {
       "default": null,
-      "doc": "Cartesian topocentric X coordinate (at the emit time).",
+      "doc": "Cartesian topocentric X coordinate (at the emit time) [AU].",
       "name": "topocentricX",
       "type": [
         "null",
@@ -383,7 +176,7 @@
     },
     {
       "default": null,
-      "doc": "Cartesian topocentric Y coordinate (at the emit time).",
+      "doc": "Cartesian topocentric Y coordinate (at the emit time) [AU].",
       "name": "topocentricY",
       "type": [
         "null",
@@ -392,7 +185,7 @@
     },
     {
       "default": null,
-      "doc": "Cartesian topocentric Z coordinate (at the emit time).",
+      "doc": "Cartesian topocentric Z coordinate (at the emit time) [AU].",
       "name": "topocentricZ",
       "type": [
         "null",
@@ -401,7 +194,7 @@
     },
     {
       "default": null,
-      "doc": "Cartesian topocentric X velocity (at the emit time).",
+      "doc": "Cartesian topocentric X velocity (at the emit time) [AU/d].",
       "name": "topocentricVX",
       "type": [
         "null",
@@ -410,7 +203,7 @@
     },
     {
       "default": null,
-      "doc": "Cartesian topocentric Y velocity (at the emit time).",
+      "doc": "Cartesian topocentric Y velocity (at the emit time) [AU/d].",
       "name": "topocentricVY",
       "type": [
         "null",
@@ -419,7 +212,7 @@
     },
     {
       "default": null,
-      "doc": "Cartesian topocentric Z velocity (at the emit time).",
+      "doc": "Cartesian topocentric Z velocity (at the emit time) [AU/d].",
       "name": "topocentricVZ",
       "type": [
         "null",

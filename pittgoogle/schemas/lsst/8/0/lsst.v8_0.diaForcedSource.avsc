@@ -14,12 +14,12 @@
       "type": "long"
     },
     {
-      "doc": "Right ascension coordinate of the position of the DiaObject.",
+      "doc": "Right ascension coordinate of the position of the DiaObject [deg].",
       "name": "ra",
       "type": "double"
     },
     {
-      "doc": "Declination coordinate of the position of the DiaObject.",
+      "doc": "Declination coordinate of the position of the DiaObject [deg].",
       "name": "dec",
       "type": "double"
     },
@@ -35,7 +35,7 @@
     },
     {
       "default": null,
-      "doc": "Point Source model flux.",
+      "doc": "Point Source model flux [nJy].",
       "name": "psfFlux",
       "type": [
         "null",
@@ -44,7 +44,7 @@
     },
     {
       "default": null,
-      "doc": "Uncertainty of psfFlux.",
+      "doc": "Uncertainty of psfFlux [nJy].",
       "name": "psfFluxErr",
       "type": [
         "null",
@@ -52,13 +52,13 @@
       ]
     },
     {
-      "doc": "Effective mid-visit time for this diaForcedSource, expressed as Modified Julian Date, International Atomic Time.",
+      "doc": "Effective mid-visit time for this diaForcedSource, expressed as Modified Julian Date, International Atomic Time [d].",
       "name": "midpointMjdTai",
       "type": "double"
     },
     {
       "default": null,
-      "doc": "Forced photometry flux for a point source model measured on the visit image centered at the DiaObject position.",
+      "doc": "Forced photometry flux for a point source model measured on the visit image centered at the DiaObject position [nJy].",
       "name": "scienceFlux",
       "type": [
         "null",
@@ -67,7 +67,7 @@
     },
     {
       "default": null,
-      "doc": "Uncertainty of scienceFlux.",
+      "doc": "Uncertainty of scienceFlux [nJy].",
       "name": "scienceFluxErr",
       "type": [
         "null",

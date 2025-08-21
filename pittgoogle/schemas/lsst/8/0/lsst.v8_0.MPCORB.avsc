@@ -23,7 +23,7 @@
     },
     {
       "default": null,
-      "doc": "Absolute magnitude, H.",
+      "doc": "Absolute magnitude, H [mag].",
       "name": "mpcH",
       "type": [
         "null",
@@ -32,7 +32,7 @@
     },
     {
       "default": null,
-      "doc": "Epoch (in MJD, .0 TT).",
+      "doc": "Epoch (in MJD, .0 TT) [d].",
       "name": "epoch",
       "type": [
         "null",
@@ -41,7 +41,7 @@
     },
     {
       "default": null,
-      "doc": "Mean anomaly at the epoch, in degrees.",
+      "doc": "Mean anomaly at the epoch [deg].",
       "name": "M",
       "type": [
         "null",
@@ -50,7 +50,7 @@
     },
     {
       "default": null,
-      "doc": "Argument of perihelion, J2000.0 (degrees).",
+      "doc": "Argument of perihelion, J2000.0 [deg].",
       "name": "peri",
       "type": [
         "null",
@@ -59,7 +59,7 @@
     },
     {
       "default": null,
-      "doc": "Longitude of the ascending node, J2000.0 (degrees).",
+      "doc": "Longitude of the ascending node, J2000.0 [deg].",
       "name": "node",
       "type": [
         "null",
@@ -68,7 +68,7 @@
     },
     {
       "default": null,
-      "doc": "Inclination to the ecliptic, J2000.0 (degrees).",
+      "doc": "Inclination to the ecliptic, J2000.0 [deg].",
       "name": "incl",
       "type": [
         "null",
@@ -86,7 +86,7 @@
     },
     {
       "default": null,
-      "doc": "Semimajor axis (AU).",
+      "doc": "Semimajor axis [AU].",
       "name": "a",
       "type": [
         "null",
@@ -95,7 +95,7 @@
     },
     {
       "default": null,
-      "doc": "Perihelion distance (AU).",
+      "doc": "Perihelion distance [AU].",
       "name": "q",
       "type": [
         "null",
@@ -104,7 +104,7 @@
     },
     {
       "default": null,
-      "doc": "MJD of pericentric passage.",
+      "doc": "MJD of pericentric passage [d].",
       "name": "t_p",
       "type": [
         "null",
