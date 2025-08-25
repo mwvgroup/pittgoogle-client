@@ -611,9 +611,12 @@ class Alert:
             # and that only one of these will point to a non-null value in the alert.
             for subdict in survey_field:
                 for survey_fields in subdict.values():
-                    alert_value = self.dict.get(survey_fields[0], {}).get(survey_fields[1], None)
+                    alert_value = (self.dict.get(survey_fields[0]) or {}).get(
+                        survey_fields[1], None
+                    )
                     if alert_value:
                         return alert_value
+            return default
 
         # if survey_field is not one of the expected types, the schema map is malformed
         # maybe this was intentional, but we don't know how to handle it here
@@ -672,7 +675,9 @@ class Alert:
             # and that only one of these will point to a non-null value in the alert.
             for subdict in survey_field:
                 for survey_fields in subdict.values():
-                    alert_value = self.dict.get(survey_fields[0], {}).get(survey_fields[1], None)
+                    alert_value = (self.dict.get(survey_fields[0]) or {}).get(
+                        survey_fields[1], None
+                    )
                     if alert_value is not None:
                         return survey_fields[-1] if name_only else survey_fields
             return default
