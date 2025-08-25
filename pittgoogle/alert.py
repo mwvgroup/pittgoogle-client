@@ -654,32 +654,37 @@ class Alert:
                 Default value to be returned if the field is not found.
 
         Returns:
-            str or list[str]):
+            str, list[str] or None:
                 Survey-specific name for the `field`, or `default` if the field is not found.
                 list[str] if this is a nested field and `name_only` is False, else str with the
                 final field name only.
         """
-        survey_field = self.schema.map.get(field)  # str, list[str], dict[str, list[str]], or None
+        survey_field = self.schema.map.get(field)  # str, list[str], list[dict], or None
 
         if survey_field is None:
             return default
 
-        if name_only and isinstance(survey_field, list):
-            return survey_field[-1]
-
-        if isinstance(survey_field, dict):
+        # handle list[dict]
+        if isinstance(survey_field, list) and all(isinstance(x, dict) for x in survey_field):
             # This was implemented specifically for LSST objectid.
-            # We assume that the dict values are lists with exactly two elements
+            # We assume that the list values are dicts with exactly two elements
             # and that only one of these will point to a non-null value in the alert.
-            for survey_fields in survey_field.values():
-                # Check whether this item points to a non-null value in the alert. If so, return the key.
-                alert_value = self.dict.get(survey_fields[0], {}).get(survey_fields[1], None)
-                if alert_value:
-                    if name_only:
-                        return survey_fields[-1]
-                    return survey_fields
+            for subdict in survey_field:
+                for survey_fields in subdict.values():
+                    alert_value = self.dict.get(survey_fields[0], {}).get(survey_fields[1], None)
+                    if alert_value is not None:
+                        return survey_fields[-1] if name_only else survey_fields
+            return default
 
-        return survey_field
+        # handle list[str]
+        if isinstance(survey_field, list) and all(isinstance(x, str) for x in survey_field):
+            return survey_field[-1] if name_only else survey_field
+
+        # handle str
+        if isinstance(survey_field, str):
+            return survey_field
+
+        return default
 
     def drop_cutouts(self) -> dict:
         """Drop the cutouts from the alert dictionary.
