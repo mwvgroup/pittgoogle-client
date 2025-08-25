@@ -135,7 +135,6 @@ class TestAlertProperties:
         alert_dict = {
             "diaObject": {"diaObjectId": 222},
             "diaSource": {"diaSourceId": 3333, "midpointMjdTai": 60745.0031},
-            "ssSource": {"ssObjectId": 4444},
         }
         alert = pittgoogle.Alert.from_dict(alert_dict, "lsst")
         alert.schema_name = "lsst"
