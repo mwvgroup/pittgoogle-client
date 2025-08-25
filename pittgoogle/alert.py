@@ -324,14 +324,6 @@ class Alert:
         return self._dataframe
 
     @property
-    def alertid(self) -> str | int:
-        """Return the alert ID. Convenience wrapper around :attr:`Alert.get`.
-
-        If the survey does not define an alert ID, this returns the `sourceid`.
-        """
-        return self.get("alertid", self.sourceid)
-
-    @property
     def objectid(self) -> str | int:
         """Return the object ID. Convenience wrapper around :attr:`Alert.get`.
 
@@ -560,10 +552,8 @@ class Alert:
         """Add IDs, indexes, and other properties to :attr:`Alert.attributes`.
 
         The added keys include:
-            - alertid (if defined by the survey)
             - objectid (if defined by the survey)
             - sourceid (if defined by the survey)
-            - ssobjectid (if defined by the survey)
             - healpix9
             - healpix19
             - healpix29
@@ -572,7 +562,7 @@ class Alert:
         """
         # Get the data IDs and corresponding survey-specific field names. If the field is nested, the
         # key will be a list. Join list -> string since these are likely to become Pub/Sub message attributes.
-        ids = ["alertid", "objectid", "sourceid", "ssobjectid"]
+        ids = ["objectid", "sourceid"]
         _names = [self.get_key(id) for id in ids]
         names = ["_".join(id) if isinstance(id, list) else id for id in _names]
         values = [self.get(id) for id in ids]
@@ -607,13 +597,26 @@ class Alert:
             any:
                 The value in the :attr:`Alert.dict` corresponding to the field.
         """
-        survey_field = self.schema.map.get(field)  # str, list[str], or None
+        survey_field = self.schema.map.get(field)  # str, list[str], list[dict], or None
 
         if survey_field is None:
             return default
 
         if isinstance(survey_field, str):
             return self.dict.get(survey_field, default)
+
+        if isinstance(survey_field, list) and all(isinstance(x, dict) for x in survey_field):
+            # This was implemented specifically for LSST objectid.
+            # We assume that the list values are dicts with exactly two elements
+            # and that only one of these will point to a non-null value in the alert.
+            for subdict in survey_field:
+                for survey_fields in subdict.values():
+                    alert_value = (self.dict.get(survey_fields[0]) or {}).get(
+                        survey_fields[1], None
+                    )
+                    if alert_value:
+                        return alert_value
+            return default
 
         # if survey_field is not one of the expected types, the schema map is malformed
         # maybe this was intentional, but we don't know how to handle it here
@@ -655,20 +658,39 @@ class Alert:
                 Default value to be returned if the field is not found.
 
         Returns:
-            str or list[str]):
+            str, list[str] or None:
                 Survey-specific name for the `field`, or `default` if the field is not found.
                 list[str] if this is a nested field and `name_only` is False, else str with the
                 final field name only.
         """
-        survey_field = self.schema.map.get(field)  # str, list[str], or None
+        survey_field = self.schema.map.get(field)  # str, list[str], list[dict], or None
 
         if survey_field is None:
             return default
 
-        if name_only and isinstance(survey_field, list):
-            return survey_field[-1]
+        # handle list[dict]
+        if isinstance(survey_field, list) and all(isinstance(x, dict) for x in survey_field):
+            # This was implemented specifically for LSST objectid.
+            # We assume that the list values are dicts with exactly two elements
+            # and that only one of these will point to a non-null value in the alert.
+            for subdict in survey_field:
+                for survey_fields in subdict.values():
+                    alert_value = (self.dict.get(survey_fields[0]) or {}).get(
+                        survey_fields[1], None
+                    )
+                    if alert_value is not None:
+                        return survey_fields[-1] if name_only else survey_fields
+            return default
 
-        return survey_field
+        # handle list[str]
+        if isinstance(survey_field, list) and all(isinstance(x, str) for x in survey_field):
+            return survey_field[-1] if name_only else survey_field
+
+        # handle str
+        if isinstance(survey_field, str):
+            return survey_field
+
+        return default
 
     def drop_cutouts(self) -> dict:
         """Drop the cutouts from the alert dictionary.

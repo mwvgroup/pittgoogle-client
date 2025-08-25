@@ -10,7 +10,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
-(none)
+### Added
+
+- `schemas/lsst/8/0/`
+    - `lsst.v8_0.alert.avsc`
+    - `lsst.v8_0.diaForcedSources.avsc`
+    - `lsst.v8_0.diaSource.avsc`
+    - `lsst.v8_0.diaObject.avsc`
+    - `lsst.v8_0.ssSource.avsc`
+    - `lsst.v8_0.MPCORB.avsc`
+
+### Changed
+
+- `schemas/maps/lsst.yml`
+    - updated field name: `ssObject` -> `ssSource`
+- `pittgoogle/schema.py`
+    - adds v8_0 to the list of supported schema versions for LSST alerts
+    - the `_name_in_bucket` function uses the `ssObjectId` instead of the `diaObjectId` when the value of `diaObjectId`
+    is null. This is necessary because each `diaSource` will be associated with either a `diaObject` or `ssObject`
+- Solar system objects are no longer treated separately.
+Properties like `Alert.objectid` now return either the DIA or SS object ID, as appropriate for the given alert.
 
 ## \[v0.3.16\] - 2025-08-18
 

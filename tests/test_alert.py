@@ -36,9 +36,7 @@ class TestAlertFrom:
             )
             # We expect that the following keys were added to alert.attributes.
             #  to  alertid, objectid, sourceid, ssobjectid, and schema version should have been added as attributes.
-            _id_keys = (
-                alert.get_key(key) for key in ["alertid", "objectid", "sourceid", "ssobjectid"]
-            )
+            _id_keys = (alert.get_key(key) for key in ["objectid", "sourceid"])
             id_keys = ["_".join(key) if isinstance(key, list) else key for key in _id_keys]
             index_keys = ["healpix9", "healpix19", "healpix29"]
             metadata_keys = ["schema_version", "n_previous_detections"]
@@ -140,12 +138,11 @@ class TestAlertProperties:
         }
         alert = pittgoogle.Alert.from_dict(alert_dict, "lsst")
         alert.schema_name = "lsst"
-        alert.schema.version = "v7_4"
-        assert alert.name_in_bucket == "v7_4/2025-03-11/222/3333.avro"
+        alert.schema.version = "v9_0"
+        assert alert.name_in_bucket == "v9_0/2025-03-11/diaObjectId=222/diaSourceId=3333.avro"
 
     def test_get_wrappers(self):
         alert_dict = {
-            "alertid": 12345,
             "objectid": 67890,
             "sourceid": 1234567890,
             "ra": 270.0123456789,
@@ -155,7 +152,6 @@ class TestAlertProperties:
             pittgoogle.types_.PubsubMessageLike(data=json.dumps(alert_dict).encode("utf-8")),
             "default",
         )
-        assert alert.alertid == 12345
         assert alert.objectid == 67890
         assert alert.sourceid == 1234567890
         assert alert.ra == 270.0123456789
