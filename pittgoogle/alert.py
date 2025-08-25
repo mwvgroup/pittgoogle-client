@@ -597,7 +597,7 @@ class Alert:
             any:
                 The value in the :attr:`Alert.dict` corresponding to the field.
         """
-        survey_field = self.schema.map.get(field)  # str, list[str], dict[str, list[str]], or None
+        survey_field = self.schema.map.get(field)  # str, list[str], list[dict], or None
 
         if survey_field is None:
             return default
@@ -605,14 +605,15 @@ class Alert:
         if isinstance(survey_field, str):
             return self.dict.get(survey_field, default)
 
-        if isinstance(survey_field, dict):
+        if isinstance(survey_field, list) and all(isinstance(x, dict) for x in survey_field):
             # This was implemented specifically for LSST objectid.
-            # We assume that the dict values are lists with exactly two elements
+            # We assume that the list values are dicts with exactly two elements
             # and that only one of these will point to a non-null value in the alert.
-            for survey_fields in survey_field.values():
-                alert_value = self.dict.get(survey_fields[0], {}).get(survey_fields[1], None)
-                if alert_value:
-                    return alert_value
+            for subdict in survey_field:
+                for survey_fields in subdict.values():
+                    alert_value = self.dict.get(survey_fields[0], {}).get(survey_fields[1], None)
+                    if alert_value:
+                        return alert_value
 
         # if survey_field is not one of the expected types, the schema map is malformed
         # maybe this was intentional, but we don't know how to handle it here
