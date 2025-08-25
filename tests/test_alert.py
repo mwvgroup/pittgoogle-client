@@ -135,11 +135,12 @@ class TestAlertProperties:
         alert_dict = {
             "diaObject": {"diaObjectId": 222},
             "diaSource": {"diaSourceId": 3333, "midpointMjdTai": 60745.0031},
+            "ssSource": {"ssObjectId": 4444},
         }
         alert = pittgoogle.Alert.from_dict(alert_dict, "lsst")
         alert.schema_name = "lsst"
-        alert.schema.version = "v7_4"
-        assert alert.name_in_bucket == "v7_4/2025-03-11/diaObjectId=222/diaSourceId=3333.avro"
+        alert.schema.version = "v9_0"
+        assert alert.name_in_bucket == "v9_0/2025-03-11/diaObjectId=222/diaSourceId=3333.avro"
 
     def test_get_wrappers(self):
         alert_dict = {
