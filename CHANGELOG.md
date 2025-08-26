@@ -12,21 +12,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Added
 
-- `schemas/lsst/`
-    - `8/0/`
-      - `lsst.v8_0.alert.avsc`
-      - `lsst.v8_0.diaForcedSources.avsc`
-      - `lsst.v8_0.diaSource.avsc`
-      - `lsst.v8_0.diaObject.avsc`
-      - `lsst.v8_0.ssSource.avsc`
-      - `lsst.v8_0.MPCORB.avsc`
-    - `9/0/`
-      - `lsst.v9_0.alert.avsc`
-      - `lsst.v9_0.diaForcedSources.avsc`
-      - `lsst.v9_0.diaSource.avsc`
-      - `lsst.v9_0.diaObject.avsc`
-      - `lsst.v9_0.ssSource.avsc`
-      - `lsst.v9_0.MPCORB.avsc`
+- `schemas/lsst/8/0/`
+    - `lsst.v8_0.alert.avsc`
+    - `lsst.v8_0.diaForcedSources.avsc`
+    - `lsst.v8_0.diaSource.avsc`
+    - `lsst.v8_0.diaObject.avsc`
+    - `lsst.v8_0.ssSource.avsc`
+    - `lsst.v8_0.MPCORB.avsc`
+- `schemas/lsst/9/0/`
+    - `lsst.v9_0.alert.avsc`
+    - `lsst.v9_0.diaForcedSources.avsc`
+    - `lsst.v9_0.diaSource.avsc`
+    - `lsst.v9_0.diaObject.avsc`
+    - `lsst.v9_0.ssSource.avsc`
+    - `lsst.v9_0.MPCORB.avsc`
+- `sample_alerts/lsst`
+    - `lsst.v8_0.avro`
+    - `lsst.v9_0.avro`
 
 ### Changed
 
