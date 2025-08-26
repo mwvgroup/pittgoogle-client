@@ -12,24 +12,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Added
 
-- `schemas/lsst/8/0/`
-    - `lsst.v8_0.alert.avsc`
-    - `lsst.v8_0.diaForcedSources.avsc`
-    - `lsst.v8_0.diaSource.avsc`
-    - `lsst.v8_0.diaObject.avsc`
-    - `lsst.v8_0.ssSource.avsc`
-    - `lsst.v8_0.MPCORB.avsc`
+- `schemas/lsst/`
+     - `8/0/`
+          - `lsst.v8_0.alert.avsc`
+          - `lsst.v8_0.diaForcedSources.avsc`
+          - `lsst.v8_0.diaSource.avsc`
+          - `lsst.v8_0.diaObject.avsc`
+          - `lsst.v8_0.ssSource.avsc`
+          - `lsst.v8_0.MPCORB.avsc`
+     - `9/0/`
+          - `lsst.v9_0.alert.avsc`
+          - `lsst.v9_0.diaForcedSources.avsc`
+          - `lsst.v9_0.diaSource.avsc`
+          - `lsst.v9_0.diaObject.avsc`
+          - `lsst.v9_0.ssSource.avsc`
+          - `lsst.v9_0.MPCORB.avsc`
 
 ### Changed
 
 - `schemas/maps/lsst.yml`
-    - updated field name: `ssObject` -> `ssSource`
+     - updated field name: `ssObject` -> `ssSource`
+     - the mapping for the field `objectid` is now a list of dictionaries:
+```
+- objectid:
+     - dia: [diaObject, diaObjectId]
+     - ss: [ssSource, ssObjectId]
+```
 - `pittgoogle/schema.py`
-    - adds v8_0 to the list of supported schema versions for LSST alerts
-    - the `_name_in_bucket` function uses the `ssObjectId` instead of the `diaObjectId` when the value of `diaObjectId`
-    is null. This is necessary because each `diaSource` will be associated with either a `diaObject` or `ssObject`
-- Solar system objects are no longer treated separately.
-Properties like `Alert.objectid` now return either the DIA or SS object ID, as appropriate for the given alert.
+     - adds v8_0 and v9_0 to the list of supported schema versions for LSST alerts
+     - the `_name_in_bucket` function uses the `ssObjectId` instead of the `diaObjectId` when the value of
+     `diaObjectId` is null (each `diaSource` will be associated with either a `diaObject` OR `ssObject`)
+- `tests/test_alert.py`
+     - unit test for `name_in_bucket` has been updated to reflect the new pathname
+- `pittgoogle/alert.py`
+     - updates the `get` and `get_key` function
+     - `healpix9`, `healpix19`, and `healpix29` explicitly return `int` types
+
+### Removed
+
+- `alertid` and `ssobjectid` from `pittgoogle/alert.py`, `tests/test_alert.py`, and all schema maps
 
 ## \[v0.3.16\] - 2025-08-18
 
