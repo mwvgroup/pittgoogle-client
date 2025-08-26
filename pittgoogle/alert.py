@@ -401,7 +401,7 @@ class Alert:
                 lonlat=True,
                 degrees=True,
             )
-        return self._healpix29
+        return int(self._healpix29)
 
     @property
     def healpix19(self) -> int:
@@ -435,7 +435,7 @@ class Alert:
                 lonlat=True,
                 degrees=True,
             )
-        return self._healpix19
+        return int(self._healpix19)
 
     @property
     def healpix9(self) -> int:
@@ -467,7 +467,7 @@ class Alert:
                 lonlat=True,
                 degrees=True,
             )
-        return self._healpix9
+        return int(self._healpix9)
 
     @property
     def schema(self) -> Schema:
@@ -668,7 +668,8 @@ class Alert:
         if survey_field is None:
             return default
 
-        # handle list[dict]
+        # if isinstance(survey_field, list) and all(isinstance(x, str) for x in survey_field):
+        # return survey_field[-1] if name_only else survey_field
         if isinstance(survey_field, list) and all(isinstance(x, dict) for x in survey_field):
             # This was implemented specifically for LSST objectid.
             # We assume that the list values are dicts with exactly two elements
@@ -681,16 +682,10 @@ class Alert:
                     if alert_value is not None:
                         return survey_fields[-1] if name_only else survey_fields
             return default
+        elif name_only and isinstance(survey_field, list):
+            return survey_field[-1]
 
-        # handle list[str]
-        if isinstance(survey_field, list) and all(isinstance(x, str) for x in survey_field):
-            return survey_field[-1] if name_only else survey_field
-
-        # handle str
-        if isinstance(survey_field, str):
-            return survey_field
-
-        return default
+        return survey_field
 
     def drop_cutouts(self) -> dict:
         """Drop the cutouts from the alert dictionary.
