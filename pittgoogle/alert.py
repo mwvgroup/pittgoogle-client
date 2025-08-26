@@ -668,8 +668,6 @@ class Alert:
         if survey_field is None:
             return default
 
-        # if isinstance(survey_field, list) and all(isinstance(x, str) for x in survey_field):
-        # return survey_field[-1] if name_only else survey_field
         if isinstance(survey_field, list) and all(isinstance(x, dict) for x in survey_field):
             # This was implemented specifically for LSST objectid.
             # We assume that the list values are dicts with exactly two elements
