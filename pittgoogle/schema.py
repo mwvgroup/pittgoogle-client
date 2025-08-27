@@ -221,7 +221,7 @@ class Serializers:
         if isinstance(value, bytes):
             return base64.b64encode(value).decode("utf-8")
         if isinstance(value, datetime.datetime):
-            return value.isoformat()
+            return value.timestamp()
 
         # Recurse.
         if isinstance(value, list):
