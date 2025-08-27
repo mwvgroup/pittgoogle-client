@@ -247,7 +247,7 @@ class RandomLsst:
             "dipoleFitAttempted": random.choice([True, False]),
             "timeProcessedMjdTai": random.uniform(58000, 60000),
             "timeWithdrawnMjdTai": random.uniform(58000, 60000),
-            "bboxsize": random.randint(1, 200),
+            "bboxSize": random.randint(1, 200),
             "pixelFlags": random.choice([True, False]),
             "pixelFlags_bad": random.choice([True, False]),
             "pixelFlags_cr": random.choice([True, False]),
