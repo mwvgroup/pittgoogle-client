@@ -16,6 +16,7 @@
 import abc
 import base64
 import io
+import datetime
 import json
 import logging
 import struct
@@ -219,6 +220,8 @@ class Serializers:
             return value if not np.isnan(value) else None
         if isinstance(value, bytes):
             return base64.b64encode(value).decode("utf-8")
+        if isinstance(value, datetime.datetime):
+            return value.isoformat()
 
         # Recurse.
         if isinstance(value, list):
