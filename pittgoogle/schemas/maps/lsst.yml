@@ -3,8 +3,8 @@ SCHEMA_ORIGIN: 'https://github.com/lsst/alert_packet/tree/main/python/lsst/alert
 # [FIXME] Check everything below.
 # IDs
 objectid:
-  - dia: [diaObject, diaObjectId]
-  - ss: [ssSource, ssObjectId]
+  dia: [diaObject, diaObjectId]
+  ss: [ssSource, ssObjectId]
 # Starting with schema version 8.0, there is a top-level field 'diaSourceId' in addition to 'diaSource.diaSourceId'.
 # We're leaving this as [diaSource, diaSourceId] so that it still works for v<8 alerts.
 # [FIXME] There is also a field called 'ssSource.diaSourceId'. Find out if it always has the same value as
