@@ -321,4 +321,17 @@ class RandomLsst:
 
     @staticmethod
     def mbcorb() -> dict:
-        return {}
+        return {
+            "mpcDesignation": None,
+            "ssObjectId": random.randint(10000, 20000),
+            "mpcH": random.uniform(0, 30),
+            "epoch": random.uniform(58000, 60000),
+            "M": random.uniform(0, 360),
+            "peri": random.uniform(0, 360),
+            "node": random.uniform(0, 360),
+            "incl": random.uniform(0, 180),
+            "e": random.uniform(0, 1),
+            "a": random.uniform(0, 100),
+            "q": random.uniform(0, 100),
+            "t_p": random.uniform(58000, 60000),
+        }
