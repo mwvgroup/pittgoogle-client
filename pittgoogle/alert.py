@@ -611,7 +611,7 @@ class Alert:
             # and that only one of these will point to a non-null value in the alert.
             for survey_fields in survey_field.values():
                 alert_value = (self.dict.get(survey_fields[0]) or {}).get(survey_fields[1], None)
-                if alert_value:
+                if alert_value is not None:
                     return alert_value
 
         # if survey_field is not one of the expected types, the schema map is malformed
