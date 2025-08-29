@@ -673,7 +673,7 @@ class Alert:
             # and that only one of these will point to a non-null value in the alert.
             for survey_fields in survey_field.values():
                 # Check whether this item points to a non-null value in the alert. If so, return the key.
-                alert_value = self.dict.get(survey_fields[0], {}).get(survey_fields[1], None)
+                alert_value = (self.dict.get(survey_fields[0]) or {}).get(survey_fields[1], None)
                 if alert_value:
                     if name_only:
                         return survey_fields[-1]
