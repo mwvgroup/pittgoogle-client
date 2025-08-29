@@ -34,7 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 - `schemas/maps/lsst.yml`
     - updated field name: `ssObject` -> `ssSource`
-    - the mapping for the field `objectid` is now a list of dictionaries
+    - the mapping for the field `objectid` is now a `dict[list]` type
 - `pittgoogle/schema.py`
     - added v8_0 and v9_0 to the list of supported schema versions for LSST alerts
     - the `_name_in_bucket` function uses the `ssObjectId` instead of the `diaObjectId` when the value of
