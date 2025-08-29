@@ -610,7 +610,7 @@ class Alert:
             # We assume that the dict values are lists with exactly two elements
             # and that only one of these will point to a non-null value in the alert.
             for survey_fields in survey_field.values():
-                alert_value = (self.dict.get(survey_fields[0]) or {}).get(survey_fields[1], None)
+                alert_value = self.dict.get(survey_fields[0], {}).get(survey_fields[1])
                 if alert_value is not None:
                     return alert_value
 
