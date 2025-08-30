@@ -6,7 +6,6 @@ SURVEY: 'lsst'
 SCHEMA_ORIGIN: 'https://github.com/lsst/alert_packet/tree/main/python/lsst/alert/packet/schema'
 #
 # IDs.
-alertid: alertId  # str or int (typical type for the value of the field that both of these names represent)
 objectid: [diaObject, diaObjectId]  # str or int
 sourceid: [diaSource, diaSourceId]  # str or int
 #

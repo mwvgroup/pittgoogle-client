@@ -16,6 +16,7 @@
 import abc
 import base64
 import io
+import datetime
 import json
 import logging
 import struct
@@ -219,6 +220,8 @@ class Serializers:
             return value if not np.isnan(value) else None
         if isinstance(value, bytes):
             return base64.b64encode(value).decode("utf-8")
+        if isinstance(value, datetime.datetime):
+            return value.timestamp()
 
         # Recurse.
         if isinstance(value, list):
@@ -527,7 +530,7 @@ class LsstSchema(Schema):
         major, minor = str(version_id).split("0", maxsplit=1)  # Convert, eg, 703 -> 'v7_3'
         schema.version = f"v{major}_{minor}"
 
-        if schema.version not in ["v7_0", "v7_1", "v7_2", "v7_3", "v7_4"]:
+        if schema.version not in ["v7_0", "v7_1", "v7_2", "v7_3", "v7_4", "v8_0", "v9_0"]:
             raise exceptions.SchemaError(f"Schema definition not found for {schema.version}.")
 
         # Resolve the path and load the schema definition.
@@ -605,7 +608,9 @@ class LsstSchema(Schema):
         import astropy.time  # always lazy-load astropy
 
         _date = astropy.time.Time(alert.get("mjd"), format="mjd").datetime.strftime("%Y-%m-%d")
-        return f"{alert.schema.version}/{_date}/{alert.objectid}/{alert.sourceid}.avro"
+        objectid_key = alert.get_key("objectid", name_only=True)
+        sourceid_key = alert.get_key("sourceid", name_only=True)
+        return f"{alert.schema.version}/{_date}/{objectid_key}={alert.objectid}/{sourceid_key}={alert.sourceid}.avro"
 
 
 @attrs.define(kw_only=True)
