@@ -205,7 +205,7 @@ Pub/Sub Alert Streams
         attribute is set to "likely" if the alert has a Stetson J index of at least 20 and at least 30 detections in
         the g, r, or u band. The default value is "unlikely".
 
-    * - lsst-SuperNNova
+    * - lsst-supernnova
       - lsst-lite plus SuperNNova classification results (Ia vs non-Ia).
 
 BigQuery Tables
@@ -221,11 +221,11 @@ BigQuery Tables
       - Description
 
     * - lsst
-      - alerts_v7_4
-      - Alert data for LSST schema version 7.4. This table is an archive of the lsst-alerts Pub/Sub stream,
+      - alerts_v7_9
+      - Alert data for LSST schema version 7.9. This table is an archive of the lsst-alerts Pub/Sub stream,
         excluding image cutouts and metadata.
         It has the same schema as the original alert bytes (except cutouts), including nested and repeated fields.
-        Equivalent tables exist for previous schema versions: alerts_v7_3,  alerts_v7_1.
+        Equivalent tables exist for previous schema versions: alerts_v7_9, alerts_v7_4, alerts_v7_3, and alerts_v7_1.
 
     * - lsst
       - upsilon
@@ -241,7 +241,7 @@ BigQuery Tables
         data points) for each band used to observe the diaObject associated with an alert.
 
     * - lsst
-      - SuperNNova
+      - supernnova
       - Results from a SuperNNova (Möller \& de Boissière, 2019) Type Ia supernova classification (binary).
 
 Cloud Storage Buckets
@@ -258,5 +258,6 @@ Cloud Storage Buckets
     * - ardent-cycling-243415-lsst_alerts
       - Alert data for LSST. This bucket is an Avro file archive of the lsst-alerts Pub/Sub stream,
         including image cutouts and metadata. Each alert is stored as a separate Avro file.
-        The filename syntax is: `<schema_version>/<alert_date>/<diaObjectId>/<diaSourceId>.avro`.
-        For example, `v7_3/2026-10-01/3516505565058564097/3527242976319242284.avro`.
+        The filename syntax is: `<schema_version>/<alert_date>/<objectid_key>=<objectid>/<sourceid_key>=<sourceid>.avro`.
+        For example, `v7_9/2026-10-01/diaObjectId=3516505565058564097/diaSourceId=3527242976319242284.avro` or
+        `v7_9/2026-10-01/ssObjectId=3516505565058564097/diaSourceId=3527242976319242284.avro`.
