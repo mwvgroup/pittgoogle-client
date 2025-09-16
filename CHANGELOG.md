@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Changed
 
 - `pittgoogle/alert.py`
-    - Address in a bug in the `get` and `get_key` functions that raises an `AttributeError` when a field's value is `None`
+    - Address a bug in the `get` and `get_key` functions that raises an `AttributeError` when a field's value is `None`
 
 ## \[v0.3.17\] - 2025-09-01
 
