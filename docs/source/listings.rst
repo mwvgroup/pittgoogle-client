@@ -221,10 +221,11 @@ BigQuery Tables
       - Description
 
     * - lsst
-      - alerts_v7_9
-      - Alert data for LSST schema version 7.9. This table is an archive of the lsst-alerts Pub/Sub stream,
-        excluding image cutouts and metadata.
-        It has the same schema as the original alert bytes (except cutouts), including nested and repeated fields.
+      - alerts_v9_0
+      - Alert data for LSST schema version 9.0. This table is an archive of the lsst-alerts Pub/Sub stream,
+        excluding image cutouts and metadata. It has the same schema as the original alert bytes (except cutouts),
+        including nested and repeated fields. The fields `kafkaPublishTimestamp` and `healpix9`, `healpix19`, and
+        `healpix29` are included to support time-based partitioning and spatial clustering, respectively.
 
     * - lsst
       - upsilon
@@ -232,16 +233,19 @@ BigQuery Tables
         Cepheid, Type II Cepheid, Delta Scuti star, eclipsing binary, long-period variable, etc.). Contains
         the predicted label (i.e., class), the probability of the predicted label, and a flag value: 0
         (successful classification), 1 (suspicious classification because the period is in period alias or the period
-        SNR is lower than 20) for each band used to observe the diaObject associated with an alert.
+        SNR is lower than 20) for each band used to observe the diaObject associated with an alert. The field
+        `kafkaPublishTimestamp` is included to support time-based partitioning.
 
     * - lsst
       - variability
       - Results from the lsst-variability module. This table contains Stetson J indices and the number of detections (i.e.,
-        data points) for each band used to observe the diaObject associated with an alert.
+        data points) for each band used to observe the diaObject associated with an alert. The field
+        `kafkaPublishTimestamp` is included to support time-based partitioning.
 
     * - lsst
       - supernnova
-      - Results from a SuperNNova (Möller \& de Boissière, 2019) Type Ia supernova classification (binary).
+      - Results from a SuperNNova (Möller \& de Boissière, 2019) Type Ia supernova classification (binary). The field
+        `kafkaPublishTimestamp` is included to support time-based partitioning.
 
 Cloud Storage Buckets
 ^^^^^^^^^^^^^^^^^^^^^
