@@ -225,7 +225,6 @@ BigQuery Tables
       - Alert data for LSST schema version 7.9. This table is an archive of the lsst-alerts Pub/Sub stream,
         excluding image cutouts and metadata.
         It has the same schema as the original alert bytes (except cutouts), including nested and repeated fields.
-        Equivalent tables exist for previous schema versions: alerts_v7_9, alerts_v7_4, alerts_v7_3, and alerts_v7_1.
 
     * - lsst
       - upsilon
