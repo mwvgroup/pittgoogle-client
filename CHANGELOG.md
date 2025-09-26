@@ -10,7 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
-(none)
+### Changed
+
+- `pittgoogle/schema.py`
+    - update `_clean_for_json()` to return `None` if `math.isinf(value)`
 
 ## \[v0.3.18\] - 2025-09-16
 
