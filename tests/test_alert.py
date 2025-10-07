@@ -17,8 +17,8 @@ class TestAlertFrom:
             alert = pittgoogle.Alert.from_path(
                 sample_alert.path,
                 schema_name=sample_alert.schema_name,
-                attributes={"kafka.timestamp": 1757145492393},
             )
+            alert.attributes["kafka.timestamp"] = 1757145492393
             assert isinstance(alert, pittgoogle.Alert)
             assert alert.path == sample_alert.path
             assert alert.dict == sample_alert.dict_
@@ -34,7 +34,9 @@ class TestAlertFrom:
     def test_attributes(self, sample_alerts, random_alerts):
         for test_alert in sample_alerts + random_alerts:
             alert = pittgoogle.Alert.from_dict(
-                test_alert.dict_, schema_name=test_alert.schema_name
+                test_alert.dict_,
+                schema_name=test_alert.schema_name,
+                attributes={**alert.attributes},
             )
             # We expect that the following keys were added to alert.attributes.
             #  to  alertid, objectid, sourceid, ssobjectid, and schema version should have been added as attributes.
