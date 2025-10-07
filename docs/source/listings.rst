@@ -261,6 +261,6 @@ Cloud Storage Buckets
     * - ardent-cycling-243415-lsst_alerts
       - Alert data for LSST. This bucket is an Avro file archive of the lsst-alerts Pub/Sub stream,
         including image cutouts and metadata. Each alert is stored as a separate Avro file.
-        The filename syntax is: `<schema_version>/<alert_date>/<objectid_key>=<objectid>/<sourceid_key>=<sourceid>.avro`.
-        DIA Object example: `v7_9/2026-10-01/diaObjectId=3516505565058564097/diaSourceId=3527242976319242284.avro`.
-        Solar System Object example: `v7_9/2026-10-01/ssObjectId=3516505565058564097/diaSourceId=3527242976319242284.avro`.
+        The filename syntax is: `<schema_version>/kafkaPublishTimestamp=<kafka_timestamp>/<objectid_key>=<objectid>/<sourceid_key>=<sourceid>.avro`.
+        DIA Object example: `v9_0/kafkaPublishTimestamp=2026-10-01/diaObjectId=3516505565058564097/diaSourceId=3527242976319242284.avro`.
+        Solar System Object example: `v9_0/kafkaPublishTimestamp=2026-10-01/ssObjectId=3516505565058564097/diaSourceId=3527242976319242284.avro`.
