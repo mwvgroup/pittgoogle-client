@@ -35,14 +35,13 @@ class TestAlertFrom:
             alert = pittgoogle.Alert.from_dict(
                 test_alert.dict_,
                 schema_name=test_alert.schema_name,
-                attributes={"kafka.timestamp": None},
             )
             # We expect that the following keys were added to alert.attributes.
             #  to  alertid, objectid, sourceid, ssobjectid, and schema version should have been added as attributes.
             _id_keys = (alert.get_key(key) for key in ["objectid", "sourceid"])
             id_keys = ["_".join(key) if isinstance(key, list) else key for key in _id_keys]
             index_keys = ["healpix9", "healpix19", "healpix29"]
-            metadata_keys = ["schema_version", "n_previous_detections", "kafka.timestamp"]
+            metadata_keys = ["schema_version", "n_previous_detections"]
             # 'if key' to drop None.
             expected_keys = set(key for key in id_keys + index_keys + metadata_keys if key)
             assert set(alert.attributes) == expected_keys
@@ -137,10 +136,10 @@ class TestAlertProperties:
     def test_name_in_bucket(self):
         alert_dict = {
             "diaObject": {"diaObjectId": 222},
-            "diaSource": {"diaSourceId": 3333, "midpointMjdTai": 60745.0031},
+            "diaSource": {"diaSourceId": 3333},
         }
         alert = pittgoogle.Alert.from_dict(
-            alert_dict, "lsst", attributes={"kafka.timestamp": 1757145492393}
+            payload=alert_dict, schema_name="lsst", attributes={"kafka.timestamp": 1757145492393}
         )
         alert.schema_name = "lsst"
         alert.schema.version = "v9_0"
