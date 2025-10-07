@@ -12,6 +12,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 (none)
 
+## \[v0.3.19\] - 2025-10-07
+
+### Changed
+
+- `pittgoogle/schema.py`
+    - update `_clean_for_json()` to return `None` if `math.isinf(value)`
+    - `_name_in_bucket` for the LsstSchema class now returns:
+    {alert.schema.version}/kafkaPublishTimestamp={_date}/{objectid_key}={alert.objectid}/{sourceid_key}={alert.sourceid}.
+    avro
+- `tests/test_alert.py`
+    - update `test_name_in_bucket` to account for the change in `pittgoogle/schema.py/_name_in_bucket`
+
 ## \[v0.3.18\] - 2025-09-16
 
 ### Changed

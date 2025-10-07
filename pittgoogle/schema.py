@@ -21,6 +21,7 @@ import json
 import logging
 import struct
 import types
+import math
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
@@ -217,7 +218,9 @@ class Serializers:
         if isinstance(value, (str, int, types.NoneType)):
             return value
         if isinstance(value, float):
-            return value if not np.isnan(value) else None
+            if math.isnan(value) or math.isinf(value):
+                return None
+            return value
         if isinstance(value, bytes):
             return base64.b64encode(value).decode("utf-8")
         if isinstance(value, datetime.datetime):
@@ -605,12 +608,12 @@ class LsstSchema(Schema):
                 "No version information available. Cannot construct object name."
             )
 
-        import astropy.time  # always lazy-load astropy
-
-        _date = astropy.time.Time(alert.get("mjd"), format="mjd").datetime.strftime("%Y-%m-%d")
+        _date = datetime.date.fromtimestamp(alert.attributes["kafka.timestamp"] / 1000).strftime(
+            "%Y-%m-%d"
+        )
         objectid_key = alert.get_key("objectid", name_only=True)
         sourceid_key = alert.get_key("sourceid", name_only=True)
-        return f"{alert.schema.version}/{_date}/{objectid_key}={alert.objectid}/{sourceid_key}={alert.sourceid}.avro"
+        return f"{alert.schema.version}/kafkaPublishTimestamp={_date}/{objectid_key}={alert.objectid}/{sourceid_key}={alert.sourceid}.avro"
 
 
 @attrs.define(kw_only=True)
