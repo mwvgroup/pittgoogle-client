@@ -26,9 +26,7 @@ class TestAlert:
     def pgalert(self) -> pittgoogle.Alert:
         if self.path:
             return pittgoogle.Alert.from_path(self.path, schema_name=self.schema_name)
-        return pittgoogle.Alert.from_dict(
-            self.dict_, attributes={"kafka.timestamp": 1757145492393}, schema_name=self.schema_name
-        )
+        return pittgoogle.Alert.from_dict(self.dict_, schema_name=self.schema_name)
 
 
 @attrs.define(kw_only=True)
