@@ -15,7 +15,9 @@ class TestAlertFrom:
     def test_from_path(self, sample_alerts):
         for sample_alert in sample_alerts:
             alert = pittgoogle.Alert.from_path(
-                sample_alert.path, schema_name=sample_alert.schema_name
+                sample_alert.path,
+                schema_name=sample_alert.schema_name,
+                attributes={"kafka.timestamp": 1757145492393},
             )
             assert isinstance(alert, pittgoogle.Alert)
             assert alert.path == sample_alert.path
