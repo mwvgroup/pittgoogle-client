@@ -608,12 +608,12 @@ class LsstSchema(Schema):
                 "No version information available. Cannot construct object name."
             )
 
-        import astropy.time  # always lazy-load astropy
-
-        _date = astropy.time.Time(alert.get("mjd"), format="mjd").datetime.strftime("%Y-%m-%d")
+        _date = datetime.date.fromtimestamp(alert.attributes["kafka.timestamp"] / 1000).strftime(
+            "%Y-%m-%d"
+        )
         objectid_key = alert.get_key("objectid", name_only=True)
         sourceid_key = alert.get_key("sourceid", name_only=True)
-        return f"{alert.schema.version}/{_date}/{objectid_key}={alert.objectid}/{sourceid_key}={alert.sourceid}.avro"
+        return f"{alert.schema.version}/kafkaPublishTimestamp={_date}/{objectid_key}={alert.objectid}/{sourceid_key}={alert.sourceid}.avro"
 
 
 @attrs.define(kw_only=True)
