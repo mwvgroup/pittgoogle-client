@@ -36,7 +36,7 @@ class TestAlertFrom:
             alert = pittgoogle.Alert.from_dict(
                 test_alert.dict_,
                 schema_name=test_alert.schema_name,
-                attributes={**alert.attributes},
+                attributes={**test_alert.attributes},
             )
             # We expect that the following keys were added to alert.attributes.
             #  to  alertid, objectid, sourceid, ssobjectid, and schema version should have been added as attributes.
