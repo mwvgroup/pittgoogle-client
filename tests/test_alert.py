@@ -134,12 +134,17 @@ class TestAlertProperties:
     def test_name_in_bucket(self):
         alert_dict = {
             "diaObject": {"diaObjectId": 222},
-            "diaSource": {"diaSourceId": 3333, "midpointMjdTai": 60745.0031},
+            "diaSource": {"diaSourceId": 3333},
         }
-        alert = pittgoogle.Alert.from_dict(alert_dict, "lsst")
+        alert = pittgoogle.Alert.from_dict(
+            payload=alert_dict, schema_name="lsst", attributes={"kafka.timestamp": 1757145492393}
+        )
         alert.schema_name = "lsst"
         alert.schema.version = "v9_0"
-        assert alert.name_in_bucket == "v9_0/2025-03-11/diaObjectId=222/diaSourceId=3333.avro"
+        assert (
+            alert.name_in_bucket
+            == "v9_0/kafkaPublishTimestamp=2025-09-06/diaObjectId=222/diaSourceId=3333.avro"
+        )
 
     def test_get_wrappers(self):
         alert_dict = {
