@@ -39,7 +39,7 @@ class TestAlertFrom:
             _id_keys = (alert.get_key(key) for key in ["objectid", "sourceid"])
             id_keys = ["_".join(key) if isinstance(key, list) else key for key in _id_keys]
             index_keys = ["healpix9", "healpix19", "healpix29"]
-            metadata_keys = ["schema_version", "n_previous_detections"]
+            metadata_keys = ["schema_version", "n_previous_detections", "kafka.timestamp"]
             # 'if key' to drop None.
             expected_keys = set(key for key in id_keys + index_keys + metadata_keys if key)
             assert set(alert.attributes) == expected_keys
@@ -139,7 +139,10 @@ class TestAlertProperties:
         alert = pittgoogle.Alert.from_dict(alert_dict, "lsst")
         alert.schema_name = "lsst"
         alert.schema.version = "v9_0"
-        assert alert.name_in_bucket == "v9_0/2025-03-11/diaObjectId=222/diaSourceId=3333.avro"
+        assert (
+            alert.name_in_bucket
+            == "v9_0/kafkaPublishTimestamp=2025-09-06/diaObjectId=222/diaSourceId=3333.avro"
+        )
 
     def test_get_wrappers(self):
         alert_dict = {
