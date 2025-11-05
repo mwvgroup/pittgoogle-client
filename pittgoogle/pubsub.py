@@ -21,6 +21,7 @@ import attrs
 import attrs.validators
 import google.api_core.exceptions
 import google.cloud.pubsub_v1
+from google.pubsub_v1.types import JavaScriptUDF, MessageTransform
 
 from . import exceptions
 from .alert import Alert
@@ -322,20 +323,42 @@ class Subscription:
             Schema name of the alerts in the subscription. Passed to :class:`pittgoogle.alert.Alert` for unpacking.
             If not provided, some properties of the Alert may not be available. For a list of schema names, see
             :meth:`pittgoogle.registry.Schemas.names`.
+        attribute_filter (str, optional):
+            Specify a filter to only receive the messages whose attributes match the filter. The filter is an immutable
+            property of a subscription. After you create a subscription, you cannot update the subscription to modify
+            the filter.
+        udf (str, optional):
+            Specify a JavaScript User-Defined Function (UDF). UDFs attached to a subscription can enable a wide range
+            of use cases, including: message filtering (based on the message payload and/or attributes), simple data
+            transformations, data masking and redaction, and data format conversions.
 
     Example:
 
-        Create a subscription to Pitt-Google's 'ztf-loop' topic and pull messages:
+        Create a subscription to Pitt-Google's 'lsst-loop' topic and pull messages:
 
         .. code-block:: python
 
             # Topic that the subscription should be connected to
-            topic = pittgoogle.Topic(name="ztf-loop", projectid=pittgoogle.ProjectIds().pittgoogle)
+            topic = pittgoogle.Topic(name="lsst-loop", projectid=pittgoogle.ProjectIds().pittgoogle)
+
+            # Specify filters (Optional)
+            keepDiaObjects = "attributes:diaObject_diaObjectId"
+            filterByNPrevDetections = '''
+                    function filterByNPrevDetections(message, metadata) {
+                        const attrs = message.attributes || {};
+                        const nPrevDetections = attrs.n_prev_detections ? parseInt(attrs.n_prev_detections) : null;
+                        return (nPrevDetections > 20) ? message : null;
+                    }
+                    '''
 
             # Create the subscription
             subscription = pittgoogle.Subscription(
-                name="my-ztf-loop-subscription", topic=topic, schema_name="ztf"
-            )
+                    name="my-lsst-loop-subscription",
+                    topic=topic,
+                    schema_name="lsst",
+                    attribute_filter=keepDiaObjects,
+                    udf=filterByNPrevDetections
+                )
             subscription.touch()
 
             # Pull a small batch of alerts
@@ -356,6 +379,8 @@ class Subscription:
         ),
     )
     schema_name: str | None = attrs.field(default=None)
+    attribute_filter: Optional[str] = attrs.field(default=None)
+    udf: Optional[str] = attrs.field(default=None)
 
     @property
     def projectid(self) -> str:
@@ -409,8 +434,28 @@ class Subscription:
         if self.topic is None:
             raise TypeError("The subscription needs to be created but no topic was provided.")
 
+        if self.udf:
+            import re
+
+            # the function name must match what is defined in the UDF code
+            # we parse through the code using regex to find it
+            match = re.search(r"function\s+([a-zA-Z0-9_]+)\s*\(", self.udf.replace("\n", " "))
+            _function_name = match.group(1) if match else "filter"
+            if not match:
+                LOGGER.warning("Could not parse function name from UDF; using default 'filter'.")
+
+            udf = JavaScriptUDF(code=self.udf, function_name=_function_name)
+            transforms = [MessageTransform(javascript_udf=udf)]
+
         try:
-            return self.client.create_subscription(name=self.path, topic=self.topic.path)
+            return self.client.create_subscription(
+                request={
+                    "name": self.path,
+                    "topic": self.topic.path,
+                    "filter": self.attribute_filter or None,
+                    "message_transforms": transforms or None,
+                }
+            )
 
         # this error message is not very clear. let's help.
         except google.api_core.exceptions.NotFound as excep:
