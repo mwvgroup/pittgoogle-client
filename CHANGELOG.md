@@ -10,7 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
-(none)
+### Changed
+
+- Upgraded all dependencies. Major version bumps include: cachetools 5.5.2 -> 6.2.1, packaging 24.2 -> 25.0,
+  protobuf 5.29.3 -> 6.33.0, pyarrow 19.0.1 -> 21.0.0 (python < 3.11) or 22.0 (python >=3.11),
+  pytest-cov 6.0.0 -> 7.0.0, showballstemmer 2.2.0 -> 3.0.1.
 
 ## \[v0.3.19\] - 2025-10-07
 
