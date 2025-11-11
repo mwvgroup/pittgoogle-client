@@ -19,8 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Added
 
 - `pittgoogle/pubsub.py`
-    - The `Subscription` class now supports the arguments: `attribute_filter` and `udf`
-    - The `_create()` function for the `Subscription` class now supports the creation of subscriptions that use
+    - The `touch` function for the `Subscription` class now supports the creation of subscriptions that use
     Pub/Sub's built-in filters (i.e., filter based on message attributes) and/or single message transforms through
     user-defined functions
 
