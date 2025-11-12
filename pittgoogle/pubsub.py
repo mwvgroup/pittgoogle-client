@@ -335,9 +335,9 @@ class Subscription:
             topic = pittgoogle.Topic(name="lsst-loop", projectid=pittgoogle.ProjectIds().pittgoogle) # currently contains simulated data only
 
             # Specify filters (Optional)
-            # messages without this attribute key are filtered out 
+            # messages without this attribute key are filtered out
             # (e.g., sources associated with solar system objects would not have this key)
-            _attribute_filter = "attributes:diaObject_diaObjectId" 
+            _attribute_filter = "attributes:diaObject_diaObjectId"
             # objects with <=20 previous detections are filtered out
             _smt_javascript_udf = '''
                     function filterByNPrevDetections(message, metadata) {
@@ -396,7 +396,9 @@ class Subscription:
             )
         return self._client
 
-    def touch(self, attribute_filter: str | None = None, smt_javascript_udf: str | None = None) -> None:
+    def touch(
+        self, attribute_filter: str | None = None, smt_javascript_udf: str | None = None
+    ) -> None:
         """Test the connection to the subscription, creating it if necessary.
 
         Note that messages published to the topic before the subscription was created are
@@ -425,9 +427,12 @@ class Subscription:
         """
         try:
             subscrip = self.client.get_subscription(subscription=self.path)
-            LOGGER.info(
-                f"subscription exists: {self.path}. Keyword arguments are not applicable in this context."
-            )
+            if attribute_filter or smt_javascript_udf:
+                LOGGER.warning(
+                    "Keyword arguments are not applicable when the subscription already exists."
+                )
+            else:
+                LOGGER.info(f"subscription exists: {self.path}")
 
         except google.api_core.exceptions.NotFound:
             # may raise TypeError or CloudConnectionError
@@ -448,7 +453,7 @@ class Subscription:
             match = re.search(
                 r"function\s+([a-zA-Z0-9_]+)\s*\(", smt_javascript_udf.replace("\n", " ")
             )
-            _function_name = match.group(1) if match else "smt_javascript_udf"
+            _function_name = match.group(1) if match else "user_defined_function"
             if not match:
                 LOGGER.warning(
                     "Could not parse function name from UDF; using default 'user_defined_function'."
