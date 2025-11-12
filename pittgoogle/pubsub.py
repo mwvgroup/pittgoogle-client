@@ -21,7 +21,8 @@ import attrs
 import attrs.validators
 import google.api_core.exceptions
 import google.cloud.pubsub_v1
-from google.pubsub_v1.types import JavaScriptUDF, MessageTransform
+import google.pubsub_v1.types
+import re
 
 from . import exceptions
 from .alert import Alert
@@ -323,14 +324,6 @@ class Subscription:
             Schema name of the alerts in the subscription. Passed to :class:`pittgoogle.alert.Alert` for unpacking.
             If not provided, some properties of the Alert may not be available. For a list of schema names, see
             :meth:`pittgoogle.registry.Schemas.names`.
-        attribute_filter (str, optional):
-            Specify a filter to only receive the messages whose attributes match the filter. The filter is an immutable
-            property of a subscription. After you create a subscription, you cannot update the subscription to modify
-            the filter.
-        udf (str, optional):
-            Specify a JavaScript User-Defined Function (UDF). UDFs attached to a subscription can enable a wide range
-            of use cases, including: message filtering (based on the message payload and/or attributes), simple data
-            transformations, data masking and redaction, and data format conversions.
 
     Example:
 
@@ -339,27 +332,28 @@ class Subscription:
         .. code-block:: python
 
             # Topic that the subscription should be connected to
-            topic = pittgoogle.Topic(name="lsst-loop", projectid=pittgoogle.ProjectIds().pittgoogle)
+            topic = pittgoogle.Topic(name="lsst-loop", projectid=pittgoogle.ProjectIds().pittgoogle) # currently contains simulated data only
 
             # Specify filters (Optional)
-            keepDiaObjects = "attributes:diaObject_diaObjectId"
-            filterByNPrevDetections = '''
+            # messages without this attribute key are filtered out
+            # (e.g., sources associated with solar system objects would not have this key)
+            _attribute_filter = "attributes:diaObject_diaObjectId"
+            # objects with <=20 previous detections are filtered out
+            _smt_javascript_udf = '''
                     function filterByNPrevDetections(message, metadata) {
                         const attrs = message.attributes || {};
                         const nPrevDetections = attrs.n_prev_detections ? parseInt(attrs.n_prev_detections) : null;
                         return (nPrevDetections > 20) ? message : null;
                     }
-                    '''
+                  '''
 
             # Create the subscription
             subscription = pittgoogle.Subscription(
                     name="my-lsst-loop-subscription",
                     topic=topic,
                     schema_name="lsst",
-                    attribute_filter=keepDiaObjects,
-                    udf=filterByNPrevDetections
                 )
-            subscription.touch()
+            subscription.touch(attribute_filter=_attribute_filter, smt_javascript_udf=_smt_javascript_udf)
 
             # Pull a small batch of alerts
             alerts = subscription.pull_batch(max_messages=4)
@@ -379,8 +373,6 @@ class Subscription:
         ),
     )
     schema_name: str | None = attrs.field(default=None)
-    attribute_filter: Optional[str] = attrs.field(default=None)
-    udf: Optional[str] = attrs.field(default=None)
 
     @property
     def projectid(self) -> str:
@@ -404,56 +396,81 @@ class Subscription:
             )
         return self._client
 
-    def touch(self) -> None:
+    def touch(
+        self, attribute_filter: str | None = None, smt_javascript_udf: str | None = None
+    ) -> None:
         """Test the connection to the subscription, creating it if necessary.
 
         Note that messages published to the topic before the subscription was created are
         not available to the subscription.
 
+        Args:
+            attribute_filter (str, optional):
+                To filter messages, specify an expression that operates on message attributes. The expression is an
+                immutable property of a subscription. After you create a subscription, you cannot update the
+                subscription to modify the expresssion. The syntax used to create a filter is outlined in:
+                https://docs.cloud.google.com/pubsub/docs/subscription-message-filter.
+            smt_javascript_udf (str, optional):
+                Specify a JavaScript User-Defined Function (UDF), a type of Single Message Transform (SMT) that allows
+                for the implementation of custom transformation logic within Pub/Sub. UDFs attached to a subscription
+                can enable a wide range of use cases, including: message filtering (based on the message payload and/or
+                attributes), simple data transformations, data masking and redaction, and data format conversions. An
+                overview of UDFs is outlined in: https://docs.cloud.google.com/pubsub/docs/smts/udfs-overview.
+
         Raises:
             TypeError:
                 if the subscription needs to be created but no topic was provided.
-
             CloudConnectionError:
-
                 - 'NotFound` if the subscription needs to be created but the topic does not exist in Google Cloud.
                 - 'InvalidTopic' if the subscription exists but the user explicitly provided a topic that
                    this subscription is not actually attached to.
         """
         try:
             subscrip = self.client.get_subscription(subscription=self.path)
-            LOGGER.info(f"subscription exists: {self.path}")
+            if attribute_filter or smt_javascript_udf:
+                LOGGER.warning(
+                    "Keyword arguments are not applicable when the subscription already exists."
+                )
+            else:
+                LOGGER.info(f"subscription exists: {self.path}")
 
         except google.api_core.exceptions.NotFound:
-            subscrip = self._create()  # may raise TypeError or CloudConnectionError
+            # may raise TypeError or CloudConnectionError
+            subscrip = self._create(attribute_filter, smt_javascript_udf)
             LOGGER.info(f"subscription created: {self.path}")
 
         self._set_topic(subscrip.topic)  # may raise CloudConnectionError
 
-    def _create(self) -> google.cloud.pubsub_v1.types.Subscription:
+    def _create(
+        self, attribute_filter: str | None = None, smt_javascript_udf: str | None = None
+    ) -> google.cloud.pubsub_v1.types.Subscription:
         if self.topic is None:
             raise TypeError("The subscription needs to be created but no topic was provided.")
 
-        if self.udf:
-            import re
-
+        if smt_javascript_udf:
             # the function name must match what is defined in the UDF code
             # we parse through the code using regex to find it
-            match = re.search(r"function\s+([a-zA-Z0-9_]+)\s*\(", self.udf.replace("\n", " "))
-            _function_name = match.group(1) if match else "filter"
+            match = re.search(
+                r"function\s+([a-zA-Z0-9_]+)\s*\(", smt_javascript_udf.replace("\n", " ")
+            )
+            _function_name = match.group(1) if match else "user_defined_function"
             if not match:
-                LOGGER.warning("Could not parse function name from UDF; using default 'filter'.")
+                LOGGER.warning(
+                    "Could not parse function name from UDF; using default 'user_defined_function'."
+                )
 
-            udf = JavaScriptUDF(code=self.udf, function_name=_function_name)
-            transforms = [MessageTransform(javascript_udf=udf)]
+            udf = google.pubsub_v1.types.JavaScriptUDF(
+                code=smt_javascript_udf, function_name=_function_name
+            )
+            transforms = [google.pubsub_v1.types.MessageTransform(javascript_udf=udf)]
 
         try:
             return self.client.create_subscription(
                 request={
                     "name": self.path,
                     "topic": self.topic.path,
-                    "filter": self.attribute_filter or None,
-                    "message_transforms": transforms or None,
+                    "filter": attribute_filter,
+                    "message_transforms": transforms,
                 }
             )
 
