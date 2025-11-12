@@ -338,7 +338,8 @@ class Subscription:
             # messages without this attribute key are filtered out 
             # (e.g., sources associated with solar system objects would not have this key)
             _attribute_filter = "attributes:diaObject_diaObjectId" 
-            _smt_javascript_udf = ''' # objects with <=20 previous detections are filtered out
+            # objects with <=20 previous detections are filtered out
+            _smt_javascript_udf = '''
                     function filterByNPrevDetections(message, metadata) {
                         const attrs = message.attributes || {};
                         const nPrevDetections = attrs.n_prev_detections ? parseInt(attrs.n_prev_detections) : null;
