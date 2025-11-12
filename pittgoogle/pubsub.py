@@ -396,7 +396,7 @@ class Subscription:
             )
         return self._client
 
-    def touch(self, attribute_filter: str | None, smt_javascript_udf: str | None) -> None:
+    def touch(self, attribute_filter: str | None = None, smt_javascript_udf: str | None = None) -> None:
         """Test the connection to the subscription, creating it if necessary.
 
         Note that messages published to the topic before the subscription was created are
