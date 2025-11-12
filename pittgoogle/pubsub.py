@@ -335,7 +335,9 @@ class Subscription:
             topic = pittgoogle.Topic(name="lsst-loop", projectid=pittgoogle.ProjectIds().pittgoogle) # currently contains simulated data only
 
             # Specify filters (Optional)
-            _attribute_filter = "attributes:diaObject_diaObjectId" # messages without this attribute key are filtered out (e.g., sources associated with solar system objects would not have this key)
+            # messages without this attribute key are filtered out 
+            # (e.g., sources associated with solar system objects would not have this key)
+            _attribute_filter = "attributes:diaObject_diaObjectId" 
             _smt_javascript_udf = ''' # objects with <=20 previous detections are filtered out
                     function filterByNPrevDetections(message, metadata) {
                         const attrs = message.attributes || {};
