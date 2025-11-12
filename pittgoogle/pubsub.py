@@ -437,7 +437,7 @@ class Subscription:
         self._set_topic(subscrip.topic)  # may raise CloudConnectionError
 
     def _create(
-        self, attribute_filter: str | None, smt_javascript_udf: str | None
+        self, attribute_filter: str | None = None, smt_javascript_udf: str | None = None
     ) -> google.cloud.pubsub_v1.types.Subscription:
         if self.topic is None:
             raise TypeError("The subscription needs to be created but no topic was provided.")
