@@ -430,9 +430,8 @@ class Subscription:
             )
 
         except google.api_core.exceptions.NotFound:
-            subscrip = self._create(
-                attribute_filter, smt_javascript_udf
-            )  # may raise TypeError or CloudConnectionError
+            # may raise TypeError or CloudConnectionError
+            subscrip = self._create(attribute_filter, smt_javascript_udf)
             LOGGER.info(f"subscription created: {self.path}")
 
         self._set_topic(subscrip.topic)  # may raise CloudConnectionError
