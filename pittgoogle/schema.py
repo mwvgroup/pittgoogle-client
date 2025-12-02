@@ -531,8 +531,8 @@ class LsstSchema(Schema):
         _, version_id = struct.Struct(">bi").unpack(alert_bytes[:5])
         schema.version_id = version_id
         # Convert, eg, 703 -> 'v7_3'
-        major = version_id // 100
-        minor = version_id % 100
+        major = str(version_id // 100)
+        minor = str(version_id % 100)
         schema.version = f"v{major}_{minor}"
 
         if schema.version not in ["v7_0", "v7_1", "v7_2", "v7_3", "v7_4", "v8_0", "v9_0", "v10_0"]:
