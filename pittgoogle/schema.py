@@ -533,7 +533,7 @@ class LsstSchema(Schema):
         major, minor = str(version_id).split("0", maxsplit=1)  # Convert, eg, 703 -> 'v7_3'
         schema.version = f"v{major}_{minor}"
 
-        if schema.version not in ["v7_0", "v7_1", "v7_2", "v7_3", "v7_4", "v8_0", "v9_0"]:
+        if schema.version not in ["v7_0", "v7_1", "v7_2", "v7_3", "v7_4", "v8_0", "v9_0", "v10_0"]:
             raise exceptions.SchemaError(f"Schema definition not found for {schema.version}.")
 
         # Resolve the path and load the schema definition.
