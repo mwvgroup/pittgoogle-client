@@ -15,6 +15,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Upgraded all dependencies. Major version bumps include: cachetools 5.5.2 -> 6.2.1, packaging 24.2 -> 25.0,
   protobuf 5.29.3 -> 6.33.0, pyarrow 19.0.1 -> 21.0.0 (python < 3.11) or 22.0 (python >=3.11),
   pytest-cov 6.0.0 -> 7.0.0, showballstemmer 2.2.0 -> 3.0.1.
+- `docs/source/listings.rst`
+    - updated resource names and descriptions for LSST data listings
 
 ### Added
 
@@ -39,8 +41,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Changed
 
-- `docs/source/listings.rst`
-    - updated resource names and descriptions for LSST data listings
 - `pittgoogle/alert.py`
     - Address a bug in the `get` and `get_key` functions that raises an `AttributeError` when a field's value is `None`
 
