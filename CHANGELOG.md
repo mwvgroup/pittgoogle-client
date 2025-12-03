@@ -17,6 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
   pytest-cov 6.0.0 -> 7.0.0, showballstemmer 2.2.0 -> 3.0.1.
 - `test/load_data.py`
     - Updated field names to accomodate the latest LSST alert schema (v10_0)
+- `pittgoogle/schema.py`
+    - `alert.attributes["kafka.timestamp"]` must be converted to a float to create a datetime object
 - `docs/source/listings.rst`
     - updated resource names and descriptions for LSST data listings
 
