@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
+## \[v0.3.20\] - 2025-12-03
+
 ### Changed
 
 - Upgraded all dependencies. Major version bumps include: cachetools 5.5.2 -> 6.2.1, packaging 24.2 -> 25.0,
