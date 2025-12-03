@@ -15,6 +15,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Upgraded all dependencies. Major version bumps include: cachetools 5.5.2 -> 6.2.1, packaging 24.2 -> 25.0,
   protobuf 5.29.3 -> 6.33.0, pyarrow 19.0.1 -> 21.0.0 (python < 3.11) or 22.0 (python >=3.11),
   pytest-cov 6.0.0 -> 7.0.0, showballstemmer 2.2.0 -> 3.0.1.
+- `test/load_data.py`
+    - Updated field names to accomodate the latest LSST alert schema (v10_0)
 
 ### Added
 
@@ -22,6 +24,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
     - The `touch` function for the `Subscription` class now supports the creation of subscriptions that use
     Pub/Sub's built-in filters (i.e., filter based on message attributes) and/or single message transforms through
     user-defined functions
+- `schemas/lsst/10/0/`
+    - `lsst.v10_0.alert.avsc`
+    - `lsst.v10_0.diaForcedSources.avsc`
+    - `lsst.v10_0.diaSource.avsc`
+    - `lsst.v10_0.diaObject.avsc`
+    - `lsst.v10_0.mpc_orbits.avsc`
+    - `lsst.v10_0.ssSource.avsc`
+    - `lsst.v10_0.ssObject.avsc`
+- `tests/data/lsst/`
+    - `lsst.v10_0.avro`
+- `pittgoogle/schema.py`
+    - Support for LSST schema v10_0
 
 ## \[v0.3.19\] - 2025-10-07
 
