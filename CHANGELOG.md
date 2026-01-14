@@ -114,6 +114,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Added
 
+- Data listings fot ZTF
 - Data listings for LSST
 - `LvkSchema` properties `_from_yaml` and `_name_in_bucket`.
 - "objectid" added to LVK schema map. Both "objectid" and "sourceid" now point to the

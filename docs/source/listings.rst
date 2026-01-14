@@ -61,6 +61,18 @@ Pub/Sub Alert Streams
     * - ztf-SuperNNova
       - ztf-tagged plus SuperNNova classification results (Ia vs non-Ia).
 
+    * - ztf-variability
+      - ztf-lite plus Stetson J indices for each band used to observe the diaObject associated with an alert.
+        Messages published to this topic contain the attribute: `pg_variable`. The value of this Pub/Sub message
+        attribute is set to "likely" if the alert has a Stetson J index of at least 20 and at least 30 detections in
+        the g or r band. The default value is "unlikely".
+
+    * - ztf-upsilon
+      - ztf-lite plus UPSILoN's (Kim \& Bailer-Jones, 2015) multi-class classification results (e.g., RR Lyrae,
+        Cepheid, Type II Cepheid, Delta Scuti star, eclipsing binary, long-period variable, etc.). Messages
+        published to this topic contain the attributes: `pg_upsilon_x_label` and `pg_upsilon_x_flag` where "x" is
+        either "g", "r", or "i" (e.g., `pg_upsilon_g_label`; `pg_upsilon_g_flag`).
+
     * - .. centered:: *Notification Streams*
       -
 
@@ -98,6 +110,19 @@ BigQuery Tables
       - SuperNNova
       - Results from a SuperNNova (Möller \& de Boissière, 2019)
         Type Ia supernova classification (binary).
+
+    * - ztf
+      - variability
+      - Results from the ztf-variability module. This table contains Stetson J indices and the number of detections (i.e.,
+        data points) for each band used to observe the diaObject associated with an alert.
+
+    * - ztf
+      - upsilon
+      - Results from UPSILoN's (Kim \& Bailer-Jones, 2015) multi-class classification results (e.g., RR Lyrae,
+        Cepheid, Type II Cepheid, Delta Scuti star, eclipsing binary, long-period variable, etc.). Contains
+        the predicted label (i.e., class), the probability of the predicted label, and a flag value: 0
+        (successful classification), 1 (suspicious classification because the period is in period alias or the period
+        SNR is lower than 20) for each band used to observe the diaObject associated with an alert.
 
 Cloud Storage Buckets
 ^^^^^^^^^^^^^^^^^^^^^
