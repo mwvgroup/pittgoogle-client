@@ -14,8 +14,11 @@ Pitt-Google's Google Cloud project ID, which will be needed for access, is:
 
 .. code-block::
 
-    # Pitt-Google's Google Cloud project ID
+    # Pitt-Google's Google Cloud project ID for ZTF and LVK data
     ardent-cycling-243415
+
+    # Pitt-Google's Google Cloud project ID for LSST data
+    pitt-alert-broker
 
 For examples of how to use the information on this page, please see our :ref:`API Reference <api reference>` and `User Demos <https://github.com/mwvgroup/pittgoogle-user-demos/>`__ repo.
 
@@ -181,31 +184,31 @@ Pub/Sub Alert Streams
     * - .. centered:: *Data Streams*
       -
 
-    * - lsst-alerts-simulated
+    * - lsst-alerts
       - Avro serialized LSST alert stream in Pub/Sub, cleaned of duplicate alerts.
         Messages contain the original alert bytes and metadata.
 
-    * - lsst-alerts-json-simulated
+    * - lsst-alerts-json
       - JSON-serialized LSST alert stream in Pub/Sub, cleaned of duplicate alerts. Non-JSON-serializable values in the
         original alert data are converted into representations that can be safely serialized to JSON (e.g., ``NaN →
         None``, ``bytes →`` UTF-8 base64-encoded strings).
 
-    * - lsst-lite-simulated
+    * - lsst-lite
       - Lite version of lsst-alerts (every alert, subset of fields).
 
-    * - lsst-upsilon-simulated
+    * - lsst-upsilon
       - lsst-lite plus UPSILoN's (Kim \& Bailer-Jones, 2015) multi-class classification results (e.g., RR Lyrae,
         Cepheid, Type II Cepheid, Delta Scuti star, eclipsing binary, long-period variable, etc.). Messages
         published to this topic contain the attributes: `pg_upsilon_x_label` and `pg_upsilon_x_flag` where "x" is
         either "u", "g", "r", "i", "z", or "y" (e.g., `pg_upsilon_u_label`; `pg_upsilon_u_flag`).
 
-    * - lsst-variability-simulated
+    * - lsst-variability
       - lsst-lite plus Stetson J indices for each band used to observe the diaObject associated with an alert.
         Messages published to this topic contain the attribute: `pg_variable`. The value of this Pub/Sub message
         attribute is set to "likely" if the alert has a Stetson J index of at least 20 and at least 30 detections in
         the g, r, or u band. The default value is "unlikely".
 
-    * - lsst-supernnova-simulated
+    * - lsst-supernnova
       - lsst-lite plus SuperNNova classification results (Ia vs non-Ia).
 
 BigQuery Tables
@@ -220,14 +223,14 @@ BigQuery Tables
       - Table
       - Description
 
-    * - lsst_simulated
-      - alerts_v9_0
-      - Simulated alert data for LSST schema version 9.0. This table is an archive of the lsst-alerts-simulated Pub/Sub stream,
+    * - lsst
+      - alerts_v10_0
+      - Alert data for LSST schema version 10.0. This table is an archive of the lsst-alerts Pub/Sub stream,
         excluding image cutouts and metadata. It has the same schema as the original alert bytes (except cutouts),
         including nested and repeated fields. The fields `kafkaPublishTimestamp` and `healpix9`, `healpix19`, and
         `healpix29` are included to support time-based partitioning and spatial clustering, respectively.
 
-    * - lsst_simulated
+    * - lsst
       - upsilon
       - Results from UPSILoN's (Kim \& Bailer-Jones, 2015) multi-class classification results (e.g., RR Lyrae,
         Cepheid, Type II Cepheid, Delta Scuti star, eclipsing binary, long-period variable, etc.). Contains
@@ -236,13 +239,13 @@ BigQuery Tables
         SNR is lower than 20) for each band used to observe the diaObject associated with an alert. The field
         `kafkaPublishTimestamp` is included to support time-based partitioning.
 
-    * - lsst_simulated
+    * - lsst
       - variability
-      - Results from the lsst-variability-simulated module. This table contains Stetson J indices and the number of detections (i.e.,
+      - Results from the lsst-variability module. This table contains Stetson J indices and the number of detections (i.e.,
         data points) for each band used to observe the diaObject associated with an alert. The field
         `kafkaPublishTimestamp` is included to support time-based partitioning.
 
-    * - lsst_simulated
+    * - lsst
       - supernnova
       - Results from a SuperNNova (Möller \& de Boissière, 2019) Type Ia supernova classification (binary). The field
         `kafkaPublishTimestamp` is included to support time-based partitioning.
@@ -258,9 +261,9 @@ Cloud Storage Buckets
     * - Bucket
       - Description
 
-    * - ardent-cycling-243415-lsst_alerts-simulated
-      - Simulated alert data for LSST. This bucket is an Avro file archive of the lsst-alerts-simulated Pub/Sub stream,
+    * - pitt-alert-broker-lsst_alerts
+      - Alert data for LSST. This bucket is an Avro file archive of the lsst-alerts Pub/Sub stream,
         including image cutouts and metadata. Each alert is stored as a separate Avro file.
         The filename syntax is: `<schema_version>/kafkaPublishTimestamp=<kafka_timestamp>/<objectid_key>=<objectid>/<sourceid_key>=<sourceid>.avro`.
-        DIA Object example: `v9_0/kafkaPublishTimestamp=2026-10-01/diaObjectId=3516505565058564097/diaSourceId=3527242976319242284.avro`.
-        Solar System Object example: `v9_0/kafkaPublishTimestamp=2026-10-01/ssObjectId=3516505565058564097/diaSourceId=3527242976319242284.avro`.
+        DIA Object example: `v10_0/kafkaPublishTimestamp=2026-02-25/diaObjectId=3516505565058564097/diaSourceId=3527242976319242284.avro`.
+        Solar System Object example: `v10_0/kafkaPublishTimestamp=2026-02-25/ssObjectId=3516505565058564097/diaSourceId=3527242976319242284.avro`.
