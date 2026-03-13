@@ -13,9 +13,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Changed
 
 - Updated resource names and descriptions for LSST data listings
-
-###
-
 - `pittgoogle/pubsub.py`
     - Set the default value of `message_transforms` to `None` in `_create()`
 
