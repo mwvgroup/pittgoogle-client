@@ -447,6 +447,7 @@ class Subscription:
         if self.topic is None:
             raise TypeError("The subscription needs to be created but no topic was provided.")
 
+        transforms = None
         if smt_javascript_udf:
             # the function name must match what is defined in the UDF code
             # we parse through the code using regex to find it
