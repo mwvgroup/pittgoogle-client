@@ -12,6 +12,6 @@ Collaboration resources:
 - `Virgo Homepage <https://www.virgo-gw.eu/>`__
 - `KAGRA Homepage <https://gwcenter.icrr.u-tokyo.ac.jp/>`__
 
-Data products:
+Data products served by Pitt-Google:
 
 - Alert Stream. Complete documentation can be found at `<https://emfollow.docs.ligo.org/userguide/>`__.

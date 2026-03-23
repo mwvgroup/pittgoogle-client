@@ -10,7 +10,7 @@ Mission resources:
 - `Gaia Homepage <https://www.esa.int/Science_Exploration/Space_Science/Gaia>`__
 - `Gaia - NASA/IPAC Infrared Science Archive <https://irsa.ipac.caltech.edu/Missions/gaia.html>`__
 
-Data products:
+Data products served by Pitt-Google:
 
 - Catalogs. The documentation for the latest Gaia data release, Gaia Data Release 3, can be view on `<https://gea.esac.esa.int/archive/documentation/GDR3/index.html>`__.
   Complete documentation can be found at the mission resources above.
