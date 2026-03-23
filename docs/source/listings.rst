@@ -17,7 +17,7 @@ Pitt-Google's Google Cloud project ID, which will be needed for access, is:
     # Pitt-Google's Google Cloud project ID for ZTF and LVK data
     ardent-cycling-243415
 
-    # Pitt-Google's Google Cloud project ID for LSST data
+    # Pitt-Google's Google Cloud project ID for LSST and Gaia DR3 data
     pitt-alert-broker
 
 For examples of how to use the information on this page, please see our :ref:`API Reference <api reference>` and `User Demos <https://github.com/mwvgroup/pittgoogle-user-demos/>`__ repo.
@@ -28,6 +28,113 @@ For examples of how to use the information on this page, please see our :ref:`AP
     Tables below use ':class: tight-table' so that longer blocks of text will wrap
     instead of rendering as a single line per row with a horizontal scroll bar.
     The class is defined in docs/source/_static/css/custom.css.
+
+.. _data lsst:
+
+Legacy Survey of Space and Time (LSST)
+--------------------------------------
+
+:ref:`LSST <survey lsst>` is an upcoming wide-field, optical survey that is currently in the commissioning phase and
+producing a public alert stream that is suitable for testing and development. The expected alert rate based on
+pre-survey analysis is about 10^7 alerts per night.
+
+Pub/Sub Alert Streams
+^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+    :class: tight-table
+    :widths: 25 75
+    :header-rows: 1
+
+    * - Topic
+      - Description
+
+    * - .. centered:: *Data Streams*
+      -
+
+    * - lsst-alerts
+      - Avro serialized LSST alert stream in Pub/Sub, cleaned of duplicate alerts.
+        Messages contain the original alert bytes and metadata.
+
+    * - lsst-alerts-json
+      - JSON-serialized LSST alert stream in Pub/Sub, cleaned of duplicate alerts. Non-JSON-serializable values in the
+        original alert data are converted into representations that can be safely serialized to JSON (e.g., ``NaN →
+        None``, ``bytes →`` UTF-8 base64-encoded strings).
+
+    * - lsst-lite
+      - Lite version of lsst-alerts-json (every alert, subset of fields).
+
+    * - lsst-upsilon
+      - lsst-lite plus UPSILoN's (Kim \& Bailer-Jones, 2015) multi-class classification results (e.g., RR Lyrae,
+        Cepheid, Type II Cepheid, Delta Scuti star, eclipsing binary, long-period variable, etc.). Messages
+        published to this topic contain the attributes: `pg_upsilon_x_label` and `pg_upsilon_x_flag` where "x" is
+        either "u", "g", "r", "i", "z", or "y" (e.g., `pg_upsilon_u_label`; `pg_upsilon_u_flag`).
+
+    * - lsst-variability
+      - lsst-lite plus Stetson J indices for each band used to observe the diaObject associated with an alert.
+        Messages published to this topic contain the attribute: `pg_variable`. The value of this Pub/Sub message
+        attribute is set to "likely" if the alert has a Stetson J index of at least 20 and at least 30 detections in
+        the g, r, or u band. The default value is "unlikely".
+
+    * - lsst-supernnova
+      - lsst-lite plus SuperNNova classification results (Ia vs non-Ia).
+
+BigQuery Tables
+^^^^^^^^^^^^^^^
+
+.. list-table::
+    :class: tight-table
+    :widths: 15 15 70
+    :header-rows: 1
+
+    * - Dataset
+      - Table
+      - Description
+
+    * - lsst
+      - alerts_v10_0
+      - Alert data for LSST schema version 10.0. This table is an archive of the lsst-alerts Pub/Sub stream,
+        excluding image cutouts and metadata. It has the same schema as the original alert bytes (except cutouts),
+        including nested and repeated fields. The fields `kafkaPublishTimestamp` and `healpix9`, `healpix19`, and
+        `healpix29` are included to support time-based partitioning and spatial clustering, respectively.
+
+    * - lsst
+      - upsilon
+      - Results from UPSILoN's (Kim \& Bailer-Jones, 2015) multi-class classification results (e.g., RR Lyrae,
+        Cepheid, Type II Cepheid, Delta Scuti star, eclipsing binary, long-period variable, etc.). Contains
+        the predicted label (i.e., class), the probability of the predicted label, and a flag value: 0
+        (successful classification), 1 (suspicious classification because the period is in period alias or the period
+        SNR is lower than 20) for each band used to observe the diaObject associated with an alert. The field
+        `kafkaPublishTimestamp` is included to support time-based partitioning.
+
+    * - lsst
+      - variability
+      - Results from the lsst-variability module. This table contains Stetson J indices and the number of detections (i.e.,
+        data points) for each band used to observe the diaObject associated with an alert. The field
+        `kafkaPublishTimestamp` is included to support time-based partitioning.
+
+    * - lsst
+      - supernnova
+      - Results from a SuperNNova (Möller \& de Boissière, 2019) Type Ia supernova classification (binary). The field
+        `kafkaPublishTimestamp` is included to support time-based partitioning.
+
+Cloud Storage Buckets
+^^^^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+    :class: tight-table
+    :widths: 40 60
+    :header-rows: 1
+
+    * - Bucket
+      - Description
+
+    * - pitt-alert-broker-lsst_alerts
+      - Alert data for LSST. This bucket is an Avro file archive of the lsst-alerts Pub/Sub stream,
+        including image cutouts and metadata. Each alert is stored as a separate Avro file.
+        The filename syntax is: `<schema_version>/kafkaPublishTimestamp=<kafka_timestamp>/<objectid_key>=<objectid>/<sourceid_key>=<sourceid>.avro`.
+        DIA Object example: `v10_0/kafkaPublishTimestamp=2026-02-25/diaObjectId=3516505565058564097/diaSourceId=3527242976319242284.avro`.
+        Solar System Object example: `v10_0/kafkaPublishTimestamp=2026-02-25/ssObjectId=3516505565058564097/diaSourceId=3527242976319242284.avro`.
 
 .. _data ztf:
 
@@ -161,55 +268,13 @@ BigQuery Tables
       - Alert data from the LVK O4 observing run. This table is an archive of the lvk-alerts Pub/Sub stream.
         It has the same schema as the original alert bytes, including nested and repeated fields.
 
-.. _data lsst:
+.. _data gaia:
 
-Legacy Survey of Space and Time (LSST)
+Gaia Space Observatory (Gaia)
 --------------------------------------
 
-:ref:`LSST <survey lsst>` is an upcoming wide-field, optical survey that is currently in the commissioning phase and
-producing an alert stream that is suitable for testing and development. LSST is expected to produce on average 10^7
-alerts per night.
-
-Pub/Sub Alert Streams
-^^^^^^^^^^^^^^^^^^^^^
-
-.. list-table::
-    :class: tight-table
-    :widths: 25 75
-    :header-rows: 1
-
-    * - Topic
-      - Description
-
-    * - .. centered:: *Data Streams*
-      -
-
-    * - lsst-alerts
-      - Avro serialized LSST alert stream in Pub/Sub, cleaned of duplicate alerts.
-        Messages contain the original alert bytes and metadata.
-
-    * - lsst-alerts-json
-      - JSON-serialized LSST alert stream in Pub/Sub, cleaned of duplicate alerts. Non-JSON-serializable values in the
-        original alert data are converted into representations that can be safely serialized to JSON (e.g., ``NaN →
-        None``, ``bytes →`` UTF-8 base64-encoded strings).
-
-    * - lsst-lite
-      - Lite version of lsst-alerts (every alert, subset of fields).
-
-    * - lsst-upsilon
-      - lsst-lite plus UPSILoN's (Kim \& Bailer-Jones, 2015) multi-class classification results (e.g., RR Lyrae,
-        Cepheid, Type II Cepheid, Delta Scuti star, eclipsing binary, long-period variable, etc.). Messages
-        published to this topic contain the attributes: `pg_upsilon_x_label` and `pg_upsilon_x_flag` where "x" is
-        either "u", "g", "r", "i", "z", or "y" (e.g., `pg_upsilon_u_label`; `pg_upsilon_u_flag`).
-
-    * - lsst-variability
-      - lsst-lite plus Stetson J indices for each band used to observe the diaObject associated with an alert.
-        Messages published to this topic contain the attribute: `pg_variable`. The value of this Pub/Sub message
-        attribute is set to "likely" if the alert has a Stetson J index of at least 20 and at least 30 detections in
-        the g, r, or u band. The default value is "unlikely".
-
-    * - lsst-supernnova
-      - lsst-lite plus SuperNNova classification results (Ia vs non-Ia).
+:ref:`Gaia <survey gaia>` is a retired space observatory that has made more than three trillion observations of two billion stars and other objects throughout the Milky Way galaxy and beyond from 27 July 2014 to 15 January 2025.
+All of the Gaia data products presented here are products of Gaia Data Release 3.
 
 BigQuery Tables
 ^^^^^^^^^^^^^^^
@@ -223,47 +288,58 @@ BigQuery Tables
       - Table
       - Description
 
-    * - lsst
-      - alerts_v10_0
-      - Alert data for LSST schema version 10.0. This table is an archive of the lsst-alerts Pub/Sub stream,
-        excluding image cutouts and metadata. It has the same schema as the original alert bytes (except cutouts),
-        including nested and repeated fields. The fields `kafkaPublishTimestamp` and `healpix9`, `healpix19`, and
-        `healpix29` are included to support time-based partitioning and spatial clustering, respectively.
+    * - xmatch_gaia
+      - agn
+      - Information on AGN properties.
 
-    * - lsst
-      - upsilon
-      - Results from UPSILoN's (Kim \& Bailer-Jones, 2015) multi-class classification results (e.g., RR Lyrae,
-        Cepheid, Type II Cepheid, Delta Scuti star, eclipsing binary, long-period variable, etc.). Contains
-        the predicted label (i.e., class), the probability of the predicted label, and a flag value: 0
-        (successful classification), 1 (suspicious classification because the period is in period alias or the period
-        SNR is lower than 20) for each band used to observe the diaObject associated with an alert. The field
-        `kafkaPublishTimestamp` is included to support time-based partitioning.
+    * - xmatch_gaia
+      - cepheid
+      - Information of Cepheid stars.
 
-    * - lsst
-      - variability
-      - Results from the lsst-variability module. This table contains Stetson J indices and the number of detections (i.e.,
-        data points) for each band used to observe the diaObject associated with an alert. The field
-        `kafkaPublishTimestamp` is included to support time-based partitioning.
+    * - xmatch_gaia
+      - classifier_result
+      - Variability classification results of all variable source classifiers.
 
-    * - lsst
-      - supernnova
-      - Results from a SuperNNova (Möller \& de Boissière, 2019) Type Ia supernova classification (binary). The field
-        `kafkaPublishTimestamp` is included to support time-based partitioning.
+    * - xmatch_gaia
+      - compact_companion
+      - Information on compact companion candidates.
 
-Cloud Storage Buckets
-^^^^^^^^^^^^^^^^^^^^^
+    * - xmatch_gaia
+      - eclipsing_binaries
+      - Properties of eclipsing binaries resulting from the variability analysis.
 
-.. list-table::
-    :class: tight-table
-    :widths: 40 60
-    :header-rows: 1
+    * - xmatch_gaia
+      - epoch_radial_velocity
+      - Epoch radial velocity data points for a sub-set of variable stars.
 
-    * - Bucket
-      - Description
+    * - xmatch_gaia
+      - long_period_variable
+      - Information on Long Period Variable stars.
 
-    * - pitt-alert-broker-lsst_alerts
-      - Alert data for LSST. This bucket is an Avro file archive of the lsst-alerts Pub/Sub stream,
-        including image cutouts and metadata. Each alert is stored as a separate Avro file.
-        The filename syntax is: `<schema_version>/kafkaPublishTimestamp=<kafka_timestamp>/<objectid_key>=<objectid>/<sourceid_key>=<sourceid>.avro`.
-        DIA Object example: `v10_0/kafkaPublishTimestamp=2026-02-25/diaObjectId=3516505565058564097/diaSourceId=3527242976319242284.avro`.
-        Solar System Object example: `v10_0/kafkaPublishTimestamp=2026-02-25/ssObjectId=3516505565058564097/diaSourceId=3527242976319242284.avro`.
+    * - xmatch_gaia
+      - microlensing
+      - Information on microlensing events.
+
+    * - xmatch_gaia
+      - ms_oscillator
+      - Information on main-sequence oscillators.
+
+    * - xmatch_gaia
+      - planetary_transit
+      - Candidate planetary transit events. This is the table that replaced the original dataset published on 13 June 2022 as part of Gaia DR3 which was found to contain serious errors.
+
+    * - xmatch_gaia
+      - rad_vel_statistics
+      - Statistical parameters of radial velocity time series.
+
+    * - xmatch_gaia
+      - rotation_modulation
+      - information on solar-like stars with rotational modulation.
+
+    * - xmatch_gaia
+      - rrlyrae
+      - Information on RR Lyrae stars.
+
+    * - xmatch_gaia
+      - short_timescale
+      - Information on short-timescale variable sources.

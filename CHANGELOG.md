@@ -12,13 +12,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 (none)
 
-## \[v0.3.21\] - 2026-03-19
+## \[v0.3.21\] - 2026-03-23
 
 ### Changed
 
 - Updated resource names and descriptions for LSST data listings
 - `pittgoogle/pubsub.py`
     - Set the default value of `message_transforms` to `None` in `_create()`
+
+### Added
+
+- Resource names and descriptions for Gaia data listings
 
 ## \[v0.3.20\] - 2025-12-03
 

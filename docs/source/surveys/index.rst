@@ -8,6 +8,7 @@ Note that data products may be served in multiple formats -- a complete listing 
 .. toctree::
     :maxdepth: 1
 
+    lsst
     ztf
     lvk
-    lsst
+    gaia
