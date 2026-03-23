@@ -35,8 +35,8 @@ Legacy Survey of Space and Time (LSST)
 --------------------------------------
 
 :ref:`LSST <survey lsst>` is an upcoming wide-field, optical survey that is currently in the commissioning phase and
-producing an alert stream that is suitable for testing and development. LSST is expected to produce on average 10^7
-alerts per night.
+producing a public alert stream that is suitable for testing and development. The expected alert rate based on
+pre-survey analysis is about 10^7 alerts per night.
 
 Pub/Sub Alert Streams
 ^^^^^^^^^^^^^^^^^^^^^
@@ -62,7 +62,7 @@ Pub/Sub Alert Streams
         None``, ``bytes →`` UTF-8 base64-encoded strings).
 
     * - lsst-lite
-      - Lite version of lsst-alerts (every alert, subset of fields).
+      - Lite version of lsst-alerts-json (every alert, subset of fields).
 
     * - lsst-upsilon
       - lsst-lite plus UPSILoN's (Kim \& Bailer-Jones, 2015) multi-class classification results (e.g., RR Lyrae,
