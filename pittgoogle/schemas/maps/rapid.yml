@@ -1,5 +1,5 @@
 SURVEY: rapid
-SCHEMA_ORIGIN:
+SCHEMA_ORIGIN: 'https://github.com/Caltech-IPAC/rapid/tree/main/alerts/schema'
 # [FIXME] Check everything below.
 # IDs
 objectid:
