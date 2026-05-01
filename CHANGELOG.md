@@ -25,6 +25,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - `pittgoogle/schema.py`
     - Support for LSST schema v11_0
 
+### Changed
+
+- `tests/load_data.py`
+    - define `schema_version="v11_0"`
+
+
 ## \[v0.3.21\] - 2026-03-23
 
 ### Changed
