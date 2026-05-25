@@ -12,6 +12,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 (none)
 
+## \[v0.3.22\] - 2026-05-07
+
+### Added
+
+- `schemas/lsst/11/0/`
+    - `lsst.v11_0.alert.avsc`
+    - `lsst.v11_0.diaForcedSources.avsc`
+    - `lsst.v11_0.diaSource.avsc`
+    - `lsst.v11_0.diaObject.avsc`
+    - `lsst.v11_0.mpc_orbits.avsc`
+    - `lsst.v11_0.ssSource.avsc`
+    - `lsst.v11_0.ssObject.avsc`
+- `tests/data/lsst/`
+    - `lsst.v11_0.avro`
+- `pittgoogle/schema.py`
+    - Support for LSST schema v11_0
+
+### Changed
+
+- `tests/load_data.py`
+    - define `schema_version="v11_0"`
+
+
 ## \[v0.3.21\] - 2026-03-23
 
 ### Changed
