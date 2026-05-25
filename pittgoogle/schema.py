@@ -712,7 +712,7 @@ class RapidSchema(Schema):
         # RAPID's syntax is: schema-id = 101 (int) --> schema-version = 'v1_0'
         _, version_id = struct.Struct(">bi").unpack(alert_bytes[:5])
         schema.version_id = version_id
-        # Convert, eg, 100 -> 'v1_0'
+        # Convert, eg, 100 -> 'v01_00'
         major = f"{version_id // 100:02d}"
         minor = f"{version_id % 100:02d}"
         schema.version = f"v{major}_{minor}"
