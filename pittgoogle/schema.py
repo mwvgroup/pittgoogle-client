@@ -13,6 +13,7 @@
 
 ----
 """
+
 import abc
 import base64
 import io
@@ -712,12 +713,12 @@ class RapidSchema(Schema):
         _, version_id = struct.Struct(">bi").unpack(alert_bytes[:5])
         schema.version_id = version_id
         # Convert, eg, 100 -> 'v1_0'
-        major = str(version_id // 100)
-        minor = str(version_id % 100)
+        major = f"{version_id // 100:02d}"
+        minor = f"{version_id % 100:02d}"
         schema.version = f"v{major}_{minor}"
 
         if schema.version not in [
-            "v1_0",
+            "v01_00",
         ]:
             raise exceptions.SchemaError(f"Schema definition not found for {schema.version}.")
 
