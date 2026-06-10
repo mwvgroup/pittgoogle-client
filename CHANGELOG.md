@@ -27,6 +27,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
     - Support for RAPID alerts schema v01_00
 - `tests/data/rapid/`
     - `rapid.v01_00.avro`
+- `tests/conftest.py`
+    - pytest fixtures for unit testing RAPID alerts
 
 ## \[v0.3.22\] - 2026-05-07
 
