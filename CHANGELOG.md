@@ -10,7 +10,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
-(none)
+### Added
+
+- `pittgoogle/registry_manifests/schemas.yml`
+    - add an entry in the registry manifest for RAPID alerts
+- `pittgoogle/schemas/maps/rapid.yml`
+- `schemas/rapid/01/00/`
+    - `rapid.alert.avsc`
+    - `rapid.v01_00.diaForcedSources.avsc`
+    - `rapid.v01_00.diaSource.avsc`
+    - `rapid.v01_00.diaObject.avsc`
+    - `rapid.v01_00.mpc_orbits.avsc`
+    - `rapid.v01_00.ssSource.avsc`
+    - `rapid.v01_00.ssObject.avsc`
+- `pittgoogle/schema.py`
+    - Support for RAPID alerts schema v01_00
+- `tests/data/rapid/`
+    - `rapid.v01_00.avro`
+- `tests/conftest.py`
+    - pytest fixtures for unit testing RAPID alerts
 
 ## \[v0.3.22\] - 2026-05-07
 

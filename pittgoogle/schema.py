@@ -13,6 +13,7 @@
 
 ----
 """
+
 import abc
 import base64
 import io
@@ -668,3 +669,134 @@ class ZtfSchema(DefaultSchema):
     deserializer: Literal["json", "avro"] = attrs.field(default="avro")
     """Whether to use a Avro (default) or JSON to deserialize when decoding `alert_bytes` -> `alert_dict`.
     If "avro", this `pittgoogle.Schema` will expect the Avro schema to be attached to `alert_bytes` in the header."""
+
+
+@attrs.define(kw_only=True)
+class RapidSchema(Schema):
+    """Schema for RAPID alerts."""
+
+    serializer: Literal["json", "avro"] = attrs.field(default="avro")
+    """Whether to serialize the dict to Avro (default) or JSON when, e.g., publishing a Pub/Sub message.
+    If "avro", this schema will use the Avro Confluent Wire Format
+    (https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format)."""
+    deserializer: Literal["json", "avro"] = attrs.field(default="avro")
+    """Whether to use Avro (default) or JSON to deserialize when decoding alert_bytes -> alert_dict.
+    If "avro", this schema will use the Avro Confluent Wire Format
+    (https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format)."""
+
+    @classmethod
+    def _from_yaml(cls, yaml_dict: dict, *, alert_bytes: bytes | None = None):
+        """Create a schema object from `yaml_dict`.
+
+        Args:
+            yaml_dict (dict):
+                A dictionary containing the schema information, loaded from the registry's 'schemas.yml' file.
+            alert_bytes (bytes or None, optional):
+                Message data. This is needed in order to infer the schema version. If not provided,
+                methods such as :meth:`RapidSchema.serialize` (if avro), :meth:`RapidSchema.deserialize` (if avro),
+                and :meth:`RapidSchema._name_in_bucket` will raise a :class:`pittgoogle.exceptions.SchemaError`.
+
+        Returns:
+            Schema
+        """
+        schema = cls(**yaml_dict)
+
+        if alert_bytes is None:
+            LOGGER.warning(
+                "No alert_bytes provided. Cannot infer schema version. "
+                "Methods that rely on it will be unavailable."
+            )
+            return schema
+
+        # Get the schema ID out of the avro header and use it to construct the schema version.
+        # RAPID's syntax is: schema-id = 101 (int) --> schema-version = 'v1_0'
+        _, version_id = struct.Struct(">bi").unpack(alert_bytes[:5])
+        schema.version_id = version_id
+        # Convert, eg, 100 -> 'v01_00'
+        major = f"{version_id // 100:02d}"
+        minor = f"{version_id % 100:02d}"
+        schema.version = f"v{major}_{minor}"
+
+        if schema.version not in [
+            "v01_00",
+        ]:
+            raise exceptions.SchemaError(f"Schema definition not found for {schema.version}.")
+
+        # Resolve the path and load the schema definition.
+        schema_path = schema.path.replace("MAJOR", major).replace("MINOR", minor)
+        schema.path = __package_path__ / schema_path
+        schema.definition = fastavro.schema.load_schema(schema.path)
+
+        return schema
+
+    def serialize(
+        self, alert_dict: dict, *, serializer: Literal["json", "avro", None] = None
+    ) -> bytes:
+        """Serialize the `alert_dict`.
+
+        Args:
+            alert_dict (dict):
+                The dictionary to be serialized.
+            serializer (str or None, optional):
+                Whether to serialize the dict using Avro or JSON. If not None, this will override
+                :meth:`LsstSchema.serializer` and is subject to the same conditions.
+
+        Returns:
+            bytes:
+                The serialized data in bytes.
+
+        Raises:
+            exceptions.SchemaError:
+                If the schema version or definition are unavailable and Avro serialization is requested.
+        """
+        _serializer = serializer or self.serializer
+        if _serializer == "json":
+            return Serializers.serialize_json(alert_dict)
+
+        if self.version is None or self.definition is None:
+            raise exceptions.SchemaError(
+                "No Avro schema information is available. Cannot serialize to Avro."
+            )
+
+        # Reconstruct RAPID's schema ID from the version string. Convert, eg, 'v1_0' -> 100.
+        schema_id = self.version_id
+        return Serializers.serialize_confluent_wire_avro(
+            alert_dict, schema_definition=self.definition, schema_id=schema_id
+        )
+
+    def deserialize(self, alert_bytes: bytes) -> dict:
+        """Deserialize `alert_bytes` using JSON or Avro format as defined by :meth:`RapidSchema.deserializer`.
+
+        Args:
+            alert_bytes (bytes):
+                The bytes to be deserialized.
+
+        Returns:
+            A dictionary representing the deserialized `alert_bytes`.
+        """
+        if self.deserializer == "json":
+            return Serializers.deserialize_json(alert_bytes)
+
+        if self.definition is None:
+            raise exceptions.SchemaError(
+                "No schema definition available. Cannot deserialize Avro."
+            )
+
+        return Serializers.deserialize_confluent_wire_avro(
+            alert_bytes, schema_definition=self.definition
+        )
+
+    @staticmethod
+    def _name_in_bucket(alert: "Alert") -> str:
+        """Construct the name of the Google Cloud Storage object."""
+        if alert.schema.version is None:
+            raise exceptions.SchemaError(
+                "No version information available. Cannot construct object name."
+            )
+
+        _date = datetime.date.fromtimestamp(
+            float(alert.attributes["kafka.timestamp"]) / 1000
+        ).strftime("%Y-%m-%d")
+        objectid_key = alert.get_key("objectid", name_only=True)
+        sourceid_key = alert.get_key("sourceid", name_only=True)
+        return f"{alert.schema.version}/kafkaPublishTimestamp={_date}/{objectid_key}={alert.objectid}/{sourceid_key}={alert.sourceid}.avro"

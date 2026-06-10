@@ -1,0 +1,35 @@
+SURVEY: rapid
+SCHEMA_ORIGIN: 'https://github.com/Caltech-IPAC/rapid/tree/main/alerts/schema'
+# [FIXME] Check everything below.
+# IDs
+objectid:
+  dia: [diaObject, diaObjectId]
+  ss: [ssSource, ssObjectId]
+# [FIXME] There is also a field called 'ssSource.diaSourceId'. Find out if it always has the same value as
+# 'diaSource.diaSourceId' (unless null). If it has a different value, we need to figure out how to handle
+# that in Alert.get() and Alert.get_key() so that we return 'ssSource.diaSourceId' for SS alerts.
+sourceid: diaSourceId
+# Sources and Objects
+source: diaSource
+object: diaObject
+prv_sources: prvDiaSources
+prv_forced_sources: prvDiaForcedSources
+prv_nondetect_limits: null
+ss_source: ssSource
+# Other
+cutout_science: cutoutScience
+cutout_template: cutoutTemplate
+cutout_difference: cutoutDifference
+dec: [diaSource, dec]
+dec_err: [diaSource, decErr]
+filter: [diaSource, band]
+flux: [diaSource, psfFlux]
+flux_err: [diaSource, psfFluxErr]
+mag: null
+mag_err: null
+mag_zp: null
+mjd: [diaSource, midpointMjdTai]
+ra: [diaSource, ra]
+ra_err: [diaSource, raErr]
+snr: [diaSource, snr]
+urls:
