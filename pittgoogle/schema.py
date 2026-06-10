@@ -759,7 +759,7 @@ class RapidSchema(Schema):
             )
 
         # Reconstruct RAPID's schema ID from the version string. Convert, eg, 'v1_0' -> 100.
-        schema_id = int("0".join(self.version.strip("v").split("_")))
+        schema_id = self.version_id
         return Serializers.serialize_confluent_wire_avro(
             alert_dict, schema_definition=self.definition, schema_id=schema_id
         )
