@@ -1,0 +1,14 @@
+FILTER_MAP:
+  1: g
+  2: r
+  3: i
+prv_sources: prv_sources
+source: source_dict
+objectid: [alertIds, objectId]
+sourceid: [alertIds, sourceId]
+filter:  [source_dict, filter]
+mag: [source_dict, mag]
+mag_err: [source_dict, magerr]
+mag_zp: [source_dict, magzp]
+xmatch: xmatch
+jd: [source_dict, jd]
