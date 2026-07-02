@@ -23,10 +23,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
     - `rapid.v01_00.mpc_orbits.avsc`
     - `rapid.v01_00.ssSource.avsc`
     - `rapid.v01_00.ssObject.avsc`
+- `schemas/lsst/11/1/`
+    - `lsst.v11_1.alert.avsc`
+    - `lsst.v11_1.diaForcedSources.avsc`
+    - `lsst.v11_1.diaSource.avsc`
+    - `lsst.v11_1.diaObject.avsc`
+    - `lsst.v11_1.mpc_orbits.avsc`
+    - `lsst.v11_1.ssSource.avsc`
+    - `lsst.v11_1.ssObject.avsc`
 - `pittgoogle/schema.py`
     - Support for RAPID alerts schema v01_00
+    - Support for LSST schema v11_1
 - `tests/data/rapid/`
     - `rapid.v01_00.avro`
+- `tests/data/lsst/`
+    - `lsst.v11_1.avro`
 - `tests/conftest.py`
     - pytest fixtures for unit testing RAPID alerts
 
