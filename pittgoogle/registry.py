@@ -5,8 +5,6 @@
 
     ProjectIds
     Schemas
-
-----
 """
 import logging
 from typing import Final, Literal, Type
@@ -59,8 +57,6 @@ class Schemas:
             pittgoogle.Schemas().manifest
 
     **For Developers**: :doc:`/for-developers/add-new-schema`
-
-    ----
     """
 
     @staticmethod
