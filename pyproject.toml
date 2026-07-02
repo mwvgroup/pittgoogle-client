@@ -28,7 +28,7 @@ classifiers = [
 [tool.poetry.dependencies]
 # https://python-poetry.org/docs/dependency-specification/
 # https://python-poetry.org/docs/dependency-specification/#git-dependencies
-python = "^3.9"
+python = "^3.10"
 attrs = ">=23.1"
 astropy = ">=5.3"  # v<6.0.0 required by supernnova 3.0.1
 db-dtypes = "^1.2.0"  # Needed by google-cloud-bigquery. Poetry added this as "^"; leaving for now.
