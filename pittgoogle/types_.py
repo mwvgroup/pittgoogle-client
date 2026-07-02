@@ -4,8 +4,6 @@
 .. autosummary::
 
     PubsubMessageLike
-
-----
 """
 import datetime
 import logging
@@ -29,8 +27,6 @@ class PubsubMessageLike:
     cases, this class is used to create an object with the same attributes as a
     `google.cloud.pubsub_v1.types.PubsubMessage`. This object is then assigned to the `msg`
     attribute of the `Alert`.
-
-    ----
     """
 
     data: bytes = attrs.field()

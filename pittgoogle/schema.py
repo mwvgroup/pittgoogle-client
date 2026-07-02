@@ -10,8 +10,6 @@
     LsstSchema
     LvkSchema
     ZtfSchema
-
-----
 """
 
 import abc
@@ -244,8 +242,6 @@ class Schema(abc.ABC):
 
     Do not call this class's constructor directly. Instead, load a schema using the registry
     :class:`pittgoogle.registry.Schemas`.
-
-    ----
     """
 
     # String _under_ field definition will cause field to appear as a property in rendered docs.
