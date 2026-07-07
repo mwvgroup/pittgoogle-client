@@ -64,6 +64,9 @@ Pub/Sub Alert Streams
     * - lsst-lite
       - Lite version of lsst-alerts-json (every alert, subset of fields).
 
+    * - lsst-xmatch
+      - lsst-lite plus crossmatch results from Gaia's `vari_classifier_result` catalog.
+
     * - lsst-upsilon
       - lsst-lite plus UPSILoN's (Kim \& Bailer-Jones, 2015) multi-class classification results (e.g., RR Lyrae,
         Cepheid, Type II Cepheid, Delta Scuti star, eclipsing binary, long-period variable, etc.). Messages
@@ -92,11 +95,18 @@ BigQuery Tables
       - Description
 
     * - lsst
-      - alerts_v10_0
-      - Alert data for LSST schema version 10.0. This table is an archive of the lsst-alerts Pub/Sub stream,
+      - alerts_v11_1
+      - Alert data for LSST schema version 11.1. This table is an archive of the lsst-alerts Pub/Sub stream,
         excluding image cutouts and metadata. It has the same schema as the original alert bytes (except cutouts),
         including nested and repeated fields. The fields `kafkaPublishTimestamp` and `healpix9`, `healpix19`, and
         `healpix29` are included to support time-based partitioning and spatial clustering, respectively.
+        Equivalent tables exist for previous schema versions: alerts_v10_0 and alerts_v11_0.
+
+    * - lsst
+      - xmatch
+      - Results from the lsst-xmatch module. This table identifies the three closest sources from the Gaia
+        `vari_classifier_result` catalog within a 1 arcsecond radius from the `diaObject` in the alert packet. The field
+        `kafkaPublishTimestamp` is included to support time-based partitioning.
 
     * - lsst
       - upsilon
