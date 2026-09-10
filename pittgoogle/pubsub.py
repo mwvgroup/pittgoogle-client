@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 """Classes to facilitate connections to Google Cloud Pub/Sub streams.
 
 .. autosummary::
@@ -11,6 +11,7 @@
 import concurrent.futures
 import datetime
 import logging
+import multiprocessing.connection
 import queue
 import time
 from typing import Any, Callable, List, Literal, Optional, Union
@@ -558,6 +559,8 @@ class Consumer:
             Maximum number of workers for the executor. This has no effect if an executor is provided.
         executor (concurrent.futures.ThreadPoolExecutor, optional):
             Executor to be used by the Google API to pull and process messages in the background.
+        logger: logging.Logger, default the global LOGGER
+            Send log messages here.
 
     Example:
 
@@ -617,6 +620,7 @@ class Consumer:
     streaming_pull_future: google.cloud.pubsub_v1.subscriber.futures.StreamingPullFuture = (
         attrs.field(default=None, init=False)
     )
+    logger: logging.Logger = attrs.field(default=LOGGER, validator=attrs.validators.instance_of(logging.Logger))
 
     @property
     def subscription(self) -> Subscription:
@@ -633,7 +637,13 @@ class Consumer:
             self._executor = concurrent.futures.ThreadPoolExecutor(self.max_workers)
         return self._executor
 
-    def stream(self, block: bool = True) -> None:
+    def stream(self, block: bool = True,
+               pipe: multiprocessing.connection.Connection = None,
+               heartbeat: int = 60,
+               max_runtime: datetime.timedelta = None,
+               max_nmsgs: int = None,
+               exception_on_no_callback: bool = False
+               ) -> dict:
         """Open the stream in a background thread and process messages through the callbacks.
 
         Recommended for long-running listeners.
@@ -643,19 +653,48 @@ class Consumer:
                 Whether to block the main thread while the stream is open. If `True`, block
                 indefinitely (use `Ctrl-C` to close the stream and unblock). If `False`, open the
                 stream and then return (use :meth:`~Consumer.stop()` to close the stream).
-                This must be `True` in order to use a `batch_callback`.
+                This must be `True` in order to use a `batch_callback`, and if you use
+                any of pipe, max_runtime, or max_nmsgs.
+            pipe : `multiprocessing.connection.Connection`
+                A pipe.  Will listen for a dictionary on this pipe; if { 'command': 'die' }
+                is received will exit.  Will also send a heartbeat message with
+                { 'message': 'ok', 'nconsumed': int, 'runtime': datetime.timedelta } every
+                heartbeat seconds.
+            heartbeat : Time out after this many seconds have elapsed; check the pipe for
+                a command, and send the heartbeat message
+            max_runtime : datetime.timedelta, default None
+                If not None, stop after running this long.
+            max_nmsgs : int, default None
+                If not None, stop after receiving this many messages.
+            exception_on_no_callback : bool, default False
+                Normally, if the Consumer has no batch_callback, then when you call this function
+                it will just (more or less) sleep, since there's nothing for it to do.  Set
+                exception_on_no_callback to True to have it raise an exception if there's no callback.
+
+        Returns:
+            dict:
+                Dictionary with two keys, "status" and "totprocessed".
+                status will be "max_runtime", "max_nmsgs", or "die".
+                totprocessed is the number of messages that got processed
+                sent to the batch_callback.
+
         """
+        if ( not block ) and any( i is not None for i in [ pipe, max_runtime, max_nmsgs ] ):
+            raise RuntimeError( "Use of any of pipe, max_runtime, or max_nmsgs requires block" )
+
         # open a streaming-pull and process messages through the callback, in the background
         self._open_stream()
 
         if not block:
-            msg = "The stream is open in the background. Use consumer.stop() to close it."
+            msg = "The stream is open in the background. Use consumer.stop() to close it prematurely"
             print(msg)
-            LOGGER.info(msg)
-            return
+            self.logger.info(msg)
+            return None
 
         try:
-            self._process_batches()
+            return self._process_batches( pipe=pipe, heartbeat=heartbeat,
+                                          max_runtime=max_runtime, max_nmsgs=max_nmsgs,
+                                          exception_on_no_callback=exception_on_no_callback )
 
         # catch all exceptions and attempt to close the stream before raising
         except (KeyboardInterrupt, Exception):
@@ -664,7 +703,7 @@ class Consumer:
 
     def _open_stream(self) -> None:
         """Open a streaming pull and process messages in the background."""
-        LOGGER.info(f"opening a streaming pull on subscription: {self.subscription.path}")
+        self.logger.info(f"opening a streaming pull on subscription: {self.subscription.path}")
         self.streaming_pull_future = self.subscription.client.subscribe(
             self.subscription.path,
             self._callback,
@@ -677,9 +716,9 @@ class Consumer:
 
     def _callback(self, message: google.cloud.pubsub_v1.types.PubsubMessage) -> None:
         """Unpack the message, run the :attr:`~Consumer.msg_callback` and handle the response."""
-        # LOGGER.info("callback started")
+        # self.logger.info("callback started")
         response = self.msg_callback(Alert(msg=message))  # Response
-        # LOGGER.info(f"{response.result}")
+        # self.logger.info(f"{response.result}")
 
         if response.result is not None:
             self._queue.put(response.result)
@@ -689,45 +728,141 @@ class Consumer:
         else:
             message.nack()
 
-    def _process_batches(self):
+    def _drain_queue( self, batch: list = None ) -> int:
+        batch = batch if batch is not None else []
+        while not self._queue.empty():
+            batch.append( self._queue.get( block=True ) )
+            self._queue.task_done()
+        if len(batch) > 0:
+            self.batch_callback( batch )
+        return len( batch )
+
+
+    def _process_batches(self,
+                         pipe: multiprocessing.connection.Connection = None,
+                         heartbeat: int = 60,
+                         max_runtime: datetime.timedelta = None,
+                         max_nmsgs: int = None,
+                         exception_on_no_callback: bool = False
+                         ) -> dict:
         """Run the batch callback if provided, otherwise just sleep.
 
-        This never returns -- it runs until it encounters an error.
+        Runs until max_runtime has elapsed or until max_nmsgs have been
+        processed, whichever comes first.  If both are None, runs
+        indefinitely.
+
         """
+
         # if there's no batch_callback there's nothing to do except wait until the process is killed
         if self.batch_callback is None:
-            while True:
-                time.sleep(60)
+            if exception_on_no_callback:
+                raise RuntimeError( "There's no batch_callback, so _process_batches won't do anything!" )
+            else:
+                self.logger.warning( "There's no batch_callback, so _process_batches isn't doing anything!" )
+                t0 = datetime.datetime.now()
+                while True:
+                    time.sleep( heartbeat )
+                    if pipe is not None:
+                        if pipe.poll():
+                            msg = pipe.recv()
+                            if ( 'command' in msg ) and ( msg['command'] == 'die' ):
+                                self.stop()
+                                return { "status": "die", "nconsumed": 0 }
+                        pipe.send( { "message": "ok", "nconsumed": 0, "runtime": datetime.datetime.now() - t0 } )
 
         batch, count = [], 0
-        while True:
+        totprocessed = 0
+        tstart = time.monotonic()
+        t0 = tstart
+        max_runtime = max_runtime.total_seconds() if max_runtime is not None else None
+        firstheartbeat = datetime.datetime.now()
+        lastheartbeat = firstheartbeat
+        try:
+            while True:
+                t1 = time.monotonic()
+                waittime = max( min( self.batch_max_wait_between_messages, heartbeat ) - (t1-t0), 0 )
+                try:
+                    batch.append(
+                        self._queue.get(block=True, timeout=waittime)
+                    )
+
+                except queue.Empty:
+                    # hit the max wait. process the batch
+                    t0 = t1
+                    if len(batch) > 0:
+                        self.batch_callback(batch)
+                    totprocessed += len(batch)
+                    batch, count = [], 0
+
+                # catch anything else and try to process the batch before raising
+                except (KeyboardInterrupt, Exception):
+                    self.logger.error( f"Got some kind of exception that stopped us after {time.monotonic()-t0} "
+                                       f"seconds...")
+                    self.stop()
+                    totprocessed += self._drain_queue( batch )
+                    batch = []
+                    self.logger.error( f"...processed {totprocessed} messages, raising an exception." )
+                    raise
+
+                else:
+                    self._queue.task_done()
+                    count += 1
+
+                if ( (t1-t0) > self.batch_max_wait_between_messages ) or ( count >= self.batch_maxn ):
+                    # Even if the queue was never empty, we want to processes batches at least
+                    #   every batch_max_wait_between_messages seconds, or at lest every batch_maxn messages.
+                    t0 = t1
+                    if len(batch) > 0:
+                        self.batch_callback(batch)
+                    totprocessed += len(batch)
+                    batch, count = [], 0
+
+                if ( ( ( max_runtime is not None ) and ( t1 - tstart >= max_runtime ) )
+                     or
+                     ( ( max_nmsgs is not None ) and ( totprocessed >= max_nmsgs ) )
+                    ):
+                    self.logger.info( f"Stopping streaming after {t1-tstart:.1f} sec..." )
+                    self.stop()
+                    totprocessed += self._drain_queue( batch )
+                    self.logger.info( f"...processed {totprocessed} messages, exiting." )
+                    return { "status": ( "max_nmsgs"
+                                         if ( max_nmsgs is not None ) and ( totprocessed >= max_nmsgs )
+                                         else "max_runtime" ),
+                             "totprocessed": totprocessed }
+
+                # Listen for a die command, and send the heartbeat
+                if pipe is not None:
+                    if pipe.poll():
+                        msg = pipe.recv()
+                        if ( 'command' in msg ) and ( msg['command'] == 'die' ):
+                            self.logger.info( f"Received die command after {t1-tstart:.1f} sec..." )
+                            self.stop()
+                            totprocessed += self._drain_queue( batch )
+                            self.logger.info( f"...processed {totprocessed} messages, exiting." )
+                            return { "status": "die", "totprocessed": totprocessed }
+                    if ( datetime.datetime.now() - lastheartbeat ).total_seconds() > heartbeat:
+                        lastheartbeat = datetime.datetime.now()
+                        pipe.send( { "message": "ok", "nconsumed": totprocessed,
+                                     "tot_handled": totprocessed,
+                                     "runtime": lastheartbeat - firstheartbeat } )
+
+        except (KeyboardInterrupt, Exception):
+            # If we get an exception anywhere, we should make sure to try to drain the queue
+            #   before raising it, in hopes that we won't lose messages.  Of course, if there's
+            #   an exception drainig the queue, we're just SOL.
             try:
-                batch.append(
-                    self._queue.get(block=True, timeout=self.batch_max_wait_between_messages)
-                )
-
-            except queue.Empty:
-                # hit the max wait. process the batch
-                self.batch_callback(batch)
-                batch, count = [], 0
-
-            # catch anything else and try to process the batch before raising
-            except (KeyboardInterrupt, Exception):
-                self.batch_callback(batch)
-                raise
-
-            else:
-                self._queue.task_done()
-                count += 1
-
-            if count == self.batch_maxn:
-                # hit the max number of results. process the batch
-                self.batch_callback(batch)
-                batch, count = [], 0
+                self.logger.error( f"Got some kind of exception that stopped us after a total runtime "
+                                   f"of {time.monotonic()-tstart:.2f} seconds" )
+                self.stop()
+                totprocessed += self._drain_queue( batch )
+                self.logger.error( f"...processed {totprocessed} messages, reraising the exception." )
+            except Exception:
+                self.logger.error( "May have failed to stop or drain the queue handling this exception." )
+            raise
 
     def stop(self) -> None:
         """Attempt to shutdown the streaming pull and exit the background threads gracefully."""
-        LOGGER.info("closing the stream")
+        self.logger.info("closing the stream")
         self.streaming_pull_future.cancel()  # trigger the shutdown
         self.streaming_pull_future.result()  # block until the shutdown is complete
 
