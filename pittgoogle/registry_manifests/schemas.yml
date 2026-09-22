@@ -71,3 +71,12 @@
     6: 'F158'
     7: 'F184'
     8: 'F213'
+# DESIRT alerts
+- name: 'desirt'
+  path: 'schemas/desirt/MAJOR/MINOR/desirt.vMAJOR_MINOR.alert.avsc'
+  description: 'Schema for DESIRT alerts.'
+  origin: null
+  filter_map:
+    1: 'g'
+    2: 'r'
+    3: 'z'

@@ -1,0 +1,23 @@
+SURVEY: desirt
+SCHEMA_ORIGIN: null
+TOPIC_SYNTAX: null
+objectid: objectId
+prv_sources: null
+prv_forced_sources: fp_hists
+source: candidate
+sourceid: candid
+cutout_difference: cutoutDifference
+cutout_science: cutoutScience
+cutout_template: cutoutTemplate
+filter: [candidate, band]
+flux: [candidate, psfFlux]
+flux_err: [candidate, psfFluxErr]
+mag: null
+mag_err: null
+mag_zp: null
+mjd: [candidate, mjd]
+ra: [candidate, ra]
+ra_err: null
+dec: [candidate, dec]
+dec_err: null
+urls:

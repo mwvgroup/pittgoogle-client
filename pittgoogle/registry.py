@@ -6,6 +6,7 @@
     ProjectIds
     Schemas
 """
+
 import logging
 from typing import Final, Literal, Type
 
@@ -13,7 +14,6 @@ import attrs
 import yaml
 
 from . import __package_path__, exceptions, schema
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -61,7 +61,9 @@ class Schemas:
 
     @staticmethod
     def get(
-        schema_name: Literal["elasticc", "lsst", "lvk", "ztf", "default", None] = "default",
+        schema_name: Literal[
+            "elasticc", "lsst", "lvk", "ztf", "desirt", "default", None
+        ] = "default",
         alert_bytes: bytes | None = None,
     ) -> schema.Schema:
         """Return the schema with name matching `schema_name`.
