@@ -797,3 +797,12 @@ class RapidSchema(Schema):
         objectid_key = alert.get_key("objectid", name_only=True)
         sourceid_key = alert.get_key("sourceid", name_only=True)
         return f"{alert.schema.version}/kafkaPublishTimestamp={_date}/{objectid_key}={alert.objectid}/{sourceid_key}={alert.sourceid}.avro"
+
+
+@attrs.define(kw_only=True)
+class DesirtSchema(DefaultSchema):
+    """Schema for DESIRT alerts."""
+
+    deserializer: Literal["json", "avro"] = attrs.field(default="avro")
+    """Whether to use a Avro (default) or JSON to deserialize when decoding `alert_bytes` -> `alert_dict`.
+    If "avro", this `pittgoogle.Schema` will expect the Avro schema to be attached to `alert_bytes` in the header."""
