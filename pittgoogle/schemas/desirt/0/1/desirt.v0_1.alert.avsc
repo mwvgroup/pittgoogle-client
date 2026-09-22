@@ -1,0 +1,59 @@
+{
+    "namespace": "desirt",
+    "name": "alert",
+    "type": "record",
+    "version": "0.1.0",
+    "fields": [
+        {"name": "publisher", "type": "string"},
+        {"name": "objectId", "type": "string"},
+        {"name": "candid", "type": "long"},
+        {
+            "name": "candidate",
+            "type": {
+                "type": "record",
+                "name": "Candidate",
+                "fields": [
+                    {"name": "mjd", "type": "double"},
+                    {"name": "forcediffimflux", "type": "double"},
+                    {"name": "forcediffimfluxunc", "type": "double"},
+                    {"name": "forcediffimmag", "type": "double"},
+                    {"name": "forcediffimmagunc", "type": "double"},
+                    {"name": "band", "type": "string"},
+                    {"name": "diffmaglim", "type": "double"},
+                    {"name": "isdiffpos", "type": "long"},
+                    {"name": "ra", "type": "double"},
+                    {"name": "dec", "type": "double"},
+                    {"name": "psfFlux", "type": "double"},
+                    {"name": "psfFluxErr", "type": "double"},
+                    # Real-bogus score (CNN cnn_prob); Rubin-style "reliability".
+                    {"name": "reliability", "type": ["null", "double"], "default": None},
+                ],
+            },
+        },
+        {
+            "name": "fp_hists",
+            "type": {
+                "type": "array",
+                "items": {
+                    "type": "record",
+                    "name": "FpHist",
+                    "fields": [
+                        {"name": "mjd", "type": "double"},
+                        {"name": "forcediffimflux", "type": "double"},
+                        {"name": "forcediffimfluxunc", "type": "double"},
+                        {"name": "forcediffimmag", "type": "double"},
+                        {"name": "forcediffimmagunc", "type": "double"},
+                        {"name": "band", "type": "string"},
+                        {"name": "diffmaglim", "type": "double"},
+                        {"name": "isdiffpos", "type": "long"},
+                        {"name": "psfFlux", "type": "double"},
+                        {"name": "psfFluxErr", "type": "double"},
+                    ],
+                },
+            },
+        },
+        {"name": "cutoutScience", "type": "bytes"},
+        {"name": "cutoutTemplate", "type": "bytes"},
+        {"name": "cutoutDifference", "type": "bytes"},
+    ],
+}
