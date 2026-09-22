@@ -18,4 +18,6 @@ mag_zp: null
 mjd: [candidate, mjd]
 ra: [candidate, ra]
 ra_err: null
+dec: [candidate, dec]
+dec_err: null
 urls:
