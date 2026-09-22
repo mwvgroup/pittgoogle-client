@@ -10,7 +10,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
-(none)
+### Added
+
+- `pittgoogle/registry_manifests/schemas.yml`
+    - add an entry in the registry manifest for DESIRT alerts
+- `pittgoogle/schemas/maps/desirt.yml`
+- `schemas/rapid/01/00/`
+    - `desirt.alert.avsc`
+- `pittgoogle/schema.py`
+    - Support for DESIRT alerts schema v0_1
+- `tests/data/desirt/`
+    - `desirt.v01_00.avro`
+- `tests/conftest.py`
+    - pytest fixtures for unit testing DESIRT alerts
 
 ## \[v0.3.23\] - 2026-07-02
 
