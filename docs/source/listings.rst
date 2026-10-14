@@ -143,8 +143,8 @@ Cloud Storage Buckets
       - Alert data for LSST. This bucket is an Avro file archive of the lsst-alerts Pub/Sub stream,
         including image cutouts and metadata. Each alert is stored as a separate Avro file.
         The filename syntax is: `<schema_version>/kafkaPublishTimestamp=<kafka_timestamp>/<objectid_key>=<objectid>/<sourceid_key>=<sourceid>.avro`.
-        DIA Object example: `v10_0/kafkaPublishTimestamp=2026-02-25/diaObjectId=3516505565058564097/diaSourceId=3527242976319242284.avro`.
-        Solar System Object example: `v10_0/kafkaPublishTimestamp=2026-02-25/ssObjectId=3516505565058564097/diaSourceId=3527242976319242284.avro`.
+        DIA Object example: `v11_1/kafkaPublishTimestamp=2026-07-14/diaObjectId=170019696269590551/diaSourceId=170666304476282912.avro`.
+        Solar System Object example: `v11_1/kafkaPublishTimestamp=2026-02-25/ssObjectId=20610557328502849/diaSourceId=170666210050441458.avro`.
 
 .. _data ztf:
 
