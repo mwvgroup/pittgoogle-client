@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 - `poetry.lock`
     - Updated the latest versions compatible with the pyproject.toml file
+- Updated resource names and descriptions for LSST data listings
 
 ## \[v0.3.23\] - 2026-07-02
 
