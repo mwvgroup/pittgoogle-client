@@ -5,8 +5,6 @@
 
     Client
     Table
-
-----
 """
 import logging
 from typing import TYPE_CHECKING, Optional
@@ -26,8 +24,6 @@ LOGGER = logging.getLogger(__name__)
 @attrs.define
 class Client:
     """A client for interacting with Google BigQuery.
-
-    ----
     """
 
     _auth: Auth = attrs.field(
@@ -194,8 +190,6 @@ class Table:
         client (google.cloud.bigquery.Client, optional):
             BigQuery client that will be used to access the table.
             If not provided, a new client will be created the first time it is requested.
-
-    ----
     """
 
     # Strings _below_ the field will make these also show up as individual properties in rendered docs.

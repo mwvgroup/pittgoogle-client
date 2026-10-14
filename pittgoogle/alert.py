@@ -4,8 +4,6 @@
 .. autosummary::
 
     Alert
-
-----
 """
 import base64
 import datetime
@@ -52,8 +50,6 @@ class Alert:
             `<https://cloud.google.com/python/docs/reference/pubsub/latest/google.cloud.pubsub_v1.types.PubsubMessage>`__.
         path (pathlib.Path, optional):
             Path to a file containing the alert data.
-
-    ----
     """
 
     _dict: Mapping | None = attrs.field(default=None)
