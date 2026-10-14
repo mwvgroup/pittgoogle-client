@@ -10,10 +10,188 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
+### Changed
+
+- `poetry.lock`
+    - Updated the latest versions compatible with the pyproject.toml file
+
+## \[v0.3.23\] - 2026-07-02
+
+### Added
+
+- `pittgoogle/registry_manifests/schemas.yml`
+    - add an entry in the registry manifest for RAPID alerts
+- `pittgoogle/schemas/maps/rapid.yml`
+- `schemas/rapid/01/00/`
+    - `rapid.alert.avsc`
+    - `rapid.v01_00.diaForcedSources.avsc`
+    - `rapid.v01_00.diaSource.avsc`
+    - `rapid.v01_00.diaObject.avsc`
+    - `rapid.v01_00.mpc_orbits.avsc`
+    - `rapid.v01_00.ssSource.avsc`
+    - `rapid.v01_00.ssObject.avsc`
+- `schemas/lsst/11/1/`
+    - `lsst.v11_1.alert.avsc`
+    - `lsst.v11_1.diaForcedSources.avsc`
+    - `lsst.v11_1.diaSource.avsc`
+    - `lsst.v11_1.diaObject.avsc`
+    - `lsst.v11_1.mpc_orbits.avsc`
+    - `lsst.v11_1.ssSource.avsc`
+    - `lsst.v11_1.ssObject.avsc`
+- `pittgoogle/schema.py`
+    - Support for RAPID alerts schema v01_00
+    - Support for LSST schema v11_1
+- `tests/data/rapid/`
+    - `rapid.v01_00.avro`
+- `tests/data/lsst/`
+    - `lsst.v11_1.avro`
+- `tests/conftest.py`
+    - pytest fixtures for unit testing RAPID alerts
+
+## \[v0.3.22\] - 2026-05-07
+
+### Added
+
+- `schemas/lsst/11/0/`
+    - `lsst.v11_0.alert.avsc`
+    - `lsst.v11_0.diaForcedSources.avsc`
+    - `lsst.v11_0.diaSource.avsc`
+    - `lsst.v11_0.diaObject.avsc`
+    - `lsst.v11_0.mpc_orbits.avsc`
+    - `lsst.v11_0.ssSource.avsc`
+    - `lsst.v11_0.ssObject.avsc`
+- `tests/data/lsst/`
+    - `lsst.v11_0.avro`
+- `pittgoogle/schema.py`
+    - Support for LSST schema v11_0
+
+### Changed
+
+- `tests/load_data.py`
+    - define `schema_version="v11_0"`
+
+
+## \[v0.3.21\] - 2026-03-23
+
+### Changed
+
+- Updated resource names and descriptions for LSST data listings
+- `pittgoogle/pubsub.py`
+    - Set the default value of `message_transforms` to `None` in `_create()`
+
+### Added
+
+- Resource names and descriptions for Gaia data listings
+
+## \[v0.3.20\] - 2025-12-03
+
+### Changed
+
+- Upgraded all dependencies. Major version bumps include: cachetools 5.5.2 -> 6.2.1, packaging 24.2 -> 25.0,
+  protobuf 5.29.3 -> 6.33.0, pyarrow 19.0.1 -> 21.0.0 (python < 3.11) or 22.0 (python >=3.11),
+  pytest-cov 6.0.0 -> 7.0.0, showballstemmer 2.2.0 -> 3.0.1.
+- `test/load_data.py`
+    - Updated field names to accomodate the latest LSST alert schema (v10_0)
+- `pittgoogle/schema.py`
+    - `alert.attributes["kafka.timestamp"]` must be converted to a float to create a datetime object
+- `docs/source/listings.rst`
+    - updated resource names and descriptions for LSST data listings
+
+### Added
+
+- `pittgoogle/pubsub.py`
+    - The `touch` function for the `Subscription` class now supports the creation of subscriptions that use
+    Pub/Sub's built-in filters (i.e., filter based on message attributes) and/or single message transforms through
+    user-defined functions
+- `schemas/lsst/10/0/`
+    - `lsst.v10_0.alert.avsc`
+    - `lsst.v10_0.diaForcedSources.avsc`
+    - `lsst.v10_0.diaSource.avsc`
+    - `lsst.v10_0.diaObject.avsc`
+    - `lsst.v10_0.mpc_orbits.avsc`
+    - `lsst.v10_0.ssSource.avsc`
+    - `lsst.v10_0.ssObject.avsc`
+- `tests/data/lsst/`
+    - `lsst.v10_0.avro`
+- `pittgoogle/schema.py`
+    - Support for LSST schema v10_0
+
+## \[v0.3.19\] - 2025-10-07
+
+### Changed
+
+- `pittgoogle/schema.py`
+    - update `_clean_for_json()` to return `None` if `math.isinf(value)`
+    - `_name_in_bucket` for the LsstSchema class now returns:
+    {alert.schema.version}/kafkaPublishTimestamp={_date}/{objectid_key}={alert.objectid}/{sourceid_key}={alert.sourceid}.
+    avro
+- `tests/test_alert.py`
+    - update `test_name_in_bucket` to account for the change in `pittgoogle/schema.py/_name_in_bucket`
+
+## \[v0.3.18\] - 2025-09-16
+
+### Changed
+
+- `pittgoogle/alert.py`
+    - Address a bug in the `get` and `get_key` functions that raises an `AttributeError` when a field's value is `None`
+
+## \[v0.3.17\] - 2025-09-01
+
+### Added
+
+- `schemas/lsst/8/0/`
+    - `lsst.v8_0.alert.avsc`
+    - `lsst.v8_0.diaForcedSources.avsc`
+    - `lsst.v8_0.diaSource.avsc`
+    - `lsst.v8_0.diaObject.avsc`
+    - `lsst.v8_0.ssSource.avsc`
+    - `lsst.v8_0.MPCORB.avsc`
+- `schemas/lsst/9/0/`
+    - `lsst.v9_0.alert.avsc`
+    - `lsst.v9_0.diaForcedSources.avsc`
+    - `lsst.v9_0.diaSource.avsc`
+    - `lsst.v9_0.diaObject.avsc`
+    - `lsst.v9_0.ssSource.avsc`
+    - `lsst.v9_0.MPCORB.avsc`
+- `sample_alerts/lsst/`
+    - `lsst.v8_0.avro`
+    - `lsst.v9_0.avro`
+
+### Changed
+
+- `schemas/maps/lsst.yml`
+    - updated field name: `ssObject` -> `ssSource`
+    - the mapping for the field `objectid` is now a `dict[list]` type
+- `pittgoogle/schema.py`
+    - added v8_0 and v9_0 to the list of supported schema versions for LSST alerts
+    - the `_name_in_bucket` function uses the `ssObjectId` instead of the `diaObjectId` when the value of
+     `diaObjectId` is null (each `diaSource` will be associated with either a `diaObject` OR `ssObject`)
+    - `_clean_for_json` converts `datetime.datetime` objects to `timestamp`
+- `tests/test_alert.py`
+    - unit test for `name_in_bucket` has been updated to reflect the new pathname
+- `tests/test_schema.py`
+    - updated the JSON serialization test in `test_sample_alerts`to handle type mismatches
+- `tests/load_data.py`
+    - updated field names to accomodate the latest LSST alert schema version (v9_0)
+- `pittgoogle/alert.py`
+    - The `get` and `get_key` functions support fields that are `list[dict]` types
+    - `healpix9`, `healpix19`, and `healpix29` explicitly return `int` types
+
+### Removed
+
+- `alertid` and `ssobjectid` from `pittgoogle/alert.py`, `tests/test_alert.py`, and all schema maps
+
+## \[v0.3.16\] - 2025-08-18
+
 ### Added
 
 - Data listings fot ZTF
 - Data listings for LSST
+- `LvkSchema` properties `_from_yaml` and `_name_in_bucket`.
+- "objectid" added to LVK schema map. Both "objectid" and "sourceid" now point to the
+  LVK field "superevent_id" since there is no distinction between an LVK "object" and "source".
+- Added a unit test for `LvkSchema._name_in_bucket`. Added a "schema_version" field to the test data in
+  tests/data/sample_alerts/lvk/ to mimic our broker's ps_to_storage module (required for `_name_in_bucket`).
 
 ## \[v0.3.15\] - 2025-05-12
 

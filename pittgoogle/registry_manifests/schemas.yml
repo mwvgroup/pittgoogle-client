@@ -56,3 +56,18 @@
     1: g
     2: r
     3: i
+#
+# RAPID alerts
+- name: 'rapid'
+  path: 'schemas/rapid/MAJOR/MINOR/rapid.vMAJOR_MINOR.alert.avsc'
+  description: 'Schema for RAPID alerts.'
+  origin: 'https://github.com/Caltech-IPAC/rapid/tree/main/alerts/schema'
+  filter_map:
+    1: 'F062'
+    2: 'F087'
+    3: 'F106'
+    4: 'F129'
+    5: 'F146'
+    6: 'F158'
+    7: 'F184'
+    8: 'F213'

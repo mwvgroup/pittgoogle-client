@@ -2,7 +2,6 @@
 SURVEY: 'default'
 SCHEMA_ORIGIN: ''
 # IDs.
-alertid: alertid
 objectid: objectid
 sourceid: sourceid
 # Sources and Objects.

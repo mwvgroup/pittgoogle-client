@@ -10,16 +10,17 @@
     LsstSchema
     LvkSchema
     ZtfSchema
-
-----
 """
+
 import abc
 import base64
 import io
+import datetime
 import json
 import logging
 import struct
 import types
+import math
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
@@ -216,9 +217,13 @@ class Serializers:
         if isinstance(value, (str, int, types.NoneType)):
             return value
         if isinstance(value, float):
-            return value if not np.isnan(value) else None
+            if math.isnan(value) or math.isinf(value):
+                return None
+            return value
         if isinstance(value, bytes):
             return base64.b64encode(value).decode("utf-8")
+        if isinstance(value, datetime.datetime):
+            return value.timestamp()
 
         # Recurse.
         if isinstance(value, list):
@@ -237,8 +242,6 @@ class Schema(abc.ABC):
 
     Do not call this class's constructor directly. Instead, load a schema using the registry
     :class:`pittgoogle.registry.Schemas`.
-
-    ----
     """
 
     # String _under_ field definition will cause field to appear as a property in rendered docs.
@@ -313,7 +316,7 @@ class Schema(abc.ABC):
         """
 
     @abc.abstractmethod
-    def _name_in_bucket(_alert: "Alert") -> None:
+    def _name_in_bucket(_alert: "Alert") -> str:
         """Construct the name of the Google Cloud Storage object."""
 
     @property
@@ -524,10 +527,23 @@ class LsstSchema(Schema):
         # LSST's syntax is: schema-id = 703 (int) --> schema-version = 'v7_3'
         _, version_id = struct.Struct(">bi").unpack(alert_bytes[:5])
         schema.version_id = version_id
-        major, minor = str(version_id).split("0", maxsplit=1)  # Convert, eg, 703 -> 'v7_3'
+        # Convert, eg, 1103 -> 'v11_3'
+        major = str(version_id // 100)
+        minor = str(version_id % 100)
         schema.version = f"v{major}_{minor}"
 
-        if schema.version not in ["v7_0", "v7_1", "v7_2", "v7_3", "v7_4"]:
+        if schema.version not in [
+            "v7_0",
+            "v7_1",
+            "v7_2",
+            "v7_3",
+            "v7_4",
+            "v8_0",
+            "v9_0",
+            "v10_0",
+            "v11_0",
+            "v11_1",
+        ]:
             raise exceptions.SchemaError(f"Schema definition not found for {schema.version}.")
 
         # Resolve the path and load the schema definition.
@@ -595,21 +611,52 @@ class LsstSchema(Schema):
         )
 
     @staticmethod
-    def _name_in_bucket(alert: "Alert"):
+    def _name_in_bucket(alert: "Alert") -> str:
+        """Construct the name of the Google Cloud Storage object."""
         if alert.schema.version is None:
             raise exceptions.SchemaError(
                 "No version information available. Cannot construct object name."
             )
 
-        import astropy.time  # always lazy-load astropy
-
-        _date = astropy.time.Time(alert.get("mjd"), format="mjd").datetime.strftime("%Y-%m-%d")
-        return f"{alert.schema.version}/{_date}/{alert.objectid}/{alert.sourceid}.avro"
+        _date = datetime.date.fromtimestamp(
+            float(alert.attributes["kafka.timestamp"]) / 1000
+        ).strftime("%Y-%m-%d")
+        objectid_key = alert.get_key("objectid", name_only=True)
+        sourceid_key = alert.get_key("sourceid", name_only=True)
+        return f"{alert.schema.version}/kafkaPublishTimestamp={_date}/{objectid_key}={alert.objectid}/{sourceid_key}={alert.sourceid}.avro"
 
 
 @attrs.define(kw_only=True)
 class LvkSchema(DefaultSchema):
     """Schema for LVK alerts."""
+
+    @classmethod
+    def _from_yaml(cls, yaml_dict: dict, *, alert_bytes: bytes | None = None) -> "Schema":
+        """Create a schema object from `yaml_dict`.
+
+        Args:
+            yaml_dict (dict):
+                A dictionary containing the schema information, loaded from the registry's 'schemas.yml' file.
+            alert_bytes (bytes or None, optional):
+                Message data. This is needed in order to get the schema version. If not provided, methods
+                such as :meth:`LvkSchema._name_in_bucket` will raise a :class:`pittgoogle.exceptions.SchemaError`.
+
+        Returns:
+            Schema
+        """
+        schema = super()._from_yaml(yaml_dict)
+        alert_dict = Serializers.deserialize_json(alert_bytes or b"{}")
+        schema.version = alert_dict.get("schema_version")
+        return schema
+
+    @staticmethod
+    def _name_in_bucket(alert: "Alert") -> "str":
+        """Construct the name of the Google Cloud Storage object."""
+        if alert.schema.version is None:
+            raise exceptions.SchemaError("Schema version not found. Cannot construct object name.")
+
+        filename = f"{alert.dict['alert_type']}-{alert.dict['time_created'][0:10]}.json"
+        return f"{alert.schema.version}/{alert.get_key('objectid')}={alert.objectid}/{filename}"
 
 
 @attrs.define(kw_only=True)
@@ -619,3 +666,134 @@ class ZtfSchema(DefaultSchema):
     deserializer: Literal["json", "avro"] = attrs.field(default="avro")
     """Whether to use a Avro (default) or JSON to deserialize when decoding `alert_bytes` -> `alert_dict`.
     If "avro", this `pittgoogle.Schema` will expect the Avro schema to be attached to `alert_bytes` in the header."""
+
+
+@attrs.define(kw_only=True)
+class RapidSchema(Schema):
+    """Schema for RAPID alerts."""
+
+    serializer: Literal["json", "avro"] = attrs.field(default="avro")
+    """Whether to serialize the dict to Avro (default) or JSON when, e.g., publishing a Pub/Sub message.
+    If "avro", this schema will use the Avro Confluent Wire Format
+    (https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format)."""
+    deserializer: Literal["json", "avro"] = attrs.field(default="avro")
+    """Whether to use Avro (default) or JSON to deserialize when decoding alert_bytes -> alert_dict.
+    If "avro", this schema will use the Avro Confluent Wire Format
+    (https://docs.confluent.io/platform/current/schema-registry/fundamentals/serdes-develop/index.html#wire-format)."""
+
+    @classmethod
+    def _from_yaml(cls, yaml_dict: dict, *, alert_bytes: bytes | None = None):
+        """Create a schema object from `yaml_dict`.
+
+        Args:
+            yaml_dict (dict):
+                A dictionary containing the schema information, loaded from the registry's 'schemas.yml' file.
+            alert_bytes (bytes or None, optional):
+                Message data. This is needed in order to infer the schema version. If not provided,
+                methods such as :meth:`RapidSchema.serialize` (if avro), :meth:`RapidSchema.deserialize` (if avro),
+                and :meth:`RapidSchema._name_in_bucket` will raise a :class:`pittgoogle.exceptions.SchemaError`.
+
+        Returns:
+            Schema
+        """
+        schema = cls(**yaml_dict)
+
+        if alert_bytes is None:
+            LOGGER.warning(
+                "No alert_bytes provided. Cannot infer schema version. "
+                "Methods that rely on it will be unavailable."
+            )
+            return schema
+
+        # Get the schema ID out of the avro header and use it to construct the schema version.
+        # RAPID's syntax is: schema-id = 101 (int) --> schema-version = 'v1_0'
+        _, version_id = struct.Struct(">bi").unpack(alert_bytes[:5])
+        schema.version_id = version_id
+        # Convert, eg, 100 -> 'v01_00'
+        major = f"{version_id // 100:02d}"
+        minor = f"{version_id % 100:02d}"
+        schema.version = f"v{major}_{minor}"
+
+        if schema.version not in [
+            "v01_00",
+        ]:
+            raise exceptions.SchemaError(f"Schema definition not found for {schema.version}.")
+
+        # Resolve the path and load the schema definition.
+        schema_path = schema.path.replace("MAJOR", major).replace("MINOR", minor)
+        schema.path = __package_path__ / schema_path
+        schema.definition = fastavro.schema.load_schema(schema.path)
+
+        return schema
+
+    def serialize(
+        self, alert_dict: dict, *, serializer: Literal["json", "avro", None] = None
+    ) -> bytes:
+        """Serialize the `alert_dict`.
+
+        Args:
+            alert_dict (dict):
+                The dictionary to be serialized.
+            serializer (str or None, optional):
+                Whether to serialize the dict using Avro or JSON. If not None, this will override
+                :meth:`LsstSchema.serializer` and is subject to the same conditions.
+
+        Returns:
+            bytes:
+                The serialized data in bytes.
+
+        Raises:
+            exceptions.SchemaError:
+                If the schema version or definition are unavailable and Avro serialization is requested.
+        """
+        _serializer = serializer or self.serializer
+        if _serializer == "json":
+            return Serializers.serialize_json(alert_dict)
+
+        if self.version is None or self.definition is None:
+            raise exceptions.SchemaError(
+                "No Avro schema information is available. Cannot serialize to Avro."
+            )
+
+        # Reconstruct RAPID's schema ID from the version string. Convert, eg, 'v1_0' -> 100.
+        schema_id = self.version_id
+        return Serializers.serialize_confluent_wire_avro(
+            alert_dict, schema_definition=self.definition, schema_id=schema_id
+        )
+
+    def deserialize(self, alert_bytes: bytes) -> dict:
+        """Deserialize `alert_bytes` using JSON or Avro format as defined by :meth:`RapidSchema.deserializer`.
+
+        Args:
+            alert_bytes (bytes):
+                The bytes to be deserialized.
+
+        Returns:
+            A dictionary representing the deserialized `alert_bytes`.
+        """
+        if self.deserializer == "json":
+            return Serializers.deserialize_json(alert_bytes)
+
+        if self.definition is None:
+            raise exceptions.SchemaError(
+                "No schema definition available. Cannot deserialize Avro."
+            )
+
+        return Serializers.deserialize_confluent_wire_avro(
+            alert_bytes, schema_definition=self.definition
+        )
+
+    @staticmethod
+    def _name_in_bucket(alert: "Alert") -> str:
+        """Construct the name of the Google Cloud Storage object."""
+        if alert.schema.version is None:
+            raise exceptions.SchemaError(
+                "No version information available. Cannot construct object name."
+            )
+
+        _date = datetime.date.fromtimestamp(
+            float(alert.attributes["kafka.timestamp"]) / 1000
+        ).strftime("%Y-%m-%d")
+        objectid_key = alert.get_key("objectid", name_only=True)
+        sourceid_key = alert.get_key("sourceid", name_only=True)
+        return f"{alert.schema.version}/kafkaPublishTimestamp={_date}/{objectid_key}={alert.objectid}/{sourceid_key}={alert.sourceid}.avro"
