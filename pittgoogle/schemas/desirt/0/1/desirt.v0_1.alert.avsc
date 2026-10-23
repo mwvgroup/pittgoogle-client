@@ -25,7 +25,6 @@
                     {"name": "dec", "type": "double"},
                     {"name": "psfFlux", "type": "double"},
                     {"name": "psfFluxErr", "type": "double"},
-                    # Real-bogus score (CNN cnn_prob); Rubin-style "reliability".
                     {"name": "reliability", "type": ["null", "double"], "default": None},
                 ],
             },
