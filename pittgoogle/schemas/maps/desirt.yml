@@ -1,8 +1,7 @@
 SURVEY: desirt
-SCHEMA_ORIGIN: null
-TOPIC_SYNTAX: null
+SCHEMA_ORIGIN: 'Personal communication. Received directly from Xander Hall, graduate student at CMU.'
 objectid: objectId
-prv_sources: null
+prv_sources: prvCandidates
 prv_forced_sources: fp_hists
 source: candidate
 sourceid: candid
