@@ -75,7 +75,7 @@
 - name: 'desirt'
   path: 'schemas/desirt/MAJOR/MINOR/desirt.vMAJOR_MINOR.alert.avsc'
   description: 'Schema for DESIRT alerts.'
-  origin: null
+  origin: 'Personal communication. Received directly from Xander Hall, graduate student at CMU.'
   filter_map:
     1: 'g'
     2: 'r'
