@@ -15,14 +15,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - `pittgoogle/registry_manifests/schemas.yml`
     - add an entry in the registry manifest for DESIRT alerts
 - `pittgoogle/schemas/maps/desirt.yml`
-- `schemas/rapid/01/00/`
-    - `desirt.alert.avsc`
+- `pittgoogle/schemas/desirt/0/2/`
+    - `desirt.v0_2.alert.avsc`
 - `pittgoogle/schema.py`
-    - Support for DESIRT alerts schema v0_1
+    - Support for DESIRT alerts schema v0_2
 - `tests/data/desirt/`
-    - `desirt.v01_00.avro`
+    - `desirt.v0_2.avro`
 - `tests/conftest.py`
     - pytest fixtures for unit testing DESIRT alerts
+
+### Changed
+
+- `poetry.lock`
+    - Updated the latest versions compatible with the pyproject.toml file
+- Updated resource names and descriptions for LSST data listings
 
 ## \[v0.3.23\] - 2026-07-02
 
