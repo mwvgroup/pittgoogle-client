@@ -1,0 +1,22 @@
+SURVEY: desirt
+SCHEMA_ORIGIN: 'Personal communication. Received directly from Xander Hall, graduate student at CMU.'
+objectid: objectId
+prv_sources: prvCandidates
+prv_forced_sources: fp_hists
+source: candidate
+sourceid: candid
+cutout_difference: cutoutDifference
+cutout_science: cutoutScience
+cutout_template: cutoutTemplate
+filter: [candidate, band]
+flux: [candidate, psfFlux]
+flux_err: [candidate, psfFluxErr]
+mag: null
+mag_err: null
+mag_zp: null
+mjd: [candidate, mjd]
+ra: [candidate, ra]
+ra_err: null
+dec: [candidate, dec]
+dec_err: null
+urls:

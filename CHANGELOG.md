@@ -10,6 +10,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
+### Added
+
+- `pittgoogle/registry_manifests/schemas.yml`
+    - add an entry in the registry manifest for DESIRT alerts
+- `pittgoogle/schemas/maps/desirt.yml`
+- `pittgoogle/schemas/desirt/0/2/`
+    - `desirt.v0_2.alert.avsc`
+- `pittgoogle/schema.py`
+    - Support for DESIRT alerts schema v0_2
+- `tests/data/desirt/`
+    - `desirt.v0_2.avro`
+- `tests/conftest.py`
+    - pytest fixtures for unit testing DESIRT alerts
+
 ### Changed
 
 - `poetry.lock`

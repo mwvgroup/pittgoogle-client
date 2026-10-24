@@ -22,7 +22,7 @@ SCHEMAS_DIR = pittgoogle.__package_path__ / "schemas"
 @pytest.fixture
 def survey_names() -> list[str]:
     """List of all survey names supported by pittgoogle."""
-    return ["lsst", "ztf", "lvk", "rapid"]
+    return ["lsst", "ztf", "lvk", "rapid", "desirt"]
 
 
 # [FIXME] Move most of this to load_data?
@@ -157,10 +157,41 @@ def sample_alert_rapid_latest(sample_alerts_rapid) -> load_data.TestAlert:
 
 
 @pytest.fixture
+def sample_alerts_desirt() -> list[load_data.TestAlert]:
+    """List of all DESIRT sample alerts."""
+    survey = "desirt"
+    alert_paths = _get_sample_alert_paths(survey)
+    alerts = []
+    for alert_path in alert_paths:
+        alert_bytes = alert_path.read_bytes()
+        alerts.append(
+            load_data.TestAlert(
+                survey=survey,
+                schema_name=survey,
+                schema_version=alert_path.suffixes[0].strip("."),
+                path=alert_path,
+                bytes_=alert_bytes,
+                dict_=list(fastavro.reader(io.BytesIO(alert_bytes)))[0],
+            )
+        )
+    return alerts
+
+
+@pytest.fixture
 def sample_alerts(
-    sample_alerts_lsst, sample_alerts_lvk, sample_alerts_ztf, sample_alerts_rapid
+    sample_alerts_lsst,
+    sample_alerts_lvk,
+    sample_alerts_ztf,
+    sample_alerts_rapid,
+    sample_alerts_desirt,
 ) -> list[load_data.TestAlert]:
-    return [*sample_alerts_lsst, *sample_alerts_lvk, *sample_alerts_ztf, *sample_alerts_rapid]
+    return [
+        *sample_alerts_lsst,
+        *sample_alerts_lvk,
+        *sample_alerts_ztf,
+        *sample_alerts_rapid,
+        *sample_alerts_desirt,
+    ]
 
 
 @pytest.fixture
