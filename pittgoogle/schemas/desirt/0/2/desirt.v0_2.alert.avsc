@@ -1,0 +1,305 @@
+{
+  "namespace": "desirt",
+  "name": "alert",
+  "type": "record",
+  "version": "0.2.0",
+  "doc": "DESIRT/FARTS DECam difference-imaging alert. One packet per detection.",
+  "fields": [
+    {
+      "name": "schemavsn",
+      "type": "string",
+      "doc": "Schema version of this packet."
+    },
+    {
+      "name": "publisher",
+      "type": "string"
+    },
+    {
+      "name": "objectId",
+      "type": "string",
+      "doc": "Persistent object id: every detection within 1 arcsec of the object's mean position shares it, across nights. Kafka message key."
+    },
+    {
+      "name": "candid",
+      "type": "long",
+      "doc": "Unique id of THIS detection (DB alert_num). Unique across the survey."
+    },
+    {
+      "name": "sourceId",
+      "type": "string",
+      "doc": "Pipeline name of this detection (<expname>-<idx>-<skycode>); the 0.1.0 objectId."
+    },
+    {
+      "name": "candidate",
+      "type": {
+        "type": "record",
+        "name": "Candidate",
+        "fields": [
+          {
+            "name": "mjd",
+            "type": "double"
+          },
+          {
+            "name": "forcediffimflux",
+            "type": "double"
+          },
+          {
+            "name": "forcediffimfluxunc",
+            "type": "double"
+          },
+          {
+            "name": "forcediffimmag",
+            "type": "double"
+          },
+          {
+            "name": "forcediffimmagunc",
+            "type": "double"
+          },
+          {
+            "name": "band",
+            "type": "string"
+          },
+          {
+            "name": "diffmaglim",
+            "type": "double",
+            "doc": "5-sigma limiting mag of the difference image (CCD); NaN if unknown."
+          },
+          {
+            "name": "isdiffpos",
+            "type": "long"
+          },
+          {
+            "name": "ra",
+            "type": "double"
+          },
+          {
+            "name": "dec",
+            "type": "double"
+          },
+          {
+            "name": "psfFlux",
+            "type": "double",
+            "doc": "nJy (AB zp 31.4)"
+          },
+          {
+            "name": "psfFluxErr",
+            "type": "double",
+            "doc": "nJy"
+          },
+          {
+            "type": [
+              "null",
+              "double"
+            ],
+            "default": null,
+            "name": "reliability"
+          },
+          {
+            "name": "expname",
+            "type": "string",
+            "default": ""
+          },
+          {
+            "name": "detpos",
+            "type": "string",
+            "default": "",
+            "doc": "DECam CCD (e.g. N4)."
+          },
+          {
+            "name": "ndethist",
+            "type": "int",
+            "default": 1,
+            "doc": "Detections of objectId up to and including this one, ALL time (not limited to the prvCandidates window)."
+          },
+          {
+            "type": [
+              "null",
+              "double"
+            ],
+            "default": null,
+            "name": "mjdstarthist",
+            "doc": "MJD of the first detection of objectId, all time."
+          }
+        ]
+      }
+    },
+    {
+      "name": "prvCandidates",
+      "doc": "Earlier detections of the same objectId with mjd in [mjd - 30 d, mjd), oldest first. null if there are none.",
+      "type": [
+        "null",
+        {
+          "type": "array",
+          "items": {
+            "type": "record",
+            "name": "PrvCandidate",
+            "fields": [
+              {
+                "name": "candid",
+                "type": "long"
+              },
+              {
+                "name": "sourceId",
+                "type": "string"
+              },
+              {
+                "name": "expname",
+                "type": "string"
+              },
+              {
+                "name": "detpos",
+                "type": "string"
+              },
+              {
+                "name": "mjd",
+                "type": "double"
+              },
+              {
+                "name": "forcediffimflux",
+                "type": "double"
+              },
+              {
+                "name": "forcediffimfluxunc",
+                "type": "double"
+              },
+              {
+                "name": "forcediffimmag",
+                "type": "double"
+              },
+              {
+                "name": "forcediffimmagunc",
+                "type": "double"
+              },
+              {
+                "name": "band",
+                "type": "string"
+              },
+              {
+                "type": [
+                  "null",
+                  "double"
+                ],
+                "default": null,
+                "name": "diffmaglim"
+              },
+              {
+                "name": "isdiffpos",
+                "type": "long"
+              },
+              {
+                "name": "ra",
+                "type": "double"
+              },
+              {
+                "name": "dec",
+                "type": "double"
+              },
+              {
+                "name": "psfFlux",
+                "type": "double"
+              },
+              {
+                "name": "psfFluxErr",
+                "type": "double"
+              },
+              {
+                "type": [
+                  "null",
+                  "double"
+                ],
+                "default": null,
+                "name": "reliability"
+              }
+            ]
+          }
+        }
+      ],
+      "default": null
+    },
+    {
+      "name": "fp_hists",
+      "doc": "RESERVED, always null in 0.2.x. Will hold one row per earlier exposure/CCD covering the position (limits, then forced photometry).",
+      "type": [
+        "null",
+        {
+          "type": "array",
+          "items": {
+            "type": "record",
+            "name": "FpHist",
+            "fields": [
+              {
+                "name": "mjd",
+                "type": "double"
+              },
+              {
+                "name": "expname",
+                "type": "string"
+              },
+              {
+                "name": "detpos",
+                "type": "string"
+              },
+              {
+                "name": "band",
+                "type": "string"
+              },
+              {
+                "type": [
+                  "null",
+                  "double"
+                ],
+                "default": null,
+                "name": "diffmaglim"
+              },
+              {
+                "type": [
+                  "null",
+                  "double"
+                ],
+                "default": null,
+                "name": "forcediffimflux"
+              },
+              {
+                "type": [
+                  "null",
+                  "double"
+                ],
+                "default": null,
+                "name": "forcediffimfluxunc"
+              },
+              {
+                "type": [
+                  "null",
+                  "double"
+                ],
+                "default": null,
+                "name": "psfFlux"
+              },
+              {
+                "type": [
+                  "null",
+                  "double"
+                ],
+                "default": null,
+                "name": "psfFluxErr"
+              }
+            ]
+          }
+        }
+      ],
+      "default": null
+    },
+    {
+      "name": "cutoutScience",
+      "type": "bytes"
+    },
+    {
+      "name": "cutoutTemplate",
+      "type": "bytes"
+    },
+    {
+      "name": "cutoutDifference",
+      "type": "bytes"
+    }
+  ]
+}
