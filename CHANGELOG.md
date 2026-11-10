@@ -10,20 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
-### Added
-
-- `schemas/lsst/11/2/`
-    - `lsst.v11_2.alert.avsc`
-    - `lsst.v11_2.diaForcedSources.avsc`
-    - `lsst.v11_2.diaSource.avsc`
-    - `lsst.v11_2.diaObject.avsc`
-    - `lsst.v11_2.mpc_orbits.avsc`
-    - `lsst.v11_2.ssSource.avsc`
-    - `lsst.v11_2.ssObject.avsc`
-- `pittgoogle/schema.py`
-    - Support for LSST schema v11_2
-- `tests/data/lsst/`
-    - `lsst.v11_2.avro`
+(none)
 
 ## \[v0.3.25\] - 2026-11-10
 
