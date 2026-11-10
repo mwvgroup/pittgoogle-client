@@ -543,6 +543,7 @@ class LsstSchema(Schema):
             "v10_0",
             "v11_0",
             "v11_1",
+            "v11_2",
         ]:
             raise exceptions.SchemaError(f"Schema definition not found for {schema.version}.")
 
