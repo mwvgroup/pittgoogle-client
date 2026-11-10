@@ -38,7 +38,7 @@ class RandomLsst:
         return TestAlert(
             survey="lsst",
             schema_name="lsst",
-            schema_version="v11_1",
+            schema_version="v11_2",
             dict_={
                 "diaSourceId": random.randint(1, 1000),
                 "observation_reason": None,
