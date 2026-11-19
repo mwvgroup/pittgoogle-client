@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Added
 
 - `pittgoogle/alert.py`
-     - Implement `xmatch_gaia_dr3` method
+    - Implement `xmatch_gaia_dr3` method
 
 ### Changed
 
