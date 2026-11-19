@@ -10,7 +10,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## \[Unreleased\]
 
-(none)
+### Added
+
+- `pittgoogle/alert.py`
+    - Implement `xmatch_gaia_dr3` method
+
+### Changed
+
+- `poetry.lock`
+    - Updated the latest versions compatible with the pyproject.toml file
 
 ## \[v0.3.25\] - 2026-11-10
 

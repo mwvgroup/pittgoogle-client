@@ -5,21 +5,19 @@
 
     Alert
 """
+
 import base64
 import datetime
 import io
 import logging
 import random
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, Mapping, Union
-
+import functools
 import attrs
 import google.cloud.pubsub_v1
-
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Mapping, Union
 from . import exceptions, registry, types_
-
-# so 'schema' module doesn't clobber 'Alert.schema' attribute
-from .schema import Schema
+from .schema import Schema  # so 'schema' module doesn't clobber 'Alert.schema' attribute
 
 if TYPE_CHECKING:
     import astropy.table
@@ -27,6 +25,26 @@ if TYPE_CHECKING:
     import pandas as pd  # always lazy-load pandas. it hogs memory on cloud functions and run
 
 LOGGER = logging.getLogger(__name__)
+
+GAIA_DR3_HATS_URL = "s3://stpubdata/gaia/gaia_dr3/public/hats/gaia"
+_GAIA_ROW_FILTER_ORDER = 15  # HEALPix order used to build the parquet row filter
+
+
+@functools.cache
+def _gaia_dr3_hats():
+    """Return the Gaia DR3 HATS catalog (metadata only) and an anonymous S3 filesystem.
+
+    Cached so the catalog metadata is loaded once per process, and only when first needed
+    (rather than at import time).
+    """
+    import hats
+    import pyarrow.fs
+
+    catalog = hats.read_hats(GAIA_DR3_HATS_URL, single_catalog=True)
+    # pyarrow's native S3 client uses its own C++ I/O threads, so concurrent reads (e.g., in a
+    # multi-threaded gunicorn worker) run in parallel. s3fs would queue them on one event loop.
+    s3 = pyarrow.fs.S3FileSystem(anonymous=True, region="us-east-1")
+    return catalog, s3
 
 
 @attrs.define(kw_only=True)
@@ -688,6 +706,100 @@ class Alert:
         ]
         alert_stripped = {k: v for k, v in self.dict.items() if k not in cutouts}
         return alert_stripped
+
+    def xmatch_gaia_dr3(
+        self,
+        columns: list[str],
+        radius: float = 5.0,
+        n_max: int = 3,
+    ) -> "pd.DataFrame":
+        """Cross match this alert's position against the Gaia DR3 Source Catalog.
+
+        Reads the public Gaia DR3 HATS catalog from AWS S3 (anonymous access). Only the partitions and
+        rows near the alert's position are read: partitions overlapping the cone are selected from the
+        catalog metadata, then a parquet row filter on ``_healpix_29`` keeps only rows in the order-15
+        HEALPix pixels that overlap the cone. The exact angular-separation cut is applied afterward.
+
+        Uses :attr:`Alert.ra` and :attr:`Alert.dec`, so the alert's schema must map these generic
+        fields. Requires the optional dependencies ``astropy``, ``hats``, ``hpgeom``, and ``pyarrow``.
+
+        Args:
+            columns (list[str]):
+                Gaia DR3 columns to return, e.g., ``["parallax", "phot_g_mean_mag"]``. ``source_id``,
+                ``ra``, and ``dec`` are always included. Only these columns are read from the catalog,
+                so request only what you need.
+            radius (float, optional):
+                Match radius in arcseconds. Defaults to 5.
+            n_max (int, optional):
+                Maximum number of matches to return (the closest ones). Defaults to 3.
+
+        Returns:
+            pandas.DataFrame:
+                Up to ``n_max`` Gaia sources within ``radius``, sorted by increasing separation, with
+                an added ``separation`` column (arcseconds). Empty if there are no matches.
+
+        Example:
+
+            .. code-block:: python
+
+                matches = alert.xmatch_gaia_dr3(
+                    columns=["parallax", "pmra", "pmdec", "phot_g_mean_mag"], radius=5, n_max=3
+                )
+                if not matches.empty:
+                    closest = matches.iloc[0]
+                    alert.attributes["closest_gaia_source_id"] = str(closest["source_id"])
+        """
+        import astropy.units as u
+        import hpgeom
+        import pandas as pd
+        import pyarrow.parquet as pq
+        from astropy.coordinates import SkyCoord
+        from hats.io import paths
+
+        catalog, s3 = _gaia_dr3_hats()
+        ra, dec = self.ra, self.dec
+        read_columns = list(dict.fromkeys(["source_id", "ra", "dec", *columns]))
+
+        # Parquet row filter: order-15 pixels overlapping the cone. Every `_healpix_29` index begins
+        # with the index of its order-15 pixel `p`, so p * 2**shift <= _healpix_29 < (p + 1) * 2**shift.
+        shift = 2 * (29 - _GAIA_ROW_FILTER_ORDER)
+        pixels = hpgeom.query_circle(
+            hpgeom.order_to_nside(_GAIA_ROW_FILTER_ORDER), ra, dec, radius / 3600, inclusive=True
+        )
+        row_filter = [
+            [("_healpix_29", ">=", int(p) << shift), ("_healpix_29", "<", (int(p) + 1) << shift)]
+            for p in pixels
+        ]
+
+        # read the matching rows from each partition that overlaps the cone.
+        partitions = catalog.filter_by_cone(ra, dec, radius).get_healpix_pixels()
+        frames = [
+            pq.read_table(
+                str(paths.pixel_catalog_file(catalog.catalog_base_dir, partition)).removeprefix(
+                    "s3://"  # pyarrow expects "bucket/key" with no scheme
+                ),
+                columns=read_columns,
+                filters=row_filter,
+                filesystem=s3,
+            ).to_pandas()
+            for partition in partitions
+        ]
+        if not frames:
+            return pd.DataFrame(columns=[*read_columns, "separation"])
+        gaia = pd.concat(frames, ignore_index=True)
+
+        # angular separation between this alert and each Gaia source, in arcseconds
+        target = SkyCoord(ra * u.deg, dec * u.deg, frame="icrs")
+        sources = SkyCoord(
+            gaia["ra"].to_numpy("float64") * u.deg,
+            gaia["dec"].to_numpy("float64") * u.deg,
+            frame="icrs",
+        )
+        gaia["separation"] = target.separation(sources).arcsec
+
+        return (
+            gaia[gaia["separation"] < radius].nsmallest(n_max, "separation").reset_index(drop=True)
+        )
 
     @staticmethod
     def _str_to_datetime(str_time: str) -> datetime.datetime:
